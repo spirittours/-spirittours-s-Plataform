@@ -1,0 +1,428 @@
+2025-09-20T10:33:13: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:13: # -*- coding: utf-8 -*-
+2025-09-20T10:33:13: ^
+2025-09-20T10:33:13: 
+2025-09-20T10:33:13: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:13:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:13: # -*- coding: utf-8 -*-
+2025-09-20T10:33:13: ^
+2025-09-20T10:33:13: 
+2025-09-20T10:33:13: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:13:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:13: # -*- coding: utf-8 -*-
+2025-09-20T10:33:13: ^
+2025-09-20T10:33:13: 
+2025-09-20T10:33:13: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:13:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:13: # -*- coding: utf-8 -*-
+2025-09-20T10:33:13: ^
+2025-09-20T10:33:13: 
+2025-09-20T10:33:13: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:13:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:13: # -*- coding: utf-8 -*-
+2025-09-20T10:33:13: ^
+2025-09-20T10:33:13: 
+2025-09-20T10:33:13: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:13:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:13:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:13:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:13:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:13:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:13:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:14: # -*- coding: utf-8 -*-
+2025-09-20T10:33:14: ^
+2025-09-20T10:33:14: 
+2025-09-20T10:33:14: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:14:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:14: # -*- coding: utf-8 -*-
+2025-09-20T10:33:14: ^
+2025-09-20T10:33:14: 
+2025-09-20T10:33:14: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:14:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:14: # -*- coding: utf-8 -*-
+2025-09-20T10:33:14: ^
+2025-09-20T10:33:14: 
+2025-09-20T10:33:14: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:14:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:14: # -*- coding: utf-8 -*-
+2025-09-20T10:33:14: ^
+2025-09-20T10:33:14: 
+2025-09-20T10:33:14: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:14:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:14: # -*- coding: utf-8 -*-
+2025-09-20T10:33:14: ^
+2025-09-20T10:33:14: 
+2025-09-20T10:33:14: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:14:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:14:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:14:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:14:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:14:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:14:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:15: # -*- coding: utf-8 -*-
+2025-09-20T10:33:15: ^
+2025-09-20T10:33:15: 
+2025-09-20T10:33:15: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:15:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:15: # -*- coding: utf-8 -*-
+2025-09-20T10:33:15: ^
+2025-09-20T10:33:15: 
+2025-09-20T10:33:15: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:15:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:15: # -*- coding: utf-8 -*-
+2025-09-20T10:33:15: ^
+2025-09-20T10:33:15: 
+2025-09-20T10:33:15: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:15:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:15: # -*- coding: utf-8 -*-
+2025-09-20T10:33:15: ^
+2025-09-20T10:33:15: 
+2025-09-20T10:33:15: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:15:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:15: # -*- coding: utf-8 -*-
+2025-09-20T10:33:15: ^
+2025-09-20T10:33:15: 
+2025-09-20T10:33:15: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:15:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:15:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:15:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:15:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:15:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:15:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:16: /usr/local/bin/uvicorn:2
+2025-09-20T10:33:16: # -*- coding: utf-8 -*-
+2025-09-20T10:33:16: ^
+2025-09-20T10:33:16: 
+2025-09-20T10:33:16: SyntaxError: Invalid or unexpected token
+2025-09-20T10:33:16:     at wrapSafe (node:internal/modules/cjs/loader:1472:18)
+2025-09-20T10:33:16:     at Module._compile (node:internal/modules/cjs/loader:1501:20)
+2025-09-20T10:33:16:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:16:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:16:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:33:16:     at Object.<anonymous> (/home/user/webapp/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2025-09-20T10:33:16:     at Module._compile (node:internal/modules/cjs/loader:1529:14)
+2025-09-20T10:33:16:     at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+2025-09-20T10:33:16:     at Module.load (node:internal/modules/cjs/loader:1275:32)
+2025-09-20T10:33:16:     at Module._load (node:internal/modules/cjs/loader:1096:12)
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00: ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     
+2025-09-20T10:34:00: ELF
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00: SyntaxError
+2025-09-20T10:34:00: : 
+2025-09-20T10:34:00: source code cannot contain null bytes
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     
+2025-09-20T10:34:00: ELF
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00: SyntaxError
+2025-09-20T10:34:00: : source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     
+2025-09-20T10:34:00: ELF
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00: SyntaxError
+2025-09-20T10:34:00: : 
+2025-09-20T10:34:00: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     
+2025-09-20T10:34:00: ELF
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00: SyntaxError
+2025-09-20T10:34:00: : 
+2025-09-20T10:34:00: source code cannot contain null bytes
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     
+2025-09-20T10:34:00: ELF
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00: SyntaxError
+2025-09-20T10:34:00: : 
+2025-09-20T10:34:00: source code cannot contain null bytes
+2025-09-20T10:34:00: 
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:00:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:00:     ELF
+2025-09-20T10:34:00: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:26:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:26:     ELF
+2025-09-20T10:34:26: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:27:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:27:     ELF
+2025-09-20T10:34:27: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:27:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:27:     ELF
+2025-09-20T10:34:27: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     ELF
+2025-09-20T10:34:35: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     
+2025-09-20T10:34:35: ELF
+2025-09-20T10:34:35: 
+2025-09-20T10:34:35: SyntaxError
+2025-09-20T10:34:35: : 
+2025-09-20T10:34:35: source code cannot contain null bytes
+2025-09-20T10:34:35: 
+2025-09-20T10:34:35:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:35:     
+2025-09-20T10:34:35: ELF
+2025-09-20T10:34:35: 
+2025-09-20T10:34:35: SyntaxError
+2025-09-20T10:34:35: : 
+2025-09-20T10:34:35: source code cannot contain null bytes
+2025-09-20T10:34:35: 
+2025-09-20T10:34:36:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:36:     ELF
+2025-09-20T10:34:36: SyntaxError: source code cannot contain null bytes
+2025-09-20T10:34:36:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:36:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:36:     
+2025-09-20T10:34:36: ELF
+2025-09-20T10:34:36: 
+2025-09-20T10:34:36: SyntaxError
+2025-09-20T10:34:36: : 
+2025-09-20T10:34:36: source code cannot contain null bytes
+2025-09-20T10:34:36: 
+2025-09-20T10:34:36:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:36:     
+2025-09-20T10:34:36: ELF
+2025-09-20T10:34:36: 
+2025-09-20T10:34:36: SyntaxError
+2025-09-20T10:34:36: : 
+2025-09-20T10:34:36: source code cannot contain null bytes
+2025-09-20T10:34:36: 
+2025-09-20T10:34:36:   File "/usr/local/bin/python", line 1
+2025-09-20T10:34:36:     
+2025-09-20T10:34:36: ELF
+2025-09-20T10:34:36: 
+2025-09-20T10:34:36: SyntaxError
+2025-09-20T10:34:36: : 
+2025-09-20T10:34:36: source code cannot contain null bytes
