@@ -1,0 +1,6 @@
+2025-09-20 10:35:00,770 INFO RPC interface 'supervisor' initialized
+2025-09-20 10:35:00,770 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2025-09-20 10:35:00,773 INFO daemonizing the supervisord process
+2025-09-20 10:35:00,776 INFO supervisord started with pid 4172
+2025-09-20 10:35:01,779 INFO spawned: 'spirit-backend' with pid 4193
+2025-09-20 10:35:03,652 INFO success: spirit-backend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
