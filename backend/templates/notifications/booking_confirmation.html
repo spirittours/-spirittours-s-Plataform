@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation - {{booking_id}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            margin: -30px -30px 20px -30px;
+        }
+        .booking-details {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .total-amount {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d5a2d;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 10px;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Booking Confirmed!</h1>
+            <p>Thank you for choosing our travel services</p>
+        </div>
+
+        <div class="content">
+            <p>Dear <strong>{{customer_name}}</strong>,</p>
+            
+            <p>Great news! Your booking has been successfully confirmed. We're excited to help make your travel dreams come true!</p>
+
+            <div class="booking-details">
+                <h3>📋 Booking Details</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Booking ID:</span>
+                    <span class="detail-value"><strong>{{booking_id}}</strong></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">🏝️ Destination:</span>
+                    <span class="detail-value">{{destination}}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">📅 Check-in Date:</span>
+                    <span class="detail-value">{{check_in_date}}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">📅 Check-out Date:</span>
+                    <span class="detail-value">{{check_out_date}}</span>
+                </div>
+                
+                {% if guests %}
+                <div class="detail-row">
+                    <span class="detail-label">👥 Guests:</span>
+                    <span class="detail-value">{{guests}}</span>
+                </div>
+                {% endif %}
+                
+                {% if room_type %}
+                <div class="detail-row">
+                    <span class="detail-label">🛏️ Room Type:</span>
+                    <span class="detail-value">{{room_type}}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="total-amount">
+                💰 Total Amount: {{total_amount}} {{currency}}
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{booking_url}}" class="button">View Booking Details</a>
+                <a href="{{contact_url}}" class="button">Contact Support</a>
+            </div>
+
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>📱 Important Information:</h4>
+                <ul>
+                    <li>Please save this confirmation email for your records</li>
+                    <li>Arrive at least 30 minutes before check-in time</li>
+                    <li>Bring a valid ID and this confirmation</li>
+                    <li>Check our cancellation policy for any changes</li>
+                </ul>
+            </div>
+
+            {% if special_instructions %}
+            <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>📝 Special Instructions:</h4>
+                <p>{{special_instructions}}</p>
+            </div>
+            {% endif %}
+
+            <p>If you have any questions or need to make changes to your booking, please don't hesitate to contact our customer support team.</p>
+
+            <p>We look forward to providing you with an exceptional travel experience!</p>
+
+            <p>Safe travels,<br>
+            <strong>The Travel Booking Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>📞 Customer Support: {{support_phone}} | 📧 Email: {{support_email}}</p>
+            <p>🌐 Website: {{company_website}} | Follow us on social media</p>
+            <p><small>This is an automated message. Please do not reply to this email.</small></p>
+        </div>
+    </div>
+</body>
+</html>
