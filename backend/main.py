@@ -32,12 +32,14 @@ from .api import (
     advanced_auth_api,
     admin_b2b_management_api,
     commission_management_api,
-    omnichannel_communications_api
+    omnichannel_communications_api,
+    ai_voice_agents_api
 )
 
 # Import services for startup initialization
 from .services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
 from .services.omnichannel_crm_service import OmnichannelCRMService
+from .services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -78,16 +80,18 @@ app.include_router(advanced_auth_api.router)
 app.include_router(admin_b2b_management_api.router)
 app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
+app.include_router(ai_voice_agents_api.router)
 
 # Global service instances
 pbx_service: Optional[PBX3CXIntegrationService] = None
 crm_service: Optional[OmnichannelCRMService] = None
+voice_agents_service: Optional[AIVoiceAgentsService] = None
 
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and system on startup"""
-    global pbx_service, crm_service
+    global pbx_service, crm_service, voice_agents_service
     
     try:
         logger.info("Starting Spirit Tours B2C/B2B/B2B2C Platform...")
@@ -133,8 +137,21 @@ async def startup_event():
             
         except Exception as e:
             logger.warning(f"⚠️ CRM service initialization error: {str(e)}")
+        
+        # Initialize AI Voice Agents Service
+        try:
+            voice_agents_service = ai_voice_agents_service
             
-        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications")
+            # Initialize with PBX and CRM services if available
+            if await voice_agents_service.initialize(pbx_service, crm_service):
+                logger.info("✅ AI Voice Agents service initialized successfully")
+            else:
+                logger.warning("⚠️ AI Voice Agents service initialization failed - continuing without voice AI")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ AI Voice Agents service initialization error: {str(e)}")
+            
+        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {str(e)}")
@@ -212,7 +229,7 @@ async def root():
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
     """Health check endpoint with database status"""
-    global pbx_service, crm_service
+    global pbx_service, crm_service, voice_agents_service
     
     try:
         # Test database connection
@@ -237,6 +254,14 @@ async def health_check(db: Session = Depends(get_db)):
         except:
             crm_status = "error"
     
+    # Check AI Voice Agents service status
+    voice_agents_status = "not_initialized"
+    if voice_agents_service:
+        try:
+            voice_agents_status = "ready" if voice_agents_service.is_initialized else "initializing"
+        except:
+            voice_agents_status = "error"
+    
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
@@ -253,6 +278,7 @@ async def health_check(db: Session = Depends(get_db)):
             "ai_orchestrator": "ready",
             "pbx_3cx": pbx_status,
             "omnichannel_crm": crm_status,
+            "ai_voice_agents": voice_agents_status,
             "communications_api": "ready"
         },
         "business_model": {
@@ -264,6 +290,7 @@ async def health_check(db: Session = Depends(get_db)):
         },
         "omnichannel_features": {
             "3cx_pbx_integration": pbx_status == "connected",
+            "ai_voice_agents": voice_agents_status == "ready",
             "social_media_platforms": ["WhatsApp", "Facebook", "Instagram", "TikTok", "Twitter", "LinkedIn"],
             "webrtc_calling": pbx_status == "connected",
             "voicemail_management": pbx_status == "connected",
