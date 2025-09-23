@@ -567,7 +567,7 @@ http {
         }
         
         # Static files caching
-        location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        location ~* \\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             proxy_pass http://frontend_backend;
             expires 1y;
             add_header Cache-Control "public, immutable";
