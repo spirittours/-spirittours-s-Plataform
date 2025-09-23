@@ -19,7 +19,7 @@ from backend.auth.rbac_middleware import (
     RBACManager, get_current_active_user,
     AuthenticationError, AuthorizationError
 )
-from backend.database import get_db_session
+from backend.config.database import get_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -59,7 +59,7 @@ class ResetPasswordRequest(BaseModel):
 async def login(
     login_data: LoginRequest,
     request: Request,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """User login endpoint"""
     
@@ -101,7 +101,7 @@ async def login(
 @router.post("/refresh", response_model=Dict[str, Any])
 async def refresh_token(
     refresh_data: RefreshTokenRequest,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Refresh access token"""
     
@@ -137,7 +137,7 @@ async def refresh_token(
 async def logout(
     request: Request,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """User logout endpoint"""
     
@@ -157,7 +157,7 @@ async def logout(
 @router.get("/profile", response_model=UserResponse)
 async def get_profile(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get current user profile"""
     
@@ -175,7 +175,7 @@ async def update_profile(
     profile_data: UpdateProfileRequest,
     request: Request,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Update current user profile"""
     
@@ -236,7 +236,7 @@ async def change_password(
     password_data: ChangePasswordRequest,
     request: Request,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Change user password"""
     
@@ -276,7 +276,7 @@ async def change_password(
 @router.get("/permissions")
 async def get_user_permissions(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get current user's permissions"""
     
@@ -321,7 +321,7 @@ async def check_permission(
     action: str,
     resource: str,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Check if current user has specific permission"""
     
@@ -348,7 +348,7 @@ async def check_permission(
 @router.get("/accessible-agents")
 async def get_accessible_agents(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get list of AI agents current user can access"""
     
@@ -402,7 +402,7 @@ async def get_accessible_agents(
 @router.get("/dashboard-access")
 async def get_dashboard_access(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get dashboard sections current user can access"""
     

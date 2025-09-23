@@ -298,7 +298,7 @@ class VoicemailResponse(BaseModel):
 class ContactSyncRequest(BaseModel):
     """Contact synchronization request"""
     contacts: List[Dict[str, Any]]
-    sync_direction: str = Field(regex="^(to_pbx|from_pbx|bidirectional)$")
+    sync_direction: str = Field(pattern="^(to_pbx|from_pbx|bidirectional)$")
     overwrite_existing: bool = False
 
 class PBX3CXIntegrationService:

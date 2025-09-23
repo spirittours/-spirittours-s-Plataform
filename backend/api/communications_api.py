@@ -12,7 +12,7 @@ import asyncio
 
 from backend.models.rbac_models import User
 from backend.auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
-from backend.database import get_db_session
+from backend.config.database import get_db
 from backend.integrations.pbx_3cx import (
     PBX3CXManager, CommunicationManager, CallLog, CallCampaign, 
     create_pbx_manager
@@ -56,7 +56,7 @@ class CallNotesRequest(BaseModel):
 async def make_outbound_call(
     call_request: MakeCallRequest,
     current_user: User = Depends(PermissionRequiredDep("system_configuration", "execute", "phone_system")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Make outbound call through PBX"""
     try:
@@ -108,7 +108,7 @@ async def get_call_history(
     days: int = 7,
     extension: Optional[str] = None,
     current_user: User = Depends(PermissionRequiredDep("audit_logs", "read", "call_recording")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get call history from PBX and database"""
     try:
@@ -223,7 +223,7 @@ async def add_call_notes(
     call_id: str,
     notes_request: CallNotesRequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Add notes to call log"""
     try:
@@ -260,7 +260,7 @@ async def add_call_notes(
 async def create_call_campaign(
     campaign_request: CreateCampaignRequest,
     current_user: User = Depends(PermissionRequiredDep("marketing_campaigns", "create", "campaign")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Create new call campaign"""
     try:
@@ -292,7 +292,7 @@ async def start_call_campaign(
     assigned_agents: List[str],
     background_tasks: BackgroundTasks,
     current_user: User = Depends(PermissionRequiredDep("marketing_campaigns", "execute", "campaign")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Start call campaign execution"""
     try:
@@ -334,7 +334,7 @@ async def execute_campaign_background(comm_manager, campaign_id, phone_numbers, 
 @router.get("/campaigns")
 async def get_call_campaigns(
     current_user: User = Depends(PermissionRequiredDep("marketing_campaigns", "read", "campaign")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get all call campaigns"""
     try:
@@ -365,7 +365,7 @@ async def get_call_campaigns(
 async def get_campaign_statistics(
     campaign_id: str,
     current_user: User = Depends(PermissionRequiredDep("analytics_dashboard", "read", "marketing_analytics")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get comprehensive campaign statistics"""
     try:
@@ -385,7 +385,7 @@ async def send_promotional_calls_agencies(
     promo_request: PromotionalCallRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(PermissionRequiredDep("marketing_campaigns", "execute", "campaign")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Send promotional calls to travel agencies"""
     try:
@@ -416,7 +416,7 @@ async def send_promotional_calls_operators(
     promo_request: PromotionalCallRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(PermissionRequiredDep("marketing_campaigns", "execute", "campaign")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Send promotional calls to tour operators"""
     try:
@@ -488,7 +488,7 @@ async def get_extensions_status(
 async def get_communication_metrics(
     days: int = 7,
     current_user: User = Depends(PermissionRequiredDep("analytics_dashboard", "read", "call_metrics")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get communication dashboard metrics"""
     try:

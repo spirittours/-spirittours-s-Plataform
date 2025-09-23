@@ -19,9 +19,8 @@ from .business_models import (
 )
 
 from .enhanced_audit_models import (
-    ActionType, RiskLevel, SecurityAlert, AuditLogDetail,
-    BookingAuditLog, AIUsageAuditLog, LoginAuditLog, DataAccessAuditLog,
-    SystemConfigAuditLog
+    ActionType, RiskLevel, EnhancedAuditLog,
+    BookingAuditLog, AIAgentUsageLog, LoginActivityLog, DataAccessLog
 )
 
 __all__ = [
@@ -42,7 +41,6 @@ __all__ = [
     'PaymentStatementResponse',
     
     # Audit Models
-    'ActionType', 'RiskLevel', 'SecurityAlert', 'AuditLogDetail',
-    'BookingAuditLog', 'AIUsageAuditLog', 'LoginAuditLog', 'DataAccessAuditLog',
-    'SystemConfigAuditLog'
+    'ActionType', 'RiskLevel', 'EnhancedAuditLog',
+    'BookingAuditLog', 'AIAgentUsageLog', 'LoginActivityLog', 'DataAccessLog'
 ]

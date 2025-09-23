@@ -87,11 +87,11 @@ try:
     from ..models.rbac_models import Base
     from ..models.business_models import Base as BusinessBase
     # Ensure both models use the same metadata
-    metadata = Base.metadata
+    db_metadata = Base.metadata
 except ImportError:
     # Fallback if models are not available yet
     Base = declarative_base()
-    metadata = Base.metadata
+    db_metadata = Base.metadata
 
 # Event listeners for database optimization
 @event.listens_for(engine, "connect")

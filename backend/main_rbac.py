@@ -18,7 +18,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Database imports
-from backend.database import engine, get_db_session
+from backend.config.database import engine, get_db
 from backend.models.rbac_models import Base
 from backend.database.init_rbac import initialize_rbac_system
 
@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI):
     # Initialize RBAC system
     logger.info("Initializing RBAC system...")
     try:
-        db = next(get_db_session())
+        db = next(get_db())
         initialize_rbac_system(db)
         db.close()
         logger.info("RBAC system initialized successfully")
@@ -182,7 +182,7 @@ async def system_status(
     current_user = Depends(get_current_active_user)
 ):
     """Detailed system status - requires authentication"""
-    rbac_manager = RBACManager(next(get_db_session()))
+    rbac_manager = RBACManager(next(get_db()))
     
     # Check if user has monitoring permissions
     if not rbac_manager.check_permission(
@@ -230,7 +230,7 @@ if AI_AGENTS_AVAILABLE:
 @app.get("/api/dashboard/stats", tags=["Dashboard"])
 async def get_dashboard_stats(
     current_user = Depends(get_current_active_user),
-    db = Depends(get_db_session)
+    db = Depends(get_db)
 ):
     """Get dashboard statistics"""
     rbac_manager = RBACManager(db)
@@ -269,7 +269,7 @@ async def get_agents_status(
     current_user = Depends(get_current_active_user)
 ):
     """Get AI agents status and accessibility"""
-    rbac_manager = RBACManager(next(get_db_session()))
+    rbac_manager = RBACManager(next(get_db()))
     
     # Define all 25 agents
     all_agents = [

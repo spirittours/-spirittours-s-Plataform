@@ -34,7 +34,8 @@ from .api import (
     commission_management_api,
     omnichannel_communications_api,
     ai_voice_agents_api,
-    webrtc_signaling_api
+    webrtc_signaling_api,
+    advanced_voice_api
 )
 
 # Import services for startup initialization
@@ -42,6 +43,7 @@ from .services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3
 from .services.omnichannel_crm_service import OmnichannelCRMService
 from .services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
 from .services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
+from .services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -84,12 +86,14 @@ app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
 app.include_router(ai_voice_agents_api.router)
 app.include_router(webrtc_signaling_api.router)
+app.include_router(advanced_voice_api.router)
 
 # Global service instances
 pbx_service: Optional[PBX3CXIntegrationService] = None
 crm_service: Optional[OmnichannelCRMService] = None
 voice_agents_service: Optional[AIVoiceAgentsService] = None
 webrtc_service: Optional[WebRTCSignalingService] = None
+# advanced_voice_service is imported as global instance from services
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -167,8 +171,27 @@ async def startup_event():
                 
         except Exception as e:
             logger.warning(f"⚠️ WebRTC Signaling service initialization error: {str(e)}")
+        
+        # Initialize Advanced Voice AI Service  
+        try:
+            # Prepare configuration for advanced voice service
+            voice_config = {
+                "elevenlabs_api_key": getattr(settings, 'ELEVENLABS_API_KEY', None),
+                "openai_api_key": getattr(settings, 'OPENAI_API_KEY', None),
+                "google_api_key": getattr(settings, 'GOOGLE_API_KEY', None),
+                "azure_api_key": getattr(settings, 'AZURE_API_KEY', None),
+            }
             
-        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents + WebRTC")
+            # Initialize advanced voice service using global instance
+            if await advanced_voice_service.initialize(voice_config):
+                logger.info("✅ Advanced Voice AI service initialized successfully")
+            else:
+                logger.warning("⚠️ Advanced Voice AI service initialization failed - continuing without advanced voice features")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Advanced Voice AI service initialization error: {str(e)}")
+            
+        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents + WebRTC + Advanced Voice AI")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {str(e)}")
@@ -287,6 +310,14 @@ async def health_check(db: Session = Depends(get_db)):
         except:
             webrtc_status = "error"
     
+    # Check Advanced Voice AI service status
+    advanced_voice_status = "not_initialized"
+    if advanced_voice_service:
+        try:
+            advanced_voice_status = "ready" if advanced_voice_service.is_initialized else "initializing"
+        except:
+            advanced_voice_status = "error"
+    
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
@@ -305,6 +336,7 @@ async def health_check(db: Session = Depends(get_db)):
             "omnichannel_crm": crm_status,
             "ai_voice_agents": voice_agents_status,
             "webrtc_signaling": webrtc_status,
+            "advanced_voice_ai": advanced_voice_status,
             "communications_api": "ready"
         },
         "business_model": {
@@ -324,7 +356,16 @@ async def health_check(db: Session = Depends(get_db)):
             "voicemail_management": pbx_status == "connected",
             "unified_phonebook": crm_status == "ready",
             "conversation_analytics": crm_status == "ready",
-            "browser_to_ai_calling": webrtc_status == "running" and voice_agents_status == "ready"
+            "browser_to_ai_calling": webrtc_status == "running" and voice_agents_status == "ready",
+            "advanced_voice_ai": {
+                "voice_cloning": advanced_voice_status == "ready",
+                "multi_dialect_synthesis": advanced_voice_status == "ready",
+                "emotional_tone_control": advanced_voice_status == "ready",
+                "personal_voice_management": advanced_voice_status == "ready",
+                "employee_voice_management": advanced_voice_status == "ready",
+                "real_time_voice_switching": advanced_voice_status == "ready",
+                "professional_voice_library": advanced_voice_status == "ready"
+            }
         }
     }
 

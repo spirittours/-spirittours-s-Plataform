@@ -6,7 +6,11 @@ Configuración completa del sistema Spirit Tours
 
 import os
 from typing import List, Optional, Dict, Any
-from pydantic import BaseSettings, validator
+try:
+    from pydantic_settings import BaseSettings
+    from pydantic import validator
+except ImportError:
+    from pydantic import BaseSettings, validator
 from functools import lru_cache
 
 class Settings(BaseSettings):

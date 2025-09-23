@@ -21,7 +21,7 @@ from backend.auth.rbac_middleware import (
     get_current_active_user, AdminRequiredDep, PermissionRequiredDep,
     RBACManager, AuthorizationError, require_admin
 )
-from backend.database import get_db_session
+from backend.config.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["Admin Management"])
 
@@ -35,7 +35,7 @@ async def get_all_users(
     role_name: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get all users with filtering and pagination - Admin only"""
     
@@ -77,7 +77,7 @@ async def create_user(
     user_data: CreateUserRequest,
     request: Request,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Create a new user - Admin only"""
     
@@ -138,7 +138,7 @@ async def create_user(
 async def get_user(
     user_id: str,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get user by ID - Admin only"""
     
@@ -162,7 +162,7 @@ async def update_user(
     user_data: UpdateUserRequest,
     request: Request,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Update user - Admin only"""
     
@@ -246,7 +246,7 @@ async def delete_user(
     user_id: str,
     request: Request,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Delete user - Admin only"""
     
@@ -296,7 +296,7 @@ async def reset_user_password(
     new_password: str,
     request: Request,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Reset user password - Admin only"""
     
@@ -330,7 +330,7 @@ async def reset_user_password(
 @router.get("/roles", response_model=List[RoleResponse])
 async def get_all_roles(
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get all roles - Admin only"""
     
@@ -345,7 +345,7 @@ async def create_role(
     permission_ids: List[str],
     request: Request,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Create a new role - Admin only"""
     
@@ -390,7 +390,7 @@ async def create_role(
 async def get_all_permissions(
     scope: Optional[PermissionScope] = Query(None),
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get all permissions - Admin only"""
     
@@ -406,7 +406,7 @@ async def get_all_permissions(
 @router.get("/branches", response_model=List[BranchResponse])
 async def get_all_branches(
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get all branches - Admin only"""
     
@@ -422,7 +422,7 @@ async def create_branch(
     request: Request,
     region: Optional[str] = None,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Create a new branch - Admin only"""
     
@@ -466,7 +466,7 @@ async def get_audit_logs(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get audit logs - Admin only"""
     
@@ -517,7 +517,7 @@ async def get_audit_logs(
 @router.get("/analytics/users")
 async def get_user_analytics(
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get user analytics - Admin only"""
     

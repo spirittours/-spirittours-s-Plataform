@@ -12,7 +12,7 @@ from datetime import datetime
 from backend.models.rbac_models import User
 from backend.auth.rbac_middleware import get_current_active_user, AdminRequiredDep
 from backend.auth.security_2fa import SecurityManager, TwoFactorAuth
-from backend.database import get_db_session
+from backend.config.database import get_db
 
 router = APIRouter(prefix="/security/2fa", tags=["Two-Factor Authentication"])
 
@@ -39,7 +39,7 @@ class SecurityEventResponse(BaseModel):
 async def setup_2fa(
     setup_request: Setup2FARequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Set up 2FA for current user"""
     try:
@@ -65,7 +65,7 @@ async def setup_2fa(
 async def verify_2fa(
     verify_request: Verify2FARequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Verify 2FA token"""
     try:
@@ -91,7 +91,7 @@ async def verify_2fa(
 async def enable_2fa(
     enable_request: Enable2FARequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Enable 2FA after successful verification"""
     try:
@@ -117,7 +117,7 @@ async def enable_2fa(
 async def disable_2fa(
     verify_request: Verify2FARequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Disable 2FA for current user"""
     try:
@@ -147,7 +147,7 @@ async def disable_2fa(
 @router.get("/status")
 async def get_2fa_status(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get 2FA status for current user"""
     try:
@@ -174,7 +174,7 @@ async def get_2fa_status(
 async def regenerate_backup_codes(
     verify_request: Verify2FARequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Regenerate backup codes"""
     try:
@@ -204,7 +204,7 @@ async def regenerate_backup_codes(
 async def get_security_events(
     days: int = 30,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get security events for current user"""
     try:
@@ -237,7 +237,7 @@ async def get_security_events(
 async def get_login_attempts(
     days: int = 30,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get login attempts for current user"""
     try:
@@ -271,7 +271,7 @@ async def get_login_attempts(
 @router.get("/admin/security-overview")
 async def get_security_overview(
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get system-wide security overview (Admin only)"""
     try:
@@ -287,7 +287,7 @@ async def get_security_overview(
 @router.get("/admin/users-2fa-status")
 async def get_users_2fa_status(
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get 2FA status for all users (Admin only)"""
     try:
@@ -309,7 +309,7 @@ async def get_users_2fa_status(
 async def force_2fa_setup(
     user_id: str,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Force 2FA setup for specific user (Admin only)"""
     try:
@@ -332,7 +332,7 @@ async def force_2fa_setup(
 async def get_high_risk_events(
     days: int = 7,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Get high-risk security events (Admin only)"""
     try:

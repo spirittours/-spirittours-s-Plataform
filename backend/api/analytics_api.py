@@ -29,7 +29,7 @@ from ..services.analytics_service import (
     MetricType, KPIMetrics, AnalyticsReport
 )
 from ..auth.auth_manager import get_current_user, require_permission
-from ..database import get_db_session
+from ..database import get_db
 
 logger = logging.getLogger(__name__)
 

@@ -21,7 +21,7 @@ from backend.services.advanced_auth_service import (
     AccountStatus,
     OAuthProvider
 )
-from backend.database import get_db_session
+from backend.config.database import get_db
 from backend.services.notification_service import NotificationService
 from pydantic import BaseModel, EmailStr, Field, validator
 
@@ -47,7 +47,7 @@ class CommissionRate(BaseModel):
 class B2BApplicationReview(BaseModel):
     """B2B application review request model."""
     application_id: str
-    decision: str = Field(..., regex="^(approve|reject)$")
+    decision: str = Field(..., pattern="^(approve|reject)$")
     commission_rate: Optional[Decimal] = Field(None, ge=0, le=1)
     admin_notes: Optional[str] = Field(None, max_length=1000)
     special_conditions: Optional[Dict[str, Union[str, bool, int]]] = Field(default_factory=dict)
@@ -109,7 +109,7 @@ class B2BDashboardStats(BaseModel):
 # Authentication and Authorization
 async def get_admin_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """Verify admin authentication and authorization."""
     try:
@@ -156,7 +156,7 @@ async def get_admin_user(
 @router.get("/dashboard/stats", response_model=B2BDashboardStats)
 async def get_dashboard_statistics(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     date_range: int = Query(30, description="Statistics date range in days")
 ):
     """
@@ -282,13 +282,13 @@ async def get_dashboard_statistics(
 @router.get("/applications", response_model=List[B2BApplicationResponse])
 async def get_b2b_applications(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     status_filter: Optional[List[AccountStatus]] = Query(None),
     user_type_filter: Optional[List[UserType]] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    sort_by: str = Query("created_at", regex="^(created_at|company_name|status|commission_rate)$"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$")
+    sort_by: str = Query("created_at", pattern="^(created_at|company_name|status|commission_rate)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$")
 ):
     """
     Get paginated list of B2B applications with filtering and sorting.
@@ -362,7 +362,7 @@ async def get_b2b_applications(
 async def get_b2b_application_details(
     application_id: str,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Get detailed information for a specific B2B application.
@@ -426,7 +426,7 @@ async def review_b2b_application(
     application_id: str,
     review_request: B2BApplicationReview,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Review and approve/reject a B2B application.
@@ -545,7 +545,7 @@ async def update_b2b_account(
     user_id: str,
     update_request: B2BAccountUpdate,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Update B2B account status, commission rate, and other settings.
@@ -669,7 +669,7 @@ async def update_b2b_account(
 @router.get("/commissions/rates")
 async def get_commission_rates(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     user_type_filter: Optional[List[UserType]] = Query(None),
     active_only: bool = Query(True)
 ):
@@ -721,7 +721,7 @@ async def get_commission_rates(
 async def bulk_update_commission_rates(
     updates: Dict[str, Decimal],
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Bulk update commission rates for multiple partners.
@@ -784,8 +784,8 @@ async def bulk_update_commission_rates(
 @router.get("/reports/applications/export")
 async def export_applications_report(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
-    format: str = Query("csv", regex="^(csv|json|excel)$"),
+    db: Session = Depends(get_db),
+    format: str = Query("csv", pattern="^(csv|json|excel)$"),
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None
 ):
@@ -858,7 +858,7 @@ async def export_applications_report(
 @router.get("/applications/search")
 async def search_b2b_applications(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     query: str = Query(..., min_length=2),
     search_fields: List[str] = Query(["company_name", "email"], description="Fields to search in")
 ):

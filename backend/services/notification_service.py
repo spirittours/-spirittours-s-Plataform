@@ -28,7 +28,13 @@ from pathlib import Path
 # Configure logging
 logger = logging.getLogger(__name__)
 
-Base = declarative_base()
+# Use the same Base as rbac_models
+try:
+    from backend.models.rbac_models import Base
+except ImportError:
+    # Fallback for when rbac_models is not available
+    from sqlalchemy.ext.declarative import declarative_base
+    Base = declarative_base()
 
 class NotificationType(str, Enum):
     EMAIL = "email"
@@ -96,7 +102,7 @@ class NotificationLog(Base):
     scheduled_at = Column(DateTime)
     sent_at = Column(DateTime)
     delivered_at = Column(DateTime)
-    metadata = Column(JSON)
+    notification_metadata = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # Pydantic Models
@@ -353,7 +359,7 @@ class NotificationService:
             subject=request.subject,
             priority=request.priority,
             scheduled_at=request.scheduled_at,
-            metadata=request.metadata
+            notification_metadata=request.metadata
         )
         
         try:

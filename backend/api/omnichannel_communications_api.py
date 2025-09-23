@@ -39,7 +39,7 @@ from backend.services.omnichannel_crm_service import (
     MessageStatus
 )
 from backend.services.advanced_auth_service import AdvancedAuthService, User, UserType, AccountStatus
-from backend.database import get_db_session
+from backend.config.database import get_db
 from pydantic import BaseModel, Field, validator
 import os
 
@@ -56,7 +56,7 @@ auth_service = AdvancedAuthService()
 class WebRTCSessionRequest(BaseModel):
     """WebRTC session creation request"""
     customer_name: str = Field(..., min_length=2, max_length=100)
-    customer_phone: str = Field(..., regex=r"^\+?[1-9]\d{1,14}$")
+    customer_phone: str = Field(..., pattern=r"^\+?[1-9]\d{1,14}$")
     customer_email: Optional[str] = None
     preferred_agent: Optional[str] = None
     call_purpose: Optional[str] = None
@@ -64,9 +64,9 @@ class WebRTCSessionRequest(BaseModel):
 class ExtensionCreateRequest(BaseModel):
     """Create new PBX extension"""
     user_id: str
-    extension_number: str = Field(..., regex=r"^\d{3,5}$")
+    extension_number: str = Field(..., pattern=r"^\d{3,5}$")
     display_name: str = Field(..., min_length=2, max_length=100)
-    email: str = Field(..., regex=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    email: str = Field(..., pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
     department: Optional[str] = None
     is_sales_agent: bool = False
     is_support_agent: bool = False
@@ -111,7 +111,7 @@ class SocialMediaIntegrationConfig(BaseModel):
 # Authentication helpers
 async def get_authenticated_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """Get authenticated user with communications access"""
     try:
@@ -143,7 +143,7 @@ async def get_authenticated_user(
 
 async def get_admin_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """Get admin user for configuration endpoints"""
     user = await get_authenticated_user(credentials, db)
@@ -157,7 +157,7 @@ async def get_admin_user(
     return user
 
 # Initialize services function
-async def get_pbx_service(db: Session = Depends(get_db_session)) -> PBX3CXIntegrationService:
+async def get_pbx_service(db: Session = Depends(get_db)) -> PBX3CXIntegrationService:
     """Get initialized PBX service"""
     # This would typically load configuration from environment or database
     config = PBX3CXConfig(
@@ -171,7 +171,7 @@ async def get_pbx_service(db: Session = Depends(get_db_session)) -> PBX3CXIntegr
     await service.initialize_connection()
     return service
 
-async def get_crm_service(db: Session = Depends(get_db_session)) -> OmnichannelCRMService:
+async def get_crm_service(db: Session = Depends(get_db)) -> OmnichannelCRMService:
     """Get initialized CRM service"""
     service = OmnichannelCRMService(db)
     await service.initialize_platforms()

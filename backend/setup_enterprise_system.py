@@ -9,7 +9,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from backend.database import get_db_session, engine
+from backend.config.database import get_db, engine
 from backend.models.rbac_models import Base
 from backend.database.init_rbac_expanded import initialize_enterprise_rbac_system
 
@@ -25,7 +25,7 @@ def main():
     
     # Initialize enterprise RBAC system
     print("\n🏢 Initializing Enterprise RBAC System...")
-    db = next(get_db_session())
+    db = next(get_db())
     try:
         initialize_enterprise_rbac_system(db)
         print("✅ Enterprise system initialized successfully!")
