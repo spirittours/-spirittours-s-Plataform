@@ -17,8 +17,12 @@ def test_main_py_integration():
         # Check for required imports
         required_imports = [
             'omnichannel_communications_api',
-            'PBX3CXIntegrationService',
-            'OmnichannelCRMService'
+            'PBX3CXIntegrationService', 
+            'OmnichannelCRMService',
+            'AIVoiceAgentsService',
+            'WebRTCSignalingService',
+            'ai_voice_agents_api',
+            'webrtc_signaling_api'
         ]
         
         for import_item in required_imports:
@@ -28,34 +32,47 @@ def test_main_py_integration():
             else:
                 print(f"✅ Found import: {import_item}")
                 
-        # Check for router inclusion
-        if 'app.include_router(omnichannel_communications_api.router)' in content:
-            print("✅ Found omnichannel router inclusion")
-        else:
-            print("❌ Missing omnichannel router inclusion")
-            return False
+        # Check for router inclusions
+        routers = [
+            'app.include_router(omnichannel_communications_api.router)',
+            'app.include_router(ai_voice_agents_api.router)',
+            'app.include_router(webrtc_signaling_api.router)'
+        ]
+        
+        for router in routers:
+            if router in content:
+                router_name = router.split('(')[1].split('.')[0]
+                print(f"✅ Found {router_name} router inclusion")
+            else:
+                print(f"❌ Missing router inclusion: {router}")
+                return False
             
         # Check for startup initialization
-        if 'pbx_service = PBX3CXIntegrationService(pbx_config)' in content:
-            print("✅ Found PBX service initialization")
-        else:
-            print("❌ Missing PBX service initialization")
-            return False
-            
-        if 'crm_service = OmnichannelCRMService()' in content:
-            print("✅ Found CRM service initialization")
-        else:
-            print("❌ Missing CRM service initialization")
-            return False
+        initializations = [
+            ('pbx_service = PBX3CXIntegrationService(pbx_config)', 'PBX service'),
+            ('crm_service = OmnichannelCRMService()', 'CRM service'),
+            ('voice_agents_service = ai_voice_agents_service', 'AI Voice Agents service'),
+            ('webrtc_service = webrtc_signaling_service', 'WebRTC service')
+        ]
+        
+        for init_code, service_name in initializations:
+            if init_code in content:
+                print(f"✅ Found {service_name} initialization")
+            else:
+                print(f"❌ Missing {service_name} initialization")
+                return False
             
         # Check health endpoint updates
-        if 'pbx_3cx' in content and 'omnichannel_crm' in content:
-            print("✅ Found health check updates for omnichannel services")
-        else:
-            print("❌ Missing health check updates")
-            return False
+        health_checks = ['pbx_3cx', 'omnichannel_crm', 'ai_voice_agents', 'webrtc_signaling']
+        
+        for health_check in health_checks:
+            if health_check in content:
+                print(f"✅ Found {health_check} health check")
+            else:
+                print(f"❌ Missing {health_check} health check")
+                return False
             
-        print("\n🎉 All omnichannel integration checks passed!")
+        print("\n🎉 All omnichannel + WebRTC integration checks passed!")
         return True
         
     except Exception as e:
@@ -110,7 +127,7 @@ def test_settings_py_integration():
         return False
 
 if __name__ == "__main__":
-    print("🚀 Testing Omnichannel Integration...")
+    print("🚀 Testing Omnichannel + WebRTC Integration...")
     print("="*50)
     
     print("\n📋 Testing main.py integration:")
@@ -121,7 +138,7 @@ if __name__ == "__main__":
     
     print("\n" + "="*50)
     if main_test and settings_test:
-        print("🎊 ALL TESTS PASSED! Omnichannel integration is complete!")
+        print("🎊 ALL TESTS PASSED! Omnichannel + WebRTC integration is complete!")
         sys.exit(0)
     else:
         print("❌ Some tests failed. Please review the integration.")

@@ -33,13 +33,15 @@ from .api import (
     admin_b2b_management_api,
     commission_management_api,
     omnichannel_communications_api,
-    ai_voice_agents_api
+    ai_voice_agents_api,
+    webrtc_signaling_api
 )
 
 # Import services for startup initialization
 from .services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
 from .services.omnichannel_crm_service import OmnichannelCRMService
 from .services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
+from .services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -81,17 +83,19 @@ app.include_router(admin_b2b_management_api.router)
 app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
 app.include_router(ai_voice_agents_api.router)
+app.include_router(webrtc_signaling_api.router)
 
 # Global service instances
 pbx_service: Optional[PBX3CXIntegrationService] = None
 crm_service: Optional[OmnichannelCRMService] = None
 voice_agents_service: Optional[AIVoiceAgentsService] = None
+webrtc_service: Optional[WebRTCSignalingService] = None
 
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and system on startup"""
-    global pbx_service, crm_service, voice_agents_service
+    global pbx_service, crm_service, voice_agents_service, webrtc_service
     
     try:
         logger.info("Starting Spirit Tours B2C/B2B/B2B2C Platform...")
@@ -150,8 +154,21 @@ async def startup_event():
                 
         except Exception as e:
             logger.warning(f"⚠️ AI Voice Agents service initialization error: {str(e)}")
+        
+        # Initialize WebRTC Signaling Service
+        try:
+            webrtc_service = webrtc_signaling_service
             
-        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents")
+            # Initialize with AI Voice Agents and PBX services
+            if await webrtc_service.initialize(voice_agents_service, pbx_service):
+                logger.info("✅ WebRTC Signaling service initialized successfully")
+            else:
+                logger.warning("⚠️ WebRTC Signaling service initialization failed - continuing without WebRTC")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ WebRTC Signaling service initialization error: {str(e)}")
+            
+        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents + WebRTC")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {str(e)}")
@@ -229,7 +246,7 @@ async def root():
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
     """Health check endpoint with database status"""
-    global pbx_service, crm_service, voice_agents_service
+    global pbx_service, crm_service, voice_agents_service, webrtc_service
     
     try:
         # Test database connection
@@ -262,6 +279,14 @@ async def health_check(db: Session = Depends(get_db)):
         except:
             voice_agents_status = "error"
     
+    # Check WebRTC Signaling service status
+    webrtc_status = "not_initialized"
+    if webrtc_service:
+        try:
+            webrtc_status = "running" if webrtc_service.is_running else "stopped"
+        except:
+            webrtc_status = "error"
+    
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
@@ -279,6 +304,7 @@ async def health_check(db: Session = Depends(get_db)):
             "pbx_3cx": pbx_status,
             "omnichannel_crm": crm_status,
             "ai_voice_agents": voice_agents_status,
+            "webrtc_signaling": webrtc_status,
             "communications_api": "ready"
         },
         "business_model": {
@@ -291,11 +317,14 @@ async def health_check(db: Session = Depends(get_db)):
         "omnichannel_features": {
             "3cx_pbx_integration": pbx_status == "connected",
             "ai_voice_agents": voice_agents_status == "ready",
+            "webrtc_browser_calling": webrtc_status == "running",
+            "webrtc_signaling_server": webrtc_status == "running",
             "social_media_platforms": ["WhatsApp", "Facebook", "Instagram", "TikTok", "Twitter", "LinkedIn"],
-            "webrtc_calling": pbx_status == "connected",
+            "webrtc_calling": pbx_status == "connected" or webrtc_status == "running",
             "voicemail_management": pbx_status == "connected",
             "unified_phonebook": crm_status == "ready",
-            "conversation_analytics": crm_status == "ready"
+            "conversation_analytics": crm_status == "ready",
+            "browser_to_ai_calling": webrtc_status == "running" and voice_agents_status == "ready"
         }
     }
 
