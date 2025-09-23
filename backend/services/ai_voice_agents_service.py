@@ -739,6 +739,20 @@ class AIVoiceAgentsService:
             logger.error(f"❌ Error getting conversation analytics: {str(e)}")
             return {}
     
+    def get_available_agents(self) -> List[Dict[str, Any]]:
+        """Get list of available AI voice agents"""
+        return [
+            {
+                "agent_type": agent_type.value,
+                "name": config.name,
+                "description": config.description,
+                "supported_languages": config.supported_languages,
+                "voice_settings": config.voice_settings,
+                "is_active": True
+            }
+            for agent_type, config in self.agent_configs.items()
+        ]
+    
     def get_active_sessions(self) -> List[Dict[str, Any]]:
         """Get list of active conversation sessions"""
         return [

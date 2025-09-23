@@ -16,8 +16,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 import logging
 import smtplib
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import requests
 import jwt
 
@@ -158,7 +158,8 @@ class SecurityManager:
             
             # Check backup codes
             if twofa.backup_codes:
-                backup_codes = twofa.backup_codes.split(',')\n                if token.upper() in backup_codes:
+                backup_codes = twofa.backup_codes.split(',')
+                if token.upper() in backup_codes:
                     # Remove used backup code
                     backup_codes.remove(token.upper())
                     twofa.backup_codes = ','.join(backup_codes)
@@ -463,15 +464,6 @@ class SecurityManager:
         # TODO: Implement SMS sending
         logger.info(f"2FA SMS notification sent to {phone_number}")
         return True
-                    event_details="2FA successfully enabled",
-                    success=True
-                )
-                return True
-            return False
-            
-        except Exception as e:
-            logger.error(f"Error enabling 2FA: {e}")
-            return False
     
     def disable_2fa(self, user_id: str, verification_token: str) -> bool:
         """Disable 2FA after verification"""
@@ -778,7 +770,7 @@ class NotificationManager:
     def send_2fa_email(self, email: str, code: str) -> bool:
         """Send 2FA code via email"""
         try:
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = self.email_user
             msg['To'] = email
             msg['Subject'] = "Spirit Tours - Código de Verificación 2FA"
@@ -793,7 +785,7 @@ class NotificationManager:
             Spirit Tours CRM Security Team
             """
             
-            msg.attach(MimeText(body, 'plain'))
+            msg.attach(MIMEText(body, 'plain'))
             
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.starttls()

@@ -24,7 +24,7 @@ from backend.services.commission_management_service import (
     PaymentFrequency
 )
 from backend.services.advanced_auth_service import AdvancedAuthService, User, UserType, AccountStatus
-from backend.database import get_db_session
+from backend.config.database import get_db
 from pydantic import BaseModel, Field
 
 # Configure logging
@@ -66,7 +66,7 @@ class PaymentBatchRequest(BaseModel):
 # Authentication helper
 async def get_admin_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """Verify admin authentication and authorization."""
     try:
@@ -113,7 +113,7 @@ async def get_admin_user(
 @router.get("/dashboard/stats", response_model=CommissionDashboardStats)
 async def get_commission_dashboard_stats(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     months: int = Query(12, ge=1, le=24, description="Number of months for trend analysis")
 ):
     """
@@ -209,7 +209,7 @@ async def create_commission_structure(
     partner_id: str,
     structure_request: CommissionStructureRequest,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Create a new commission structure for a partner.
@@ -277,7 +277,7 @@ async def create_commission_structure(
 @router.get("/structures")
 async def get_commission_structures(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     partner_id: Optional[str] = Query(None),
     active_only: bool = Query(True),
     page: int = Query(1, ge=1),
@@ -344,7 +344,7 @@ async def get_commission_structures(
 async def get_commission_structure_details(
     structure_id: str,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Get detailed information about a specific commission structure.
@@ -404,7 +404,7 @@ async def get_commission_structure_details(
 async def calculate_commission(
     calculation_request: CommissionCalculationRequest,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Calculate commission for a specific booking.
@@ -441,7 +441,7 @@ async def calculate_commission(
 @router.get("/calculations")
 async def get_commission_calculations(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     partner_id: Optional[str] = Query(None),
     status_filter: Optional[List[CommissionStatus]] = Query(None),
     date_from: Optional[datetime] = Query(None),
@@ -517,7 +517,7 @@ async def get_commission_calculations(
 async def approve_commission_calculations(
     approval_request: BulkApprovalRequest,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Approve multiple commission calculations for payment.
@@ -552,7 +552,7 @@ async def approve_commission_calculations(
 async def get_partner_commission_summary(
     partner_id: str,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     period_start: datetime = Query(..., description="Start date for commission summary"),
     period_end: datetime = Query(..., description="End date for commission summary")
 ):
@@ -586,7 +586,7 @@ async def get_partner_commission_summary(
 async def process_commission_payment_batch(
     payment_request: PaymentBatchRequest,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Process commission payments for multiple partners in a batch.
@@ -627,7 +627,7 @@ async def process_commission_payment_batch(
 @router.get("/payments")
 async def get_commission_payments(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     partner_id: Optional[str] = Query(None),
     batch_id: Optional[str] = Query(None),
     status_filter: Optional[List[CommissionStatus]] = Query(None),
@@ -710,7 +710,7 @@ async def get_commission_payments(
 @router.get("/reports/partner-performance")
 async def get_partner_performance_report(
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
     period_months: int = Query(3, ge=1, le=12),
     top_n: int = Query(10, ge=5, le=50)
 ):

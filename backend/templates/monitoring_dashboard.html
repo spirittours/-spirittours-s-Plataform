@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spirit Tours - System Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #e1e5e9;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-excellent { background-color: #48bb78; }
+        .status-good { background-color: #68d391; }
+        .status-fair { background-color: #f6ad55; }
+        .status-poor { background-color: #fc8181; }
+        .status-healthy { background-color: #48bb78; }
+        .status-degraded { background-color: #f6ad55; }
+        .status-unhealthy { background-color: #fc8181; }
+        .status-critical { background-color: #e53e3e; }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 0.5rem 0;
+        }
+        
+        .metric-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-cpu { background-color: #4299e1; }
+        .progress-memory { background-color: #38b2ac; }
+        .progress-disk { background-color: #ed8936; }
+        
+        .service-list {
+            list-style: none;
+        }
+        
+        .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .service-item:last-child {
+            border-bottom: none;
+        }
+        
+        .service-name {
+            font-weight: 500;
+        }
+        
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .alert-item {
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            border-left: 4px solid;
+        }
+        
+        .alert-critical {
+            background-color: #fed7d7;
+            border-left-color: #e53e3e;
+        }
+        
+        .alert-warning {
+            background-color: #fefcbf;
+            border-left-color: #d69e2e;
+        }
+        
+        .alert-info {
+            background-color: #bee3f8;
+            border-left-color: #3182ce;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        .refresh-btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .refresh-btn:hover {
+            background: #3182ce;
+        }
+        
+        .last-updated {
+            color: #718096;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .error-message {
+            background-color: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Spirit Tours - System Monitoring</h1>
+        <p>Real-time system health, performance metrics, and analytics dashboard</p>
+    </div>
+    
+    <div class="dashboard">
+        <div id="loading" class="loading">
+            Loading monitoring data...
+        </div>
+        
+        <div id="error" class="error-message" style="display: none;">
+            Failed to load monitoring data. <button onclick="loadDashboard()" class="refresh-btn">Retry</button>
+        </div>
+        
+        <div id="dashboard-content" style="display: none;">
+            <!-- System Health Overview -->
+            <div class="status-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Overall System Health</h3>
+                        <span id="overall-status-indicator" class="status-indicator"></span>
+                    </div>
+                    <div id="overall-health-score" class="metric-value">--</div>
+                    <div class="metric-label">Health Score</div>
+                    <div id="overall-health-status" class="metric-label">--</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">System Performance</h3>
+                        <button onclick="loadDashboard()" class="refresh-btn">Refresh</button>
+                    </div>
+                    
+                    <div style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>CPU Usage</span>
+                            <span id="cpu-usage-value">--</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="cpu-progress" class="progress-fill progress-cpu" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Memory Usage</span>
+                            <span id="memory-usage-value">--</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="memory-progress" class="progress-fill progress-memory" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Disk Usage</span>
+                            <span id="disk-usage-value">--</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="disk-progress" class="progress-fill progress-disk" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">External Services</h3>
+                        <div id="services-summary">--</div>
+                    </div>
+                    <ul id="services-list" class="service-list">
+                        <!-- Services will be populated here -->
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Alerts</h3>
+                        <div id="alerts-count">--</div>
+                    </div>
+                    <div id="alerts-list">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analytics Section -->
+            <div class="analytics-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Call Analytics (24h)</h3>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                        <div style="text-align: center;">
+                            <div id="total-calls" class="metric-value">--</div>
+                            <div class="metric-label">Total Calls</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="call-success-rate" class="metric-value">--%</div>
+                            <div class="metric-label">Success Rate</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="appointment-requests" class="metric-value">--</div>
+                            <div class="metric-label">Appointments</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="follow-ups" class="metric-value">--</div>
+                            <div class="metric-label">Follow-ups</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="callsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Scheduling Analytics (24h)</h3>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                        <div style="text-align: center;">
+                            <div id="total-appointments" class="metric-value">--</div>
+                            <div class="metric-label">Total Scheduled</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="scheduling-success-rate" class="metric-value">--%</div>
+                            <div class="metric-label">Success Rate</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="schedulingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="last-updated" id="last-updated">
+                Last updated: --
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let callsChart = null;
+        let schedulingChart = null;
+        
+        async function loadDashboard() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'none';
+                
+                // Load monitoring summary
+                const summaryResponse = await fetch('/api/v1/monitoring/summary');
+                if (!summaryResponse.ok) throw new Error('Failed to load summary');
+                const summary = await summaryResponse.json();
+                
+                // Load call analytics
+                const callAnalyticsResponse = await fetch('/api/v1/monitoring/analytics/calls');
+                const callAnalytics = await callAnalyticsResponse.json();
+                
+                // Load scheduling analytics
+                const schedulingAnalyticsResponse = await fetch('/api/v1/monitoring/analytics/scheduling');
+                const schedulingAnalytics = await schedulingAnalyticsResponse.json();
+                
+                // Load services health
+                const servicesResponse = await fetch('/api/v1/monitoring/health/services');
+                const services = await servicesResponse.json();
+                
+                // Load recent alerts
+                const alertsResponse = await fetch('/api/v1/monitoring/alerts/recent');
+                const alerts = await alertsResponse.json();
+                
+                // Update dashboard
+                updateOverallHealth(summary.overall_health);
+                updateSystemPerformance(summary.system_performance);
+                updateServices(services);
+                updateAlerts(alerts);
+                updateCallAnalytics(summary.call_analytics, callAnalytics);
+                updateSchedulingAnalytics(summary.scheduling_analytics, schedulingAnalytics);
+                
+                document.getElementById('last-updated').textContent = 
+                    `Last updated: ${new Date().toLocaleString()}`;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+        
+        function updateOverallHealth(health) {
+            document.getElementById('overall-health-score').textContent = health.score;
+            document.getElementById('overall-health-status').textContent = health.status.toUpperCase();
+            
+            const indicator = document.getElementById('overall-status-indicator');
+            indicator.className = `status-indicator status-${health.status}`;
+        }
+        
+        function updateSystemPerformance(performance) {
+            // CPU
+            document.getElementById('cpu-usage-value').textContent = `${performance.cpu_usage.toFixed(1)}%`;
+            document.getElementById('cpu-progress').style.width = `${performance.cpu_usage}%`;
+            
+            // Memory
+            document.getElementById('memory-usage-value').textContent = `${performance.memory_usage.toFixed(1)}%`;
+            document.getElementById('memory-progress').style.width = `${performance.memory_usage}%`;
+            
+            // Disk
+            document.getElementById('disk-usage-value').textContent = `${performance.disk_usage.toFixed(1)}%`;
+            document.getElementById('disk-progress').style.width = `${performance.disk_usage}%`;
+        }
+        
+        function updateServices(servicesData) {
+            const summary = document.getElementById('services-summary');
+            summary.textContent = `${servicesData.summary.healthy_services}/${servicesData.summary.total_services} Healthy`;
+            
+            const servicesList = document.getElementById('services-list');
+            servicesList.innerHTML = '';
+            
+            Object.entries(servicesData.services).forEach(([name, service]) => {
+                const li = document.createElement('li');
+                li.className = 'service-item';
+                
+                li.innerHTML = `
+                    <span class="service-name">${name}</span>
+                    <div class="service-status">
+                        <span class="status-indicator status-${service.status}"></span>
+                        <span>${service.status}</span>
+                        <span style="margin-left: 0.5rem; color: #718096;">${service.response_time.toFixed(0)}ms</span>
+                    </div>
+                `;
+                
+                servicesList.appendChild(li);
+            });
+        }
+        
+        function updateAlerts(alertsData) {
+            const count = document.getElementById('alerts-count');
+            count.textContent = `${alertsData.summary.total_alerts} alerts`;
+            
+            const alertsList = document.getElementById('alerts-list');
+            alertsList.innerHTML = '';
+            
+            if (alertsData.alerts.length === 0) {
+                alertsList.innerHTML = '<div style="color: #718096; text-align: center; padding: 1rem;">No recent alerts</div>';
+                return;
+            }
+            
+            alertsData.alerts.slice(0, 5).forEach(alert => {
+                const div = document.createElement('div');
+                div.className = `alert-item alert-${alert.type}`;
+                div.innerHTML = `
+                    <div style="font-weight: 500;">${alert.type.toUpperCase()}</div>
+                    <div style="margin-top: 0.25rem;">${alert.message}</div>
+                `;
+                alertsList.appendChild(div);
+            });
+        }
+        
+        function updateCallAnalytics(summary, analytics) {
+            document.getElementById('total-calls').textContent = summary.total_calls_24h;
+            document.getElementById('call-success-rate').textContent = `${summary.success_rate}%`;
+            document.getElementById('appointment-requests').textContent = summary.appointment_requests;
+            
+            // Update chart
+            if (analytics.analytics) {
+                updateCallsChart(analytics.analytics);
+            }
+        }
+        
+        function updateSchedulingAnalytics(summary, analytics) {
+            document.getElementById('total-appointments').textContent = summary.total_appointments_24h;
+            document.getElementById('scheduling-success-rate').textContent = `${summary.scheduling_success_rate}%`;
+            
+            // Update chart
+            if (analytics.analytics) {
+                updateSchedulingChart(analytics.analytics);
+            }
+        }
+        
+        function updateCallsChart(data) {
+            const ctx = document.getElementById('callsChart');
+            
+            if (callsChart) {
+                callsChart.destroy();
+            }
+            
+            const sentimentData = data.sentiment_distribution || {};
+            const labels = Object.keys(sentimentData);
+            const values = Object.values(sentimentData);
+            
+            callsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#48bb78', '#f6ad55', '#fc8181', '#4299e1'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Call Sentiment Distribution'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateSchedulingChart(data) {
+            const ctx = document.getElementById('schedulingChart');
+            
+            if (schedulingChart) {
+                schedulingChart.destroy();
+            }
+            
+            const timezoneData = data.timezone_distribution || {};
+            const labels = Object.keys(timezoneData).slice(0, 8); // Top 8 timezones
+            const values = labels.map(tz => timezoneData[tz]);
+            
+            schedulingChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Appointments',
+                        data: values,
+                        backgroundColor: '#4299e1',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Appointments by Timezone'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Load dashboard on page load
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

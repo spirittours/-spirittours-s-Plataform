@@ -11,7 +11,7 @@ from datetime import datetime
 
 from backend.models.rbac_models import User
 from backend.auth.rbac_middleware import get_current_active_user, AdminRequiredDep
-from backend.database import get_db_session
+from backend.config.database import get_db
 from backend.services.alert_service import AlertService, AlertSeverity, AlertType, get_alert_service
 
 router = APIRouter(prefix="/alerts", tags=["Security Alerts"])
@@ -31,7 +31,7 @@ class AlertResponse(BaseModel):
 async def get_active_alerts(
     severity: Optional[str] = None,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener alertas activas (Solo Admin)"""
     try:
@@ -57,7 +57,7 @@ async def get_active_alerts(
 async def run_security_check(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Ejecutar verificación de seguridad manual (Solo Admin)"""
     try:
@@ -80,7 +80,7 @@ async def run_security_check(
 async def clear_old_alerts(
     hours: int = 24,
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Limpiar alertas antiguas (Solo Admin)"""
     try:
@@ -106,7 +106,7 @@ async def clear_old_alerts(
 @router.get("/summary")
 async def get_alerts_summary(
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener resumen de alertas por severidad (Solo Admin)"""
     try:

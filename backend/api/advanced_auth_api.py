@@ -22,7 +22,7 @@ from backend.services.advanced_auth_service import (
     UserType,
     AccountStatus
 )
-from backend.database import get_db_session
+from backend.config.database import get_db
 from backend.services.notification_service import NotificationService
 
 # Configure logging
@@ -47,7 +47,7 @@ def get_client_ip(request: Request) -> str:
 async def register_b2c_customer(
     registration_request: B2CRegistrationRequest,
     request: Request,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Register B2C customer with OAuth or traditional email/password.
@@ -83,7 +83,7 @@ async def register_b2c_customer(
 async def register_b2b_partner(
     registration_request: B2BRegistrationRequest,
     request: Request,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Register B2B/B2B2C partner with administrative approval workflow.
@@ -119,7 +119,7 @@ async def register_b2b_partner(
 async def login_user(
     login_request: LoginRequest,
     request: Request,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Authenticate user with email/password or OAuth.
@@ -261,7 +261,7 @@ async def oauth_callback(
 @router.post("/verify-email")
 async def verify_email(
     token: str,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Verify user email address with token.
@@ -332,7 +332,7 @@ async def verify_email(
 @router.post("/resend-verification")
 async def resend_verification_email(
     email: str,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Resend email verification for unverified accounts.
@@ -380,7 +380,7 @@ async def resend_verification_email(
 @router.post("/forgot-password")
 async def forgot_password(
     email: str,
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Initiate password reset process.
@@ -421,7 +421,7 @@ async def forgot_password(
 @router.get("/profile")
 async def get_user_profile(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Get authenticated user profile information.
@@ -485,7 +485,7 @@ async def get_user_profile(
 async def update_marketing_consent(
     consent_data: Dict[str, bool],
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """
     Update user marketing consent preferences.

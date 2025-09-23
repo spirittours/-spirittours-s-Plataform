@@ -12,7 +12,7 @@ import json
 
 from backend.models.rbac_models import User
 from backend.auth.rbac_middleware import get_current_active_user, AdminRequiredDep, PermissionRequiredDep
-from backend.database import get_db_session
+from backend.config.database import get_db
 from backend.services.enhanced_audit_service import EnhancedAuditService, get_audit_service
 from backend.models.enhanced_audit_models import (
     EnhancedAuditLog, BookingAuditLog, AIAgentUsageLog, LoginActivityLog, DataAccessLog,
@@ -54,7 +54,7 @@ async def log_booking_action(
     booking_request: BookingActionRequest,
     request: Request,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Registrar acción en reserva (crear, modificar, cancelar)"""
     try:
@@ -103,7 +103,7 @@ async def log_ai_agent_usage(
     usage_request: AIAgentUsageRequest,
     request: Request,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Registrar uso de agente AI"""
     try:
@@ -139,7 +139,7 @@ async def log_data_access(
     access_request: DataAccessRequest,
     request: Request,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Registrar acceso a datos sensibles"""
     try:
@@ -183,7 +183,7 @@ async def get_enhanced_audit_logs(
     limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
     offset: int = Query(0, ge=0, description="Number of records to skip"),
     current_user: User = Depends(PermissionRequiredDep("audit_logs", "read", "system_logs")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener logs de auditoría mejorados con filtros"""
     try:
@@ -255,7 +255,7 @@ async def get_booking_audit_logs(
     days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
     limit: int = Query(100, ge=1, le=1000),
     current_user: User = Depends(PermissionRequiredDep("booking_management", "read", "booking_logs")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener logs específicos de reservas"""
     try:
@@ -313,7 +313,7 @@ async def get_ai_agent_usage_logs(
     days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(PermissionRequiredDep("analytics_dashboard", "read", "ai_usage_logs")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener logs de uso de agentes AI"""
     try:
@@ -359,7 +359,7 @@ async def get_user_activity_dashboard(
     user_id: str,
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     current_user: User = Depends(PermissionRequiredDep("user_management", "read", "user_activity")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener dashboard de actividad de usuario específico"""
     try:
@@ -407,7 +407,7 @@ async def get_user_activity_dashboard(
 async def get_system_audit_dashboard(
     days: int = Query(7, ge=1, le=30, description="Number of days to analyze"),
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener dashboard general de auditoría del sistema (Solo Admin)"""
     try:
@@ -454,7 +454,7 @@ async def get_system_audit_dashboard(
 async def get_suspicious_activity_alerts(
     days: int = Query(7, ge=1, le=30),
     current_user: User = Depends(AdminRequiredDep()),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Obtener alertas de actividad sospechosa (Solo Admin)"""
     try:
@@ -532,7 +532,7 @@ async def search_audit_logs(
     days: int = Query(30, ge=1, le=365),
     limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(PermissionRequiredDep("audit_logs", "read", "search")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Buscar en logs de auditoría"""
     try:
@@ -582,7 +582,7 @@ async def export_audit_logs(
     format: str = Query("json", description="Export format: json, csv"),
     filters: Optional[str] = Query(None, description="JSON string of filters"),
     current_user: User = Depends(PermissionRequiredDep("data_export", "execute", "audit_logs")),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ):
     """Exportar logs de auditoría"""
     try:

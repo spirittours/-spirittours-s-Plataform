@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 import uuid
 import json
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Enum as SQLEnum, Decimal as SQLDecimal, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Enum as SQLEnum, DECIMAL as SQLDecimal, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
 from pydantic import BaseModel, Field, validator
@@ -221,7 +221,7 @@ class CommissionCalculationRequest(BaseModel):
     booking_id: str
     partner_id: str
     booking_amount: Decimal = Field(..., gt=0)
-    booking_currency: str = Field(default="USD", regex="^[A-Z]{3}$")
+    booking_currency: str = Field(default="USD", pattern="^[A-Z]{3}$")
     booking_date: datetime
     product_type: Optional[str] = None
     additional_factors: Optional[Dict[str, Union[str, int, float, bool]]] = Field(default_factory=dict)

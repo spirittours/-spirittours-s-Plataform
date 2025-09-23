@@ -13,7 +13,12 @@ import uuid
 import enum
 from pydantic import BaseModel
 
-Base = declarative_base()
+# Use the same Base as rbac_models
+try:
+    from .rbac_models import Base
+except ImportError:
+    # Fallback for when rbac_models is not available
+    Base = declarative_base()
 
 class ActionType(enum.Enum):
     """Tipos de acciones para logging detallado"""

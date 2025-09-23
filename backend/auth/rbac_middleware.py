@@ -19,7 +19,7 @@ from backend.models.rbac_models import (
     User, Role, Permission, Branch, AuditLog, SessionToken,
     PermissionScope, UserLevel, PermissionChecker
 )
-from backend.database import get_db_session
+from backend.config.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +177,7 @@ class RBACManager:
 # Dependency functions for FastAPI
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """FastAPI dependency to get current authenticated user"""
     rbac_manager = RBACManager(db)
@@ -275,7 +275,7 @@ class PermissionRequiredDep:
         self.resource = resource
     
     def __call__(self, current_user: User = Depends(get_current_active_user),
-                 db: Session = Depends(get_db_session)):
+                 db: Session = Depends(get_db)):
         rbac_manager = RBACManager(db)
         if not rbac_manager.check_permission(current_user, self.scope, self.action, self.resource):
             raise AuthorizationError(f"Permission denied: {self.scope.value}:{self.action}:{self.resource}")

@@ -27,7 +27,7 @@ from backend.services.ai_voice_agents_service import (
 from backend.services.pbx_3cx_integration_service import PBX3CXIntegrationService
 from backend.services.omnichannel_crm_service import OmnichannelCRMService
 from backend.services.advanced_auth_service import AdvancedAuthService, User, UserType
-from backend.database import get_db_session
+from backend.config.database import get_db
 from pydantic import BaseModel, Field
 import base64
 
@@ -102,7 +102,7 @@ async def get_voice_agents_service() -> AIVoiceAgentsService:
 
 async def get_admin_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """Require admin user for management endpoints"""
     try:
@@ -123,7 +123,7 @@ async def get_admin_user(
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db)
 ) -> User:
     """Get current authenticated user"""
     try:
