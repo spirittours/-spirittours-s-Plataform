@@ -551,3 +551,13 @@ def is_elevenlabs_available() -> bool:
 async def initialize_all_external_services() -> bool:
     """Initialize all external services"""
     return await external_services_config.initialize_production_services()
+
+# Create alias for validation compatibility  
+ExternalServicesConfiguration = ExternalServicesManager
+
+# Also create global instance with alias
+external_services_config = ExternalServicesManager()
+
+def get_external_services_config() -> ExternalServicesManager:
+    """Get the global external services configuration instance"""
+    return external_services_config

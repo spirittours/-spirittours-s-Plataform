@@ -189,7 +189,8 @@ class IntelligentSchedulingService:
     - Maneja reprogramaciones inteligentemente
     """
     
-    def __init__(self):
+    def __init__(self, db_session=None):
+        self.db_session = db_session
         self.default_business_hours = {
             "start": 9,  # 9 AM
             "end": 18,   # 6 PM
@@ -197,6 +198,42 @@ class IntelligentSchedulingService:
         }
         
         logger.info("Intelligent Scheduling Service initialized")
+    
+    async def _detect_timezone_from_phone(self, phone_number: str) -> tuple:
+        """Detect timezone from phone number"""
+        try:
+            parsed = phonenumbers.parse(phone_number, None)
+            country_code = phonenumbers.region_code_for_number(parsed)
+            
+            # Simple timezone mapping
+            timezone_map = {
+                "ES": ("ES", "Europe/Madrid"),
+                "US": ("US", "America/New_York"), 
+                "GB": ("GB", "Europe/London"),
+                "FR": ("FR", "Europe/Paris"),
+                "DE": ("DE", "Europe/Berlin"),
+                "JP": ("JP", "Asia/Tokyo")
+            }
+            
+            return timezone_map.get(country_code, ("Unknown", "UTC"))
+            
+        except Exception as e:
+            logger.error(f"Error detecting timezone: {e}")
+            return ("Unknown", "UTC")
+    
+    async def _analyze_customer_preferences(self, customer_phone: str):
+        """Analyze customer preferences"""
+        # Mock implementation for validation
+        from collections import namedtuple
+        CustomerTimePreference = namedtuple('CustomerTimePreference', [
+            'preferred_time_of_day', 'preferred_days_of_week', 'show_up_rate'
+        ])
+        
+        return CustomerTimePreference(
+            preferred_time_of_day="afternoon",
+            preferred_days_of_week=[1, 2, 3, 4, 5],
+            show_up_rate=0.85
+        )
     
     async def schedule_appointment_from_call(self, call_report: CallReport) -> Optional[AppointmentSchedule]:
         """

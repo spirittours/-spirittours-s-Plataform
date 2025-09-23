@@ -1,0 +1,256 @@
+{
+  "timestamp": "2025-09-23T12:26:34.070053",
+  "results": [
+    {
+      "test_name": "File exists: infrastructure/disaster_recovery.py",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Size: 45,759 bytes",
+      "duration": 5.316734313964844e-05,
+      "timestamp": "2025-09-23T12:26:32.874884"
+    },
+    {
+      "test_name": "File exists: config/disaster_recovery.yaml",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Size: 7,484 bytes",
+      "duration": 3.0994415283203125e-05,
+      "timestamp": "2025-09-23T12:26:32.874951"
+    },
+    {
+      "test_name": "File exists: scripts/disaster_recovery_cli.py",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Size: 25,745 bytes",
+      "duration": 1.8596649169921875e-05,
+      "timestamp": "2025-09-23T12:26:32.874983"
+    },
+    {
+      "test_name": "File exists: tests/test_disaster_recovery.py",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Size: 36,271 bytes",
+      "duration": 1.9788742065429688e-05,
+      "timestamp": "2025-09-23T12:26:32.875025"
+    },
+    {
+      "test_name": "File exists: docs/disaster_recovery_runbook.md",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Size: 15,454 bytes",
+      "duration": 1.4543533325195312e-05,
+      "timestamp": "2025-09-23T12:26:32.875050"
+    },
+    {
+      "test_name": "File exists: validate_disaster_recovery_implementation.py",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Size: 45,396 bytes",
+      "duration": 1.2874603271484375e-05,
+      "timestamp": "2025-09-23T12:26:32.875072"
+    },
+    {
+      "test_name": "Import infrastructure.disaster_recovery: DisasterRecoveryOrchestrator, RecoveryType, RecoveryStatus",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Class type: EnumType",
+      "duration": 1.1612486839294434,
+      "timestamp": "2025-09-23T12:26:34.036348"
+    },
+    {
+      "test_name": "Import infrastructure.disaster_recovery: RecoveryPoint, RecoveryOperation, BackupManager",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Class type: type",
+      "duration": 5.4836273193359375e-06,
+      "timestamp": "2025-09-23T12:26:34.036384"
+    },
+    {
+      "test_name": "Import infrastructure.disaster_recovery: MonitoringClient, BackupType",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Class type: EnumType",
+      "duration": 2.86102294921875e-06,
+      "timestamp": "2025-09-23T12:26:34.036396"
+    },
+    {
+      "test_name": "DisasterRecoveryOrchestrator initialization",
+      "status": "\u2717 FAIL",
+      "passed": false,
+      "details": "Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))",
+      "duration": 0.005446434020996094,
+      "timestamp": "2025-09-23T12:26:34.041883"
+    },
+    {
+      "test_name": "RecoveryType enum validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All 7 recovery types present",
+      "duration": 5.4836273193359375e-06,
+      "timestamp": "2025-09-23T12:26:34.041941"
+    },
+    {
+      "test_name": "RecoveryStatus enum validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All 7 recovery statuses present",
+      "duration": 2.86102294921875e-06,
+      "timestamp": "2025-09-23T12:26:34.041954"
+    },
+    {
+      "test_name": "BackupType enum validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All 6 backup types present",
+      "duration": 3.0994415283203125e-06,
+      "timestamp": "2025-09-23T12:26:34.041978"
+    },
+    {
+      "test_name": "RecoveryPoint creation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Version: v1.0.0, Type: rollback",
+      "duration": 1.1682510375976562e-05,
+      "timestamp": "2025-09-23T12:26:34.042015"
+    },
+    {
+      "test_name": "RecoveryOperation creation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "ID: test_op_001, Status: initiated",
+      "duration": 7.867813110351562e-06,
+      "timestamp": "2025-09-23T12:26:34.042030"
+    },
+    {
+      "test_name": "BackupConfig creation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Type: full, Retention: 30 days",
+      "duration": 5.4836273193359375e-06,
+      "timestamp": "2025-09-23T12:26:34.042045"
+    },
+    {
+      "test_name": "CLI file structure validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "CLI structure valid with proper imports",
+      "duration": 0.0001552104949951172,
+      "timestamp": "2025-09-23T12:26:34.042224"
+    },
+    {
+      "test_name": "CLI commands validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All 8 CLI commands present",
+      "duration": 0.00013256072998046875,
+      "timestamp": "2025-09-23T12:26:34.042366"
+    },
+    {
+      "test_name": "YAML parsing",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Successfully parsed YAML with 15 top-level sections",
+      "duration": 0.021953821182250977,
+      "timestamp": "2025-09-23T12:26:34.064370"
+    },
+    {
+      "test_name": "Configuration sections validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All 13 required sections present",
+      "duration": 3.0994415283203125e-06,
+      "timestamp": "2025-09-23T12:26:34.064407"
+    },
+    {
+      "test_name": "Critical configuration validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All critical configuration keys present",
+      "duration": 4.5299530029296875e-06,
+      "timestamp": "2025-09-23T12:26:34.064419"
+    },
+    {
+      "test_name": "Documentation content validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "All 11 sections present, 15,414 characters",
+      "duration": 0.0001704692840576172,
+      "timestamp": "2025-09-23T12:26:34.064718"
+    },
+    {
+      "test_name": "Documentation code examples",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "29 code blocks, 45 command examples",
+      "duration": 2.8848648071289062e-05,
+      "timestamp": "2025-09-23T12:26:34.064761"
+    },
+    {
+      "test_name": "Test coverage validation",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "4 test classes, 11 test methods",
+      "duration": 0.0002353191375732422,
+      "timestamp": "2025-09-23T12:26:34.065056"
+    },
+    {
+      "test_name": "pytest compatibility",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "pytest fixtures, asyncio support, and mocking present",
+      "duration": 5.245208740234375e-06,
+      "timestamp": "2025-09-23T12:26:34.065070"
+    },
+    {
+      "test_name": "Module import performance",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Import completed in 0.000s",
+      "duration": 6.4373016357421875e-06,
+      "timestamp": "2025-09-23T12:26:34.065100"
+    },
+    {
+      "test_name": "Configuration loading performance",
+      "status": "\u2717 FAIL",
+      "passed": false,
+      "details": "Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))",
+      "duration": 0.003399372100830078,
+      "timestamp": "2025-09-23T12:26:34.068512"
+    },
+    {
+      "test_name": "Deployment system integration",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Compatible with existing deployment system",
+      "duration": 0.0010099411010742188,
+      "timestamp": "2025-09-23T12:26:34.069571"
+    },
+    {
+      "test_name": "Service compatibility",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Compatible with existing services: ['backend/services', 'backend/config', 'frontend', 'infrastructure']",
+      "duration": 0.00012874603271484375,
+      "timestamp": "2025-09-23T12:26:34.069728"
+    },
+    {
+      "test_name": "Configuration compatibility",
+      "status": "\u2713 PASS",
+      "passed": true,
+      "details": "Found 0 existing config files",
+      "duration": 6.699562072753906e-05,
+      "timestamp": "2025-09-23T12:26:34.069809"
+    }
+  ],
+  "performance_report": {
+    "total_validation_time": 1.1952402591705322,
+    "metrics": {
+      "import_time": 6.4373016357421875e-06
+    },
+    "test_count": 30,
+    "passed_tests": 28,
+    "failed_tests": 2,
+    "success_rate": 93.33333333333333
+  },
+  "success_rate": 93.33333333333333
+}

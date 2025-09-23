@@ -28,6 +28,23 @@ from backend.config.production_database import get_db_write, get_db_read
 # Configure logging
 logger = logging.getLogger(__name__)
 
+class CallStatus(Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"  
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class Sentiment(Enum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    NEUTRAL = "neutral"
+
+class AppointmentType(Enum):
+    CONSULTATION = "consultation"
+    BOOKING_REVIEW = "booking_review"
+    FOLLOW_UP = "follow_up"
+    PREMIUM_CONSULTATION = "premium_consultation"
+
 class CallOutcome(str, Enum):
     """Resultado de la llamada"""
     SUCCESSFUL_SALE = "successful_sale"
