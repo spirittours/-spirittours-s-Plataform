@@ -1,406 +1,377 @@
 #!/usr/bin/env python3
 """
-Spirit Tours Test Suite Runner
-Comprehensive test execution script with reporting and analysis.
+Comprehensive Test Runner para Spirit Tours Platform
+Script para ejecutar todos los tipos de tests de forma organizada.
 """
-
-import argparse
-import asyncio
 import os
 import sys
 import subprocess
+import argparse
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Dict, Any, Optional
+import json
 
-import pytest
 
 class TestRunner:
-    """Advanced test runner for Spirit Tours platform."""
+    """Runner principal para todos los tests"""
     
-    def __init__(self):
-        self.start_time = None
-        self.test_results = {}
-        self.coverage_threshold = 85
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
+        self.results: Dict[str, Any] = {}
+        self.start_time = datetime.now()
         
-    def setup_environment(self):
-        """Setup test environment variables."""
-        test_env = {
-            'TESTING': 'true',
-            'DATABASE_URL': 'postgresql://test_user:test_password@localhost:5432/spirittours_test',
-            'REDIS_URL': 'redis://localhost:6379/1',  # Use DB 1 for tests
-            'SECRET_KEY': 'test_secret_key_for_testing_only',
-            'DISABLE_AUTH': 'false',  # Keep auth enabled for realistic testing
-            'LOG_LEVEL': 'WARNING',  # Reduce log noise during tests
-        }
+    def log(self, message: str, level: str = "INFO"):
+        """Log con timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {level}: {message}")
+    
+    def run_command(self, cmd: List[str], description: str) -> Dict[str, Any]:
+        """Ejecutar comando y capturar resultado"""
+        self.log(f"🚀 {description}")
         
-        for key, value in test_env.items():
-            os.environ[key] = value
+        start_time = time.time()
+        try:
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True, 
+                timeout=300  # 5 minutes timeout
+            )
             
-        print("✅ Test environment configured")
+            duration = time.time() - start_time
+            
+            if result.returncode == 0:
+                self.log(f"✅ {description} - PASSED ({duration:.2f}s)")
+                return {
+                    "status": "PASSED",
+                    "duration": duration,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr
+                }
+            else:
+                self.log(f"❌ {description} - FAILED ({duration:.2f}s)")
+                if self.verbose:
+                    self.log(f"STDOUT: {result.stdout}")
+                    self.log(f"STDERR: {result.stderr}")
+                return {
+                    "status": "FAILED",
+                    "duration": duration,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "returncode": result.returncode
+                }
+                
+        except subprocess.TimeoutExpired:
+            self.log(f"⏰ {description} - TIMEOUT")
+            return {
+                "status": "TIMEOUT",
+                "duration": 300,
+                "error": "Test timed out after 5 minutes"
+            }
+        except Exception as e:
+            self.log(f"💥 {description} - ERROR: {e}")
+            return {
+                "status": "ERROR",
+                "error": str(e),
+                "duration": time.time() - start_time
+            }
     
-    def run_unit_tests(self, verbose: bool = False, coverage: bool = True) -> Dict:
-        """Run unit tests with optional coverage."""
-        print("\n🧪 Running Unit Tests...")
-        
+    def run_unit_tests(self) -> Dict[str, Any]:
+        """Ejecutar unit tests"""
         cmd = [
-            'pytest', 'tests/unit/',
-            '--junitxml=unit-test-results.xml',
-            '-m', 'unit'
+            "python", "-m", "pytest",
+            "tests/unit/",
+            "-v",
+            "-m", "unit",
+            "--cov=backend",
+            "--cov-report=html:reports/coverage/unit",
+            "--cov-report=xml:reports/coverage/unit.xml",
+            "--junit-xml=reports/junit/unit.xml"
         ]
         
-        if coverage:
-            cmd.extend([
-                '--cov=backend',
-                '--cov=ai-agents',
-                '--cov-report=html:unit-htmlcov',
-                '--cov-report=xml:unit-coverage.xml',
-                '--cov-report=term-missing',
-                f'--cov-fail-under={self.coverage_threshold}'
-            ])
-            
-        if verbose:
-            cmd.append('-v')
-        else:
-            cmd.extend(['-q', '--tb=short'])
-            
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        
-        return {
-            'name': 'Unit Tests',
-            'success': result.returncode == 0,
-            'output': result.stdout,
-            'errors': result.stderr,
-            'duration': 0  # Will be calculated by caller
-        }
+        return self.run_command(cmd, "Unit Tests")
     
-    def run_integration_tests(self, verbose: bool = False) -> Dict:
-        """Run integration tests."""
-        print("\n🔗 Running Integration Tests...")
-        
+    def run_integration_tests(self) -> Dict[str, Any]:
+        """Ejecutar integration tests"""
         cmd = [
-            'pytest', 'tests/integration/',
-            '--junitxml=integration-test-results.xml',
-            '-m', 'integration'
+            "python", "-m", "pytest",
+            "tests/integration/",
+            "-v",
+            "-m", "integration",
+            "--cov=backend",
+            "--cov-report=html:reports/coverage/integration",
+            "--cov-report=xml:reports/coverage/integration.xml",
+            "--junit-xml=reports/junit/integration.xml"
         ]
         
-        if verbose:
-            cmd.append('-v')
-        else:
-            cmd.extend(['-q', '--tb=short'])
-            
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        
-        return {
-            'name': 'Integration Tests',
-            'success': result.returncode == 0,
-            'output': result.stdout,
-            'errors': result.stderr,
-            'duration': 0
-        }
+        return self.run_command(cmd, "Integration Tests")
     
-    def run_e2e_tests(self, verbose: bool = False) -> Dict:
-        """Run end-to-end tests."""
-        print("\n🌐 Running End-to-End Tests...")
-        
+    def run_e2e_tests(self) -> Dict[str, Any]:
+        """Ejecutar end-to-end tests"""
         cmd = [
-            'pytest', 'tests/e2e/',
-            '--junitxml=e2e-test-results.xml',
-            '-m', 'e2e'
+            "python", "-m", "pytest",
+            "tests/e2e/",
+            "-v",
+            "-m", "e2e",
+            "--junit-xml=reports/junit/e2e.xml"
         ]
         
-        if verbose:
-            cmd.append('-v')
-        else:
-            cmd.extend(['-q', '--tb=short'])
-            
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        
-        return {
-            'name': 'E2E Tests',
-            'success': result.returncode == 0,
-            'output': result.stdout,
-            'errors': result.stderr,
-            'duration': 0
-        }
+        return self.run_command(cmd, "End-to-End Tests")
     
-    def run_performance_tests(self, verbose: bool = False) -> Dict:
-        """Run performance tests."""
-        print("\n⚡ Running Performance Tests...")
-        
+    def run_performance_tests(self) -> Dict[str, Any]:
+        """Ejecutar performance tests"""
         cmd = [
-            'pytest', 
-            'tests/unit/test_payment_service.py::TestPaymentPerformance',
-            'tests/unit/test_notification_service.py::TestNotificationPerformance',
-            'tests/unit/test_file_service.py::TestFileServicePerformance',
-            'tests/unit/test_ai_orchestrator.py::TestAISystemPerformance',
-            '--junitxml=performance-test-results.xml',
-            '--benchmark-json=benchmark-results.json',
-            '-m', 'slow or performance'
+            "python", "-m", "pytest",
+            "tests/performance/",
+            "-v",
+            "-m", "performance",
+            "--junit-xml=reports/junit/performance.xml"
         ]
         
-        if verbose:
-            cmd.append('-v')
-        else:
-            cmd.extend(['-q', '--tb=short'])
-            
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        
-        return {
-            'name': 'Performance Tests',
-            'success': result.returncode == 0,
-            'output': result.stdout,
-            'errors': result.stderr,
-            'duration': 0
-        }
+        return self.run_command(cmd, "Performance Tests")
     
-    def run_security_tests(self) -> Dict:
-        """Run security analysis."""
-        print("\n🔒 Running Security Analysis...")
-        
-        # Bandit security scan
-        bandit_cmd = [
-            'bandit', '-r', 'backend/', 'ai-agents/',
-            '-f', 'json', '-o', 'bandit-report.json'
+    def run_load_tests(self) -> Dict[str, Any]:
+        """Ejecutar load tests"""
+        cmd = [
+            "python", "-m", "pytest",
+            "tests/load/",
+            "-v",
+            "-m", "load",
+            "--junit-xml=reports/junit/load.xml"
         ]
         
-        bandit_result = subprocess.run(bandit_cmd, capture_output=True, text=True)
-        
-        # Safety check for dependencies
-        safety_cmd = ['safety', 'check', '--json', '--output', 'safety-report.json']
-        safety_result = subprocess.run(safety_cmd, capture_output=True, text=True)
-        
-        return {
-            'name': 'Security Analysis',
-            'success': bandit_result.returncode == 0 and safety_result.returncode == 0,
-            'output': f"Bandit: {bandit_result.stdout}\nSafety: {safety_result.stdout}",
-            'errors': f"Bandit: {bandit_result.stderr}\nSafety: {safety_result.stderr}",
-            'duration': 0
-        }
+        return self.run_command(cmd, "Load Tests")
     
-    def check_code_quality(self) -> Dict:
-        """Check code quality with linting tools."""
-        print("\n✨ Checking Code Quality...")
+    def run_security_tests(self) -> Dict[str, Any]:
+        """Ejecutar security tests"""
+        cmd = [
+            "python", "-m", "pytest",
+            "tests/security/",
+            "-v",
+            "-m", "security",
+            "--junit-xml=reports/junit/security.xml"
+        ]
         
-        # Black formatting check
-        black_cmd = ['black', '--check', '--diff', 'backend/', 'ai-agents/']
-        black_result = subprocess.run(black_cmd, capture_output=True, text=True)
-        
-        # Flake8 linting
-        flake8_cmd = ['flake8', 'backend/', 'ai-agents/', '--output-file=flake8-report.txt']
-        flake8_result = subprocess.run(flake8_cmd, capture_output=True, text=True)
-        
-        # Import sorting check
-        isort_cmd = ['isort', '--check-only', '--diff', 'backend/', 'ai-agents/']
-        isort_result = subprocess.run(isort_cmd, capture_output=True, text=True)
-        
-        all_passed = (
-            black_result.returncode == 0 and 
-            flake8_result.returncode == 0 and 
-            isort_result.returncode == 0
-        )
-        
-        return {
-            'name': 'Code Quality',
-            'success': all_passed,
-            'output': f"Black: OK\nFlake8: {'OK' if flake8_result.returncode == 0 else 'Issues found'}\nIsort: OK",
-            'errors': f"Black: {black_result.stderr}\nFlake8: {flake8_result.stderr}\nIsort: {isort_result.stderr}",
-            'duration': 0
-        }
+        return self.run_command(cmd, "Security Tests")
     
-    def generate_report(self, results: List[Dict], total_duration: float):
-        """Generate comprehensive test report."""
+    def run_smoke_tests(self) -> Dict[str, Any]:
+        """Ejecutar smoke tests rápidos"""
+        cmd = [
+            "python", "-m", "pytest",
+            "-v",
+            "-m", "smoke",
+            "--junit-xml=reports/junit/smoke.xml"
+        ]
+        
+        return self.run_command(cmd, "Smoke Tests")
+    
+    def run_analytics_tests(self) -> Dict[str, Any]:
+        """Ejecutar tests específicos de analytics"""
+        cmd = [
+            "python", "-m", "pytest",
+            "tests/unit/test_analytics_dashboard.py",
+            "tests/unit/test_predictive_analytics.py", 
+            "tests/unit/test_automated_reports.py",
+            "tests/integration/test_analytics_api_integration.py",
+            "-v",
+            "-m", "analytics",
+            "--cov=backend/analytics",
+            "--cov-report=html:reports/coverage/analytics",
+            "--junit-xml=reports/junit/analytics.xml"
+        ]
+        
+        return self.run_command(cmd, "Analytics Tests")
+    
+    def create_reports_directory(self):
+        """Crear directorios para reportes"""
+        directories = [
+            "reports/coverage/unit",
+            "reports/coverage/integration", 
+            "reports/coverage/analytics",
+            "reports/junit",
+            "reports/performance",
+            "reports/security"
+        ]
+        
+        for directory in directories:
+            Path(directory).mkdir(parents=True, exist_ok=True)
+    
+    def generate_summary_report(self) -> Dict[str, Any]:
+        """Generar reporte resumen de todos los tests"""
+        total_duration = (datetime.now() - self.start_time).total_seconds()
+        
+        # Contar resultados
+        passed_tests = len([r for r in self.results.values() if r.get("status") == "PASSED"])
+        failed_tests = len([r for r in self.results.values() if r.get("status") == "FAILED"])
+        error_tests = len([r for r in self.results.values() if r.get("status") == "ERROR"])
+        timeout_tests = len([r for r in self.results.values() if r.get("status") == "TIMEOUT"])
+        total_tests = len(self.results)
+        
+        # Calcular scores
+        success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
+        
+        summary = {
+            "timestamp": datetime.now().isoformat(),
+            "total_duration": total_duration,
+            "summary": {
+                "total_suites": total_tests,
+                "passed": passed_tests,
+                "failed": failed_tests,
+                "errors": error_tests,
+                "timeouts": timeout_tests,
+                "success_rate": success_rate
+            },
+            "test_results": self.results,
+            "recommendations": self.get_recommendations()
+        }
+        
+        return summary
+    
+    def get_recommendations(self) -> List[str]:
+        """Generar recomendaciones basadas en resultados"""
+        recommendations = []
+        
+        failed_tests = [name for name, result in self.results.items() 
+                       if result.get("status") == "FAILED"]
+        
+        if failed_tests:
+            recommendations.append(f"⚠️ {len(failed_tests)} test suite(s) failed: {', '.join(failed_tests)}")
+            recommendations.append("🔧 Review failed tests and fix issues before deployment")
+        
+        if any(result.get("status") == "TIMEOUT" for result in self.results.values()):
+            recommendations.append("⏰ Some tests timed out - consider optimizing slow tests")
+        
+        if any(result.get("status") == "ERROR" for result in self.results.values()):
+            recommendations.append("💥 Test execution errors detected - check test environment")
+        
+        # Recomendaciones específicas
+        if self.results.get("Security Tests", {}).get("status") == "FAILED":
+            recommendations.append("🔐 Security vulnerabilities found - address before production")
+        
+        if self.results.get("Performance Tests", {}).get("status") == "FAILED":
+            recommendations.append("🚀 Performance issues detected - optimize before deployment")
+        
+        if not recommendations:
+            recommendations.append("✅ All tests passed successfully!")
+            recommendations.append("🚀 Ready for deployment")
+        
+        return recommendations
+    
+    def save_report(self, summary: Dict[str, Any]):
+        """Guardar reporte en archivo JSON"""
+        report_path = f"reports/test_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        with open(report_path, 'w') as f:
+            json.dump(summary, f, indent=2)
+        
+        self.log(f"📊 Test summary saved to: {report_path}")
+    
+    def print_summary(self, summary: Dict[str, Any]):
+        """Imprimir resumen en consola"""
         print("\n" + "="*80)
-        print("🎯 SPIRIT TOURS TEST SUITE SUMMARY")
+        print("🎯 SPIRIT TOURS - TEST EXECUTION SUMMARY")
         print("="*80)
         
-        print(f"📅 Executed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"⏱️  Total Duration: {total_duration:.2f} seconds")
-        print()
+        print(f"\n📊 Overall Results:")
+        print(f"   Total Test Suites: {summary['summary']['total_suites']}")
+        print(f"   ✅ Passed: {summary['summary']['passed']}")
+        print(f"   ❌ Failed: {summary['summary']['failed']}")
+        print(f"   💥 Errors: {summary['summary']['errors']}")
+        print(f"   ⏰ Timeouts: {summary['summary']['timeouts']}")
+        print(f"   🎯 Success Rate: {summary['summary']['success_rate']:.1f}%")
+        print(f"   ⏱️  Total Duration: {summary['total_duration']:.2f}s")
         
-        # Test results summary
-        total_tests = len(results)
-        passed_tests = sum(1 for r in results if r['success'])
-        failed_tests = total_tests - passed_tests
-        
-        print("📊 RESULTS SUMMARY:")
-        print(f"   ✅ Passed: {passed_tests}/{total_tests}")
-        print(f"   ❌ Failed: {failed_tests}/{total_tests}")
-        print(f"   📈 Success Rate: {(passed_tests/total_tests)*100:.1f}%")
-        print()
-        
-        # Detailed results
-        print("📋 DETAILED RESULTS:")
-        for result in results:
-            status = "✅ PASS" if result['success'] else "❌ FAIL"
-            print(f"   {status} {result['name']}")
+        print(f"\n📋 Detailed Results:")
+        for test_name, result in summary['test_results'].items():
+            status = result.get('status', 'UNKNOWN')
+            duration = result.get('duration', 0)
             
-            if not result['success'] and result['errors']:
-                print(f"      Error: {result['errors'][:100]}...")
-        
-        print()
-        
-        # Coverage information
-        if Path('unit-coverage.xml').exists():
-            print("📈 COVERAGE REPORTS:")
-            print("   • HTML Report: unit-htmlcov/index.html")
-            print("   • XML Report: unit-coverage.xml")
-            print()
-        
-        # Recommendations
-        print("💡 RECOMMENDATIONS:")
-        if failed_tests > 0:
-            print("   • Review failed tests and fix issues")
-            print("   • Check error logs for detailed information")
-        
-        if Path('benchmark-results.json').exists():
-            print("   • Review performance benchmarks")
+            if status == "PASSED":
+                icon = "✅"
+            elif status == "FAILED":
+                icon = "❌"
+            elif status == "ERROR":
+                icon = "💥"
+            elif status == "TIMEOUT":
+                icon = "⏰"
+            else:
+                icon = "❓"
             
-        if Path('bandit-report.json').exists():
-            print("   • Review security scan results")
+            print(f"   {icon} {test_name}: {status} ({duration:.2f}s)")
         
-        print("   • Maintain test coverage above 85%")
-        print("   • Run tests regularly during development")
-        print()
+        print(f"\n💡 Recommendations:")
+        for rec in summary['recommendations']:
+            print(f"   {rec}")
         
-        # Final status
-        overall_success = all(r['success'] for r in results)
-        if overall_success:
-            print("🎉 ALL TESTS PASSED! Platform is ready for deployment.")
-        else:
-            print("⚠️  SOME TESTS FAILED. Please fix issues before deployment.")
-            
-        return overall_success
-    
-    def run_all_tests(self, test_types: List[str], verbose: bool = False, coverage: bool = True) -> bool:
-        """Run specified test suites."""
-        self.start_time = time.time()
-        results = []
-        
-        print("🚀 Starting Spirit Tours Test Suite")
-        print(f"📋 Running tests: {', '.join(test_types)}")
-        
-        # Setup test environment
-        self.setup_environment()
-        
-        # Run selected test suites
-        if 'unit' in test_types:
-            start = time.time()
-            result = self.run_unit_tests(verbose, coverage)
-            result['duration'] = time.time() - start
-            results.append(result)
-        
-        if 'integration' in test_types:
-            start = time.time()
-            result = self.run_integration_tests(verbose)
-            result['duration'] = time.time() - start
-            results.append(result)
-        
-        if 'e2e' in test_types:
-            start = time.time()
-            result = self.run_e2e_tests(verbose)
-            result['duration'] = time.time() - start
-            results.append(result)
-        
-        if 'performance' in test_types:
-            start = time.time()
-            result = self.run_performance_tests(verbose)
-            result['duration'] = time.time() - start
-            results.append(result)
-        
-        if 'security' in test_types:
-            start = time.time()
-            result = self.run_security_tests()
-            result['duration'] = time.time() - start
-            results.append(result)
-        
-        if 'quality' in test_types:
-            start = time.time()
-            result = self.check_code_quality()
-            result['duration'] = time.time() - start
-            results.append(result)
-        
-        # Generate final report
-        total_duration = time.time() - self.start_time
-        return self.generate_report(results, total_duration)
+        print("\n" + "="*80)
+
 
 def main():
-    """Main entry point for test runner."""
-    parser = argparse.ArgumentParser(
-        description='Spirit Tours Test Suite Runner',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python run_tests.py                          # Run all tests
-  python run_tests.py --types unit integration # Run specific test types
-  python run_tests.py --verbose               # Verbose output
-  python run_tests.py --no-coverage          # Skip coverage report
-  python run_tests.py --quick                # Run only unit tests
-        """
-    )
-    
+    """Función principal"""
+    parser = argparse.ArgumentParser(description="Spirit Tours Test Runner")
     parser.add_argument(
-        '--types',
-        nargs='+',
-        choices=['unit', 'integration', 'e2e', 'performance', 'security', 'quality'],
-        default=['unit', 'integration', 'e2e', 'security', 'quality'],
-        help='Test types to run (default: all except performance)'
+        "--suite", 
+        choices=["all", "unit", "integration", "e2e", "performance", "load", "security", "smoke", "analytics"],
+        default="all",
+        help="Test suite to run"
     )
-    
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Verbose output'
-    )
-    
-    parser.add_argument(
-        '--no-coverage',
-        action='store_true',
-        help='Skip coverage reporting'
-    )
-    
-    parser.add_argument(
-        '--quick',
-        action='store_true',
-        help='Run only unit tests (quick check)'
-    )
-    
-    parser.add_argument(
-        '--performance',
-        action='store_true',
-        help='Include performance tests'
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--no-reports", action="store_true", help="Skip generating reports")
     
     args = parser.parse_args()
     
-    # Adjust test types based on flags
-    if args.quick:
-        test_types = ['unit']
-    elif args.performance:
-        test_types = args.types + ['performance'] if 'performance' not in args.types else args.types
+    runner = TestRunner(verbose=args.verbose)
+    
+    # Crear directorios de reportes
+    if not args.no_reports:
+        runner.create_reports_directory()
+    
+    runner.log("🎯 Starting Spirit Tours Test Execution")
+    runner.log(f"Suite: {args.suite}")
+    
+    # Ejecutar tests según la suite seleccionada
+    if args.suite == "all":
+        runner.results["Unit Tests"] = runner.run_unit_tests()
+        runner.results["Integration Tests"] = runner.run_integration_tests() 
+        runner.results["E2E Tests"] = runner.run_e2e_tests()
+        runner.results["Performance Tests"] = runner.run_performance_tests()
+        runner.results["Load Tests"] = runner.run_load_tests()
+        runner.results["Security Tests"] = runner.run_security_tests()
+    elif args.suite == "unit":
+        runner.results["Unit Tests"] = runner.run_unit_tests()
+    elif args.suite == "integration":
+        runner.results["Integration Tests"] = runner.run_integration_tests()
+    elif args.suite == "e2e":
+        runner.results["E2E Tests"] = runner.run_e2e_tests()
+    elif args.suite == "performance":
+        runner.results["Performance Tests"] = runner.run_performance_tests()
+    elif args.suite == "load":
+        runner.results["Load Tests"] = runner.run_load_tests()
+    elif args.suite == "security":
+        runner.results["Security Tests"] = runner.run_security_tests()
+    elif args.suite == "smoke":
+        runner.results["Smoke Tests"] = runner.run_smoke_tests()
+    elif args.suite == "analytics":
+        runner.results["Analytics Tests"] = runner.run_analytics_tests()
+    
+    # Generar resumen
+    summary = runner.generate_summary_report()
+    runner.print_summary(summary)
+    
+    if not args.no_reports:
+        runner.save_report(summary)
+    
+    # Exit code basado en resultados
+    failed_count = summary['summary']['failed'] + summary['summary']['errors']
+    if failed_count > 0:
+        runner.log(f"❌ {failed_count} test suite(s) failed")
+        sys.exit(1)
     else:
-        test_types = args.types
-    
-    # Initialize and run tests
-    runner = TestRunner()
-    
-    try:
-        success = runner.run_all_tests(
-            test_types=test_types,
-            verbose=args.verbose,
-            coverage=not args.no_coverage
-        )
-        
-        # Exit with appropriate code
-        sys.exit(0 if success else 1)
-        
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Test execution interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n\n💥 Test runner error: {e}")
-        sys.exit(1)
+        runner.log("✅ All tests passed successfully!")
+        sys.exit(0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
