@@ -169,6 +169,154 @@ class AIMultiModelManager extends EventEmitter {
                 costPer1kTokens: 0.003,
                 strengths: ['privacy', 'european_compliance', 'multilingual', 'reasoning'],
                 use_cases: ['gdpr_compliance', 'european_markets', 'privacy_sensitive_tasks']
+            },
+
+            // ===== PHASE 2 EXTENDED: ADDITIONAL AI PROVIDERS =====
+
+            // Perplexity AI Models
+            'perplexity-llama-3.1-sonar-huge': {
+                provider: 'perplexity',
+                name: 'Llama 3.1 Sonar Huge (405B)',
+                description: 'Modelo masivo de Perplexity con capacidades de búsqueda web',
+                apiKey: process.env.PERPLEXITY_API_KEY,
+                endpoint: 'https://api.perplexity.ai/chat/completions',
+                maxTokens: 131072,
+                costPer1kTokens: 0.005,
+                strengths: ['web_search', 'real_time_data', 'large_scale', 'current_events'],
+                use_cases: ['market_research', 'real_time_analysis', 'competitive_intelligence']
+            },
+            'perplexity-sonar-pro': {
+                provider: 'perplexity',
+                name: 'Sonar Pro',
+                description: 'Modelo especializado en búsqueda y análisis web en tiempo real',
+                apiKey: process.env.PERPLEXITY_API_KEY,
+                endpoint: 'https://api.perplexity.ai/chat/completions',
+                maxTokens: 32768,
+                costPer1kTokens: 0.002,
+                strengths: ['web_search', 'citations', 'real_time', 'accuracy'],
+                use_cases: ['research', 'fact_checking', 'current_events', 'data_gathering']
+            },
+
+            // Cohere Models
+            'cohere-command-r-plus': {
+                provider: 'cohere',
+                name: 'Command R+',
+                description: 'Modelo avanzado de Cohere para razonamiento y generación',
+                apiKey: process.env.COHERE_API_KEY,
+                endpoint: 'https://api.cohere.ai/v1/chat',
+                maxTokens: 128000,
+                costPer1kTokens: 0.003,
+                strengths: ['reasoning', 'instruction_following', 'rag', 'enterprise'],
+                use_cases: ['business_analysis', 'document_qa', 'enterprise_chat', 'rag_applications']
+            },
+            'cohere-embed-v3': {
+                provider: 'cohere',
+                name: 'Embed v3',
+                description: 'Modelo de embeddings de última generación de Cohere',
+                apiKey: process.env.COHERE_API_KEY,
+                endpoint: 'https://api.cohere.ai/v1/embed',
+                maxTokens: 512,
+                costPer1kTokens: 0.0001,
+                strengths: ['embeddings', 'semantic_search', 'clustering', 'classification'],
+                use_cases: ['vector_search', 'recommendation_systems', 'document_similarity']
+            },
+
+            // AI21 Studio Models
+            'ai21-jamba-instruct': {
+                provider: 'ai21',
+                name: 'Jamba-Instruct',
+                description: 'Modelo híbrido Mamba-Transformer de AI21 optimizado para instrucciones',
+                apiKey: process.env.AI21_API_KEY,
+                endpoint: 'https://api.ai21.com/studio/v1/j2-ultra/complete',
+                maxTokens: 256000,
+                costPer1kTokens: 0.005,
+                strengths: ['long_context', 'instruction_following', 'hybrid_architecture'],
+                use_cases: ['long_document_analysis', 'complex_instructions', 'enterprise_tasks']
+            },
+            'ai21-jurassic-2-ultra': {
+                provider: 'ai21',
+                name: 'Jurassic-2 Ultra',
+                description: 'Modelo empresarial premium de AI21 para tareas complejas',
+                apiKey: process.env.AI21_API_KEY,
+                endpoint: 'https://api.ai21.com/studio/v1/j2-ultra/complete',
+                maxTokens: 8192,
+                costPer1kTokens: 0.0188,
+                strengths: ['enterprise_grade', 'complex_reasoning', 'accuracy', 'safety'],
+                use_cases: ['enterprise_applications', 'critical_analysis', 'high_stakes_decisions']
+            },
+
+            // Hugging Face Models
+            'huggingface-code-llama-70b': {
+                provider: 'huggingface',
+                name: 'Code Llama 70B',
+                description: 'Modelo especializado en programación basado en Llama',
+                apiKey: process.env.HUGGINGFACE_API_KEY,
+                endpoint: 'https://api-inference.huggingface.co/models/codellama/CodeLlama-70b-Instruct-hf',
+                maxTokens: 4096,
+                costPer1kTokens: 0.001,
+                strengths: ['code_generation', 'debugging', 'code_analysis', 'programming'],
+                use_cases: ['software_development', 'code_review', 'debugging', 'automation']
+            },
+            'huggingface-mixtral-8x22b': {
+                provider: 'huggingface',
+                name: 'Mixtral 8x22B Instruct',
+                description: 'Modelo mixture-of-experts de Mistral disponible en HuggingFace',
+                apiKey: process.env.HUGGINGFACE_API_KEY,
+                endpoint: 'https://api-inference.huggingface.co/models/mistralai/Mixtral-8x22B-Instruct-v0.1',
+                maxTokens: 65536,
+                costPer1kTokens: 0.0009,
+                strengths: ['mixture_of_experts', 'efficiency', 'multilingual', 'open_source'],
+                use_cases: ['cost_optimization', 'multilingual_tasks', 'research', 'experimentation']
+            },
+
+            // Anthropic Additional Models (Claude 3 variants)
+            'claude-3-opus': {
+                provider: 'anthropic',
+                name: 'Claude 3 Opus',
+                description: 'Modelo más poderoso de la familia Claude 3',
+                apiKey: process.env.ANTHROPIC_API_KEY,
+                endpoint: 'https://api.anthropic.com/v1/messages',
+                maxTokens: 200000,
+                costPer1kTokens: 0.015,
+                strengths: ['complex_reasoning', 'creativity', 'analysis', 'long_context'],
+                use_cases: ['complex_analysis', 'creative_writing', 'research', 'strategic_planning']
+            },
+            'claude-3-haiku': {
+                provider: 'anthropic',
+                name: 'Claude 3 Haiku',
+                description: 'Modelo rápido y eficiente de la familia Claude 3',
+                apiKey: process.env.ANTHROPIC_API_KEY,
+                endpoint: 'https://api.anthropic.com/v1/messages',
+                maxTokens: 200000,
+                costPer1kTokens: 0.00025,
+                strengths: ['speed', 'efficiency', 'cost_effective', 'quick_responses'],
+                use_cases: ['high_volume_tasks', 'real_time_chat', 'cost_optimization', 'simple_queries']
+            },
+
+            // Together AI Models
+            'together-llama-3.1-405b': {
+                provider: 'together',
+                name: 'Llama 3.1 405B Instruct',
+                description: 'Modelo open-source más grande disponible via Together AI',
+                apiKey: process.env.TOGETHER_API_KEY,
+                endpoint: 'https://api.together.xyz/v1/chat/completions',
+                maxTokens: 131072,
+                costPer1kTokens: 0.008,
+                strengths: ['open_source', 'large_scale', 'research_friendly', 'transparency'],
+                use_cases: ['research', 'experimentation', 'custom_fine_tuning', 'academic_work']
+            },
+
+            // Fireworks AI Models
+            'fireworks-mixtral-8x22b': {
+                provider: 'fireworks',
+                name: 'Mixtral 8x22B Instruct',
+                description: 'Modelo mixture-of-experts optimizado por Fireworks AI',
+                apiKey: process.env.FIREWORKS_API_KEY,
+                endpoint: 'https://api.fireworks.ai/inference/v1/chat/completions',
+                maxTokens: 65536,
+                costPer1kTokens: 0.0009,
+                strengths: ['fast_inference', 'cost_effective', 'mixture_of_experts', 'optimization'],
+                use_cases: ['production_workloads', 'high_throughput', 'cost_optimization']
             }
         };
 
@@ -194,6 +342,14 @@ class AIMultiModelManager extends EventEmitter {
             this.metrics.averageResponseTime[modelId] = 0;
             this.metrics.errorRates[modelId] = 0;
         });
+
+        // Enterprise integration properties
+        this.startTime = Date.now();
+        this.lastActivity = new Date().toISOString();
+        this.loadBalancer = null;
+        this.optimizationEngine = null;
+        this.monitoringService = null;
+        this.alertSystem = null;
 
         logger.info('AI Multi-Model Manager initialized', {
             availableModels: Object.keys(this.models).length,
@@ -847,6 +1003,122 @@ class AIMultiModelManager extends EventEmitter {
             
             return currentScore < bestScore ? current : best;
         });
+    }
+
+    // ===== PHASE 2 EXTENDED INTEGRATION METHODS =====
+
+    /**
+     * Configurar Load Balancer para integración con EnterpriseAIMasterSystem
+     */
+    setLoadBalancer(loadBalancer) {
+        this.loadBalancer = loadBalancer;
+        logger.info('Load Balancer integrated with AI Multi-Model Manager', {
+            service: 'ai-multi-model-manager',
+            version: '2.0.0',
+            phase: 'phase-2',
+            loadBalancerConfigured: !!this.loadBalancer
+        });
+    }
+
+    /**
+     * Configurar Optimization Engine para integración
+     */
+    setOptimizationEngine(optimizationEngine) {
+        this.optimizationEngine = optimizationEngine;
+        logger.info('Optimization Engine integrated with AI Multi-Model Manager', {
+            service: 'ai-multi-model-manager',
+            version: '2.0.0',
+            phase: 'phase-2',
+            optimizationEngineConfigured: !!this.optimizationEngine
+        });
+    }
+
+    /**
+     * Configurar Monitoring Service para integración
+     */
+    setMonitoringService(monitoringService) {
+        this.monitoringService = monitoringService;
+        logger.info('Monitoring Service integrated with AI Multi-Model Manager', {
+            service: 'ai-multi-model-manager',
+            version: '2.0.0',
+            phase: 'phase-2',
+            monitoringServiceConfigured: !!this.monitoringService
+        });
+    }
+
+    /**
+     * Configurar Alert System para integración
+     */
+    setAlertSystem(alertSystem) {
+        this.alertSystem = alertSystem;
+        logger.info('Alert System integrated with AI Multi-Model Manager', {
+            service: 'ai-multi-model-manager',
+            version: '2.0.0',
+            phase: 'phase-2',
+            alertSystemConfigured: !!this.alertSystem
+        });
+    }
+
+    /**
+     * Obtener métricas para Enterprise Master System
+     */
+    getEnterpriseMetrics() {
+        return {
+            totalRequests: this.metrics.totalRequests || 0,
+            successfulRequests: this.metrics.successfulRequests || 0,
+            failedRequests: this.metrics.failedRequests || 0,
+            averageResponseTime: this.metrics.averageResponseTime || 0,
+            totalTokensProcessed: this.metrics.totalTokensProcessed || 0,
+            totalCost: this.metrics.totalCost || 0,
+            cacheHitRate: this.metrics.cacheHitRate || 0,
+            modelsInUse: Object.keys(this.models).length,
+            activeModels: Object.values(this.models).filter(m => m.apiKey).length,
+            currentDefaultModel: this.config.defaultModel,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Obtener estado de salud para Enterprise Master System
+     */
+    getHealthStatus() {
+        const activeModels = Object.values(this.models).filter(m => m.apiKey).length;
+        const totalModels = Object.keys(this.models).length;
+        
+        return {
+            status: activeModels > 0 ? 'healthy' : 'degraded',
+            activeModels,
+            totalModels,
+            cacheConnected: this.redis && this.redis.connected,
+            configurationValid: !!this.config.defaultModel,
+            lastActivity: this.lastActivity || new Date().toISOString(),
+            uptime: Date.now() - this.startTime
+        };
+    }
+
+    /**
+     * Notificar evento al sistema Enterprise
+     */
+    notifyEnterpriseEvent(eventType, eventData) {
+        this.emit('enterprise.event', {
+            source: 'AIMultiModelManager',
+            type: eventType,
+            data: eventData,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (this.monitoringService) {
+            this.monitoringService.recordEvent(eventType, eventData);
+        }
+        
+        if (this.alertSystem && eventType.includes('error')) {
+            this.alertSystem.createAlert({
+                type: eventType,
+                priority: 'high',
+                title: 'AI Multi-Model Manager Alert',
+                data: eventData
+            });
+        }
     }
 }
 

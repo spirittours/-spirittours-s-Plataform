@@ -1,0 +1,179 @@
+# 🌐 Production Services - AI Multi-Model Management System
+# Load balancer and service mesh configuration
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-multimodel-api
+  namespace: production
+  labels:
+    app: ai-multimodel-api
+    tier: backend
+    environment: production
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: api-service
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3001"
+    prometheus.io/path: "/metrics"
+spec:
+  type: LoadBalancer
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  - name: api
+    port: 3001
+    targetPort: 3001
+    protocol: TCP
+  - name: websocket
+    port: 3002
+    targetPort: 3002
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9100
+    protocol: TCP
+  selector:
+    app: ai-multimodel-api
+    tier: backend
+    environment: production
+    version: blue
+
+---
+# 🌐 Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-multimodel-frontend
+  namespace: production
+  labels:
+    app: ai-multimodel-frontend
+    tier: frontend
+    environment: production
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: frontend-service
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "alb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-target-type: "ip"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: ai-multimodel-frontend
+    tier: frontend
+    environment: production
+    version: blue
+
+---
+# 🔗 Internal Service for Pod-to-Pod Communication
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-multimodel-internal
+  namespace: production
+  labels:
+    app: ai-multimodel-internal
+    tier: backend
+    environment: production
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: internal-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: api
+    port: 3001
+    targetPort: 3001
+    protocol: TCP
+  - name: websocket
+    port: 3002
+    targetPort: 3002
+    protocol: TCP
+  - name: health
+    port: 8080
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: ai-multimodel-api
+    tier: backend
+    environment: production
+
+---
+# 📊 Monitoring Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-multimodel-monitoring
+  namespace: production
+  labels:
+    app: ai-multimodel-monitoring
+    tier: monitoring
+    environment: production
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: monitoring-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 9090
+    targetPort: 9100
+    protocol: TCP
+  - name: health-metrics
+    port: 9091
+    targetPort: 9091
+    protocol: TCP
+  selector:
+    app: ai-multimodel-api
+    tier: backend
+    environment: production
+
+---
+# 🎯 Headless Service for StatefulSet (if needed for clustering)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-multimodel-headless
+  namespace: production
+  labels:
+    app: ai-multimodel-headless
+    tier: backend
+    environment: production
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: headless-service
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: cluster
+    port: 6379
+    targetPort: 6379
+    protocol: TCP
+  - name: gossip
+    port: 7946
+    targetPort: 7946
+    protocol: TCP
+  - name: raft
+    port: 8300
+    targetPort: 8300
+    protocol: TCP
+  selector:
+    app: ai-multimodel-api
+    tier: backend
+    environment: production

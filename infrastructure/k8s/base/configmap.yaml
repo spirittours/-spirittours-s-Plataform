@@ -1,0 +1,151 @@
+# 🚀 Base ConfigMap - AI Multi-Model Management System
+# Configuration settings for all environments
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-multimodel-config
+  namespace: ai-multimodel
+  labels:
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: genspark-ai-platform
+data:
+  # 🔧 Application Configuration
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  ENABLE_CLUSTERING: "true"
+  MAX_WORKERS: "4"
+  
+  # 🌐 Server Configuration
+  PORT: "3000"
+  API_PORT: "3001"
+  WEBSOCKET_PORT: "3002"
+  
+  # 📊 Monitoring Configuration
+  METRICS_ENABLED: "true"
+  HEALTH_CHECK_INTERVAL: "30000"
+  PERFORMANCE_MONITORING: "true"
+  
+  # 🔄 Load Balancer Configuration
+  LOAD_BALANCER_ALGORITHM: "intelligent"
+  ENABLE_CIRCUIT_BREAKER: "true"
+  CIRCUIT_BREAKER_THRESHOLD: "5"
+  CIRCUIT_BREAKER_TIMEOUT: "60000"
+  
+  # 🧠 AI Configuration
+  AI_REQUEST_TIMEOUT: "30000"
+  AI_MAX_CONCURRENT_REQUESTS: "100"
+  AI_RETRY_ATTEMPTS: "3"
+  AI_RETRY_DELAY: "1000"
+  
+  # 📈 Analytics Configuration
+  ANALYTICS_ENABLED: "true"
+  ANALYTICS_BATCH_SIZE: "100"
+  ANALYTICS_FLUSH_INTERVAL: "60000"
+  
+  # 🔐 Security Configuration
+  ENABLE_RATE_LIMITING: "true"
+  RATE_LIMIT_WINDOW: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "1000"
+  ENABLE_AUDIT_LOGGING: "true"
+  
+  # 📦 Cache Configuration
+  REDIS_TTL: "3600"
+  CACHE_STRATEGY: "lru"
+  CACHE_MAX_SIZE: "1000"
+  
+  # 🔄 Backup Configuration
+  BACKUP_ENABLED: "true"
+  BACKUP_INTERVAL: "86400000"
+  BACKUP_RETENTION_DAYS: "30"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-multimodel-nginx-config
+  namespace: ai-multimodel
+  labels:
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: nginx-config
+data:
+  nginx.conf: |
+    upstream api_backend {
+        least_conn;
+        server ai-multimodel-api:3001 max_fails=3 fail_timeout=30s;
+    }
+    
+    upstream websocket_backend {
+        ip_hash;
+        server ai-multimodel-api:3002 max_fails=3 fail_timeout=30s;
+    }
+    
+    server {
+        listen 80;
+        server_name _;
+        
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';" always;
+        
+        # Rate limiting
+        limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+        limit_req_zone $binary_remote_addr zone=websocket:10m rate=5r/s;
+        
+        # Frontend static files
+        location / {
+            root /usr/share/nginx/html;
+            try_files $uri $uri/ /index.html;
+            
+            # Cache static assets
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+        }
+        
+        # API endpoints
+        location /api/ {
+            limit_req zone=api burst=20 nodelay;
+            
+            proxy_pass http://api_backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # Timeout settings
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }
+        
+        # WebSocket endpoints
+        location /ws/ {
+            limit_req zone=websocket burst=10 nodelay;
+            
+            proxy_pass http://websocket_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # WebSocket timeout settings
+            proxy_read_timeout 86400s;
+            proxy_send_timeout 86400s;
+        }
+        
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "OK\n";
+            add_header Content-Type text/plain;
+        }
+    }

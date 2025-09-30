@@ -1,0 +1,301 @@
+# 🌐 Production Ingress Configuration - AI Multi-Model Management System
+# Enterprise-grade routing, SSL termination, and traffic management
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-multimodel-ingress
+  namespace: production
+  labels:
+    app: ai-multimodel-ingress
+    tier: networking
+    environment: production
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: ingress
+  annotations:
+    # 🚀 Nginx Ingress Controller
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # 🔐 SSL Configuration
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384"
+    
+    # 📊 Rate Limiting
+    nginx.ingress.kubernetes.io/rate-limit-connections: "20"
+    nginx.ingress.kubernetes.io/rate-limit-requests-per-minute: "1200"
+    nginx.ingress.kubernetes.io/rate-limit-burst-multiplier: "5"
+    
+    # 🔄 Load Balancing & Session Affinity
+    nginx.ingress.kubernetes.io/load-balance: "ewma"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$remote_addr"
+    nginx.ingress.kubernetes.io/session-cookie-name: "ai-multimodel-session"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "3600"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
+    
+    # ⏱️ Timeout Configuration
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: "60"
+    
+    # 📦 Request Size Limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
+    
+    # 🔒 Security Headers
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://ai-multimodel.genspark.ai"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization,X-API-Key"
+    nginx.ingress.kubernetes.io/cors-max-age: "86400"
+    
+    # 🛡️ Additional Security
+    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+    nginx.ingress.kubernetes.io/modsecurity-transaction-id: "$request_id"
+    
+    # 📊 Monitoring & Observability
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Request-ID: $req_id";
+      more_set_headers "X-Response-Time: $upstream_response_time";
+      more_set_headers "X-Cache-Status: $upstream_cache_status";
+
+spec:
+  # 🔐 TLS Configuration
+  tls:
+  - hosts:
+    - ai-multimodel.genspark.ai
+    - api.ai-multimodel.genspark.ai
+    - ws.ai-multimodel.genspark.ai
+    secretName: ai-multimodel-tls-cert
+  
+  # 🛣️ Routing Rules
+  rules:
+  
+  # 🌐 Main Frontend Application
+  - host: ai-multimodel.genspark.ai
+    http:
+      paths:
+      # Static assets with caching
+      - path: /static
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-frontend
+            port:
+              number: 80
+      
+      # Frontend application (SPA routing)
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-frontend
+            port:
+              number: 80
+  
+  # 🔗 API Endpoints
+  - host: api.ai-multimodel.genspark.ai
+    http:
+      paths:
+      # Health checks (no auth required)
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: ai-multimodel-api
+            port:
+              number: 3001
+      
+      # API v1 routes
+      - path: /api/v1
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-api
+            port:
+              number: 3001
+      
+      # API v2 routes (future)
+      - path: /api/v2
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-api
+            port:
+              number: 3001
+      
+      # Metrics endpoint (restricted)
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: ai-multimodel-monitoring
+            port:
+              number: 9090
+  
+  # 🔄 WebSocket Endpoints
+  - host: ws.ai-multimodel.genspark.ai
+    http:
+      paths:
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-api
+            port:
+              number: 3002
+
+---
+# 🔒 Network Policy for Ingress Traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-multimodel-ingress-policy
+  namespace: production
+  labels:
+    app: ai-multimodel-network-policy
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      tier: backend
+      environment: production
+  
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # 📥 Allowed Ingress Traffic
+  ingress:
+  # From ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 3001
+    - protocol: TCP
+      port: 3002
+  
+  # From monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9100
+  
+  # From same namespace (inter-pod communication)
+  - from:
+    - podSelector:
+        matchLabels:
+          environment: production
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 3001
+    - protocol: TCP
+      port: 3002
+  
+  # 📤 Allowed Egress Traffic
+  egress:
+  # To DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  
+  # To external APIs (AI providers)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+  
+  # To database
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+  
+  # To Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+
+---
+# 🌐 Additional Ingress for Alternative Domains
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-multimodel-alt-ingress
+  namespace: production
+  labels:
+    app: ai-multimodel-alt-ingress
+    tier: networking
+    environment: production
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/permanent-redirect: "https://ai-multimodel.genspark.ai$request_uri"
+spec:
+  tls:
+  - hosts:
+    - www.ai-multimodel.genspark.ai
+    - ai-multimodel.com
+    - www.ai-multimodel.com
+    secretName: ai-multimodel-alt-tls-cert
+  
+  rules:
+  # Redirect alternative domains to main domain
+  - host: www.ai-multimodel.genspark.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-frontend
+            port:
+              number: 80
+  
+  - host: ai-multimodel.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-frontend
+            port:
+              number: 80
+  
+  - host: www.ai-multimodel.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-multimodel-frontend
+            port:
+              number: 80
