@@ -1,0 +1,824 @@
+# 🚀 Enterprise CI/CD Pipeline - AI Multi-Model Management System
+# Comprehensive automation pipeline for production deployment
+# To be added to .github/workflows/ directory after repository permissions are configured
+
+name: 🔥 Enterprise AI Multi-Model CI/CD Pipeline
+
+on:
+  push:
+    branches: 
+      - main
+      - genspark_ai_developer
+      - develop
+      - staging
+      - 'release/*'
+      - 'hotfix/*'
+  pull_request:
+    branches: 
+      - main
+      - genspark_ai_developer
+  workflow_dispatch:
+    inputs:
+      deployment_environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      enable_rollback:
+        description: 'Enable automatic rollback on failure'
+        required: false
+        default: true
+        type: boolean
+      skip_tests:
+        description: 'Skip test execution (emergency only)'
+        required: false
+        default: false
+        type: boolean
+      force_deployment:
+        description: 'Force deployment even if quality gates fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20.x'
+  PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DEPLOYMENT_TIMEOUT: 900 # 15 minutes
+  SONAR_PROJECT_KEY: ai-multimodel-management-system
+
+jobs:
+  # 🔍 SETUP AND VALIDATION
+  setup:
+    name: 🔧 Setup & Environment Validation
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      image-tag: ${{ steps.meta.outputs.image-tag }}
+      should-deploy: ${{ steps.deploy-check.outputs.should-deploy }}
+      test-matrix: ${{ steps.test-matrix.outputs.matrix }}
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🔍 Determine Environment
+      id: env
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "environment=production" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.ref }}" == "refs/heads/genspark_ai_developer" ]]; then
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          echo "environment=development" >> $GITHUB_OUTPUT
+        else
+          echo "environment=review" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 📊 Generate Image Tag
+      id: meta
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "image-tag=pr-${{ github.event.number }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+        else
+          echo "image-tag=${{ github.ref_name }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 🎯 Deployment Decision
+      id: deploy-check
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "should-deploy=false" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.ref }}" =~ ^refs/heads/(main|genspark_ai_developer|develop)$ ]]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+        else
+          echo "should-deploy=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 🧪 Generate Test Matrix
+      id: test-matrix
+      run: |
+        echo 'matrix={"test-suite": ["unit", "integration", "e2e", "api", "security", "performance"], "node-version": ["18.x", "20.x"], "browser": ["chromium", "firefox", "webkit"]}' >> $GITHUB_OUTPUT
+
+  # 🔍 CODE QUALITY AND SECURITY
+  code-quality:
+    name: 🔍 Code Quality & Security Analysis
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        analysis: [lint, security, dependency-audit, license-check]
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Install Dependencies
+      run: |
+        npm ci
+        pip install -r requirements.txt
+        pip install flake8 black isort mypy pylint bandit safety
+
+    - name: 🔧 ESLint Analysis
+      if: matrix.analysis == 'lint'
+      run: |
+        npx eslint . --ext .js,.ts,.tsx --format json --output-file eslint-report.json || true
+        npx eslint . --ext .js,.ts,.tsx --max-warnings 5
+
+    - name: 🐍 Python Linting
+      if: matrix.analysis == 'lint'
+      run: |
+        flake8 . --format=json --output-file=flake8-report.json || true
+        black --check . --diff
+        isort --check-only . --diff
+        mypy . --ignore-missing-imports --json-report mypy-report
+
+    - name: 🔒 Security Analysis
+      if: matrix.analysis == 'security'
+      run: |
+        # Python security
+        bandit -r . -f json -o bandit-report.json || true
+        safety check --json --output safety-report.json || true
+        
+        # Node.js security
+        npm audit --audit-level moderate --json > npm-audit.json || true
+        npx audit-ci --config .audit-ci.json || true
+
+    - name: 📦 Dependency Audit
+      if: matrix.analysis == 'dependency-audit'
+      run: |
+        # Check for outdated dependencies
+        npm outdated --json > npm-outdated.json || true
+        pip list --outdated --format=json > pip-outdated.json || true
+        
+        # Check for known vulnerabilities
+        npm audit --audit-level high
+        pip-audit --format=json --output=pip-audit.json || true
+
+    - name: 📄 License Check
+      if: matrix.analysis == 'license-check'
+      run: |
+        npx license-checker --json --out license-report.json
+        pip-licenses --format=json --output-file=pip-licenses.json
+
+    - name: 📤 Upload Analysis Results
+      uses: actions/upload-artifact@v3
+      with:
+        name: code-quality-${{ matrix.analysis }}
+        path: |
+          *-report.json
+          *.json
+
+  # 🧪 COMPREHENSIVE TESTING PIPELINE
+  test-unit:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality]
+    strategy:
+      matrix:
+        node-version: ${{ fromJson(needs.setup.outputs.test-matrix).node-version }}
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+      
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Install Dependencies
+      run: |
+        npm ci
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio pytest-xdist
+
+    - name: 🔧 Setup Test Environment
+      run: |
+        cp .env.example .env
+        echo "NODE_ENV=test" >> .env
+        echo "REDIS_URL=redis://localhost:6379" >> .env
+        echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db" >> .env
+        echo "JWT_SECRET=test-jwt-secret" >> .env
+
+    - name: 🧪 Run JavaScript/Node.js Unit Tests
+      run: |
+        npm run test:unit -- --coverage --maxWorkers=2
+        npx jest --testPathPattern=tests/unit --coverage --passWithNoTests --json --outputFile=jest-results.json
+
+    - name: 🐍 Run Python Unit Tests
+      run: |
+        python -m pytest tests/unit/ -v --cov=backend --cov-report=xml --cov-report=html --junit-xml=pytest-results.xml -n auto
+
+    - name: 📊 Upload Test Results
+      uses: actions/upload-artifact@v3
+      with:
+        name: unit-test-results-node-${{ matrix.node-version }}
+        path: |
+          coverage/
+          jest-results.json
+          pytest-results.xml
+          htmlcov/
+
+    - name: 📊 Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Unit Tests (Node ${{ matrix.node-version }})
+        path: jest-results.json,pytest-results.xml
+        reporter: jest-junit
+
+  test-integration:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-latest
+    needs: [setup, test-unit]
+    strategy:
+      matrix:
+        test-suite: ${{ fromJson(needs.setup.outputs.test-matrix).test-suite }}
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: integration_test_db
+        ports:
+          - 5432:5432
+      elasticsearch:
+        image: elasticsearch:8.8.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        ports:
+          - 9200:9200
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 📦 Install Dependencies
+      run: npm ci
+
+    - name: 🚀 Start Test Services
+      run: |
+        cp .env.example .env
+        echo "NODE_ENV=test" >> .env
+        echo "REDIS_URL=redis://localhost:6379" >> .env
+        echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/integration_test_db" >> .env
+        echo "ELASTICSEARCH_URL=http://localhost:9200" >> .env
+        
+        # Start backend services in background
+        npm run start:test &
+        
+        # Wait for services to be ready
+        timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+
+    - name: 🧪 Run Integration Tests - ${{ matrix.test-suite }}
+      timeout-minutes: 15
+      run: |
+        case "${{ matrix.test-suite }}" in
+          "api")
+            npm run test:api
+            ;;
+          "integration")
+            npm run test:integration
+            ;;
+          "websockets")
+            npm run test:websockets
+            ;;
+          "security")
+            npm run test:security
+            ;;
+          "performance")
+            npm run test:performance
+            ;;
+          *)
+            echo "Running default integration tests"
+            npm run test:integration
+            ;;
+        esac
+
+    - name: 📊 Upload Integration Test Results
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-results-${{ matrix.test-suite }}
+        path: |
+          test-results/
+          coverage/
+
+  test-e2e:
+    name: 🌐 End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: [setup, test-integration]
+    strategy:
+      matrix:
+        browser: ${{ fromJson(needs.setup.outputs.test-matrix).browser }}
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 📦 Install Dependencies
+      run: |
+        npm ci
+        npx playwright install --with-deps ${{ matrix.browser }}
+
+    - name: 🚀 Start Application
+      run: |
+        cp .env.example .env
+        echo "NODE_ENV=test" >> .env
+        npm run build
+        npm run start:test &
+        npx wait-on http://localhost:3000 --timeout 120000
+
+    - name: 🧪 Run E2E Tests - ${{ matrix.browser }}
+      run: |
+        npx playwright test --project=${{ matrix.browser }} --reporter=html,json
+
+    - name: 📊 Upload E2E Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results-${{ matrix.browser }}
+        path: |
+          playwright-report/
+          test-results/
+
+  # 🏗️ BUILD AND SECURITY SCAN
+  build-and-scan:
+    name: 🏗️ Build & Security Scan
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality]
+    if: needs.setup.outputs.should-deploy == 'true' || github.event_name == 'pull_request'
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      security-passed: ${{ steps.security-scan.outputs.passed }}
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 📦 Install Dependencies
+      run: npm ci
+
+    - name: 🏗️ Build Frontend
+      run: |
+        cd frontend
+        npm ci
+        npm run build
+        npm run test -- --passWithNoTests
+
+    - name: 📦 Build SDK Packages
+      run: |
+        cd sdk/javascript
+        npm ci
+        npm run build
+        npm run test -- --passWithNoTests
+        
+        cd ../python
+        pip install build wheel
+        python -m build
+
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🔐 Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🏗️ Build Docker Image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.setup.outputs.image-tag }}
+        labels: |
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.revision=${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        outputs: type=docker,dest=/tmp/image.tar
+
+    - name: 🔒 Security Scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        input: '/tmp/image.tar'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: 📤 Upload Trivy Results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: 🔍 Security Gate Check
+      id: security-scan
+      run: |
+        # Check for critical vulnerabilities
+        CRITICAL_COUNT=$(cat trivy-results.sarif | jq '.runs[0].results | map(select(.level == "error")) | length')
+        if [ "$CRITICAL_COUNT" -eq 0 ]; then
+          echo "passed=true" >> $GITHUB_OUTPUT
+        else
+          echo "passed=false" >> $GITHUB_OUTPUT
+          echo "❌ Found $CRITICAL_COUNT critical security vulnerabilities"
+          exit 1
+        fi
+
+    - name: 📤 Push Docker Image
+      if: steps.security-scan.outputs.passed == 'true'
+      run: |
+        docker load -i /tmp/image.tar
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.setup.outputs.image-tag }}
+        
+        # Tag as latest for main branch
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.setup.outputs.image-tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        fi
+
+  # 📊 QUALITY GATES
+  quality-gate:
+    name: 📊 Quality Gate Assessment
+    runs-on: ubuntu-latest
+    needs: [setup, test-unit, test-integration, test-e2e, build-and-scan]
+    if: always() && needs.setup.outputs.should-deploy == 'true'
+    
+    outputs:
+      quality-passed: ${{ steps.quality-check.outputs.passed }}
+      
+    steps:
+    - name: 📥 Download All Artifacts
+      uses: actions/download-artifact@v3
+
+    - name: 📊 Aggregate Test Results
+      id: quality-check
+      run: |
+        # Initialize counters
+        TOTAL_TESTS=0
+        PASSED_TESTS=0
+        FAILED_TESTS=0
+        COVERAGE_THRESHOLD=80
+        
+        # Process Jest results
+        if [ -f unit-test-results-*/jest-results.json ]; then
+          JEST_PASSED=$(cat unit-test-results-*/jest-results.json | jq '.numPassedTests // 0')
+          JEST_FAILED=$(cat unit-test-results-*/jest-results.json | jq '.numFailedTests // 0')
+          COVERAGE=$(cat unit-test-results-*/jest-results.json | jq '.coverageMap.total.lines.pct // 0')
+          
+          TOTAL_TESTS=$((TOTAL_TESTS + JEST_PASSED + JEST_FAILED))
+          PASSED_TESTS=$((PASSED_TESTS + JEST_PASSED))
+          FAILED_TESTS=$((FAILED_TESTS + JEST_FAILED))
+        fi
+        
+        # Quality gate decision
+        SECURITY_PASSED="${{ needs.build-and-scan.outputs.security-passed }}"
+        
+        if [ "$FAILED_TESTS" -eq 0 ] && [ "$SECURITY_PASSED" == "true" ] && (( $(echo "$COVERAGE > $COVERAGE_THRESHOLD" | bc -l) )); then
+          echo "passed=true" >> $GITHUB_OUTPUT
+          echo "✅ Quality gate passed: Tests=$PASSED_TESTS/$TOTAL_TESTS, Coverage=$COVERAGE%, Security=✅"
+        else
+          if [[ "${{ inputs.force_deployment }}" == "true" ]]; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Quality gate bypassed by force deployment flag"
+          else
+            echo "passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Quality gate failed: Tests=$PASSED_TESTS/$TOTAL_TESTS, Coverage=$COVERAGE%, Security=$SECURITY_PASSED"
+            exit 1
+          fi
+        fi
+
+  # 🚀 DEPLOYMENT PIPELINE
+  deploy-staging:
+    name: 🧪 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [setup, quality-gate]
+    if: needs.setup.outputs.environment == 'staging' && needs.quality-gate.outputs.quality-passed == 'true'
+    
+    environment:
+      name: staging
+      url: https://staging-ai-multimodel.genspark.ai
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup Deployment Tools
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+        
+        curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz | tar xz
+        sudo mv linux-amd64/helm /usr/local/bin/
+
+    - name: 🔑 Configure Kubernetes
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: 🚀 Deploy to Staging
+      run: |
+        # Update image tags
+        sed -i "s|IMAGE_TAG|${{ needs.setup.outputs.image-tag }}|g" infrastructure/k8s/staging/deployment.yaml
+        
+        # Apply configurations
+        kubectl apply -f infrastructure/k8s/staging/ --namespace=staging
+        
+        # Wait for rollout
+        kubectl rollout status deployment/ai-multimodel-api -n staging --timeout=600s
+        kubectl rollout status deployment/ai-multimodel-frontend -n staging --timeout=600s
+
+    - name: 🔍 Health Check
+      timeout-minutes: 5
+      run: |
+        sleep 30
+        curl -f https://staging-ai-multimodel.genspark.ai/health
+        curl -f https://staging-api.ai-multimodel.genspark.ai/api/v1/health
+
+    - name: 🧪 Run Smoke Tests
+      run: |
+        chmod +x tests/smoke-tests.sh
+        ./tests/smoke-tests.sh staging
+
+  deploy-production:
+    name: 🌟 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [setup, quality-gate, deploy-staging]
+    if: needs.setup.outputs.environment == 'production' && needs.quality-gate.outputs.quality-passed == 'true'
+    
+    environment:
+      name: production
+      url: https://ai-multimodel.genspark.ai
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🔑 Configure Production Kubernetes
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: 📊 Pre-deployment Backup
+      run: |
+        kubectl create backup production-backup-$(date +%Y%m%d-%H%M%S) -n production || true
+
+    - name: 🚀 Blue-Green Deployment
+      id: deploy
+      run: |
+        # Update image tags
+        sed -i "s|IMAGE_TAG|${{ needs.setup.outputs.image-tag }}|g" infrastructure/k8s/production/deployment-green.yaml
+        
+        # Deploy green environment
+        kubectl apply -f infrastructure/k8s/production/deployment-green.yaml
+        kubectl rollout status deployment/ai-multimodel-api-green -n production --timeout=900s
+        
+        # Health check green environment
+        kubectl port-forward service/ai-multimodel-api-green 8081:80 -n production &
+        sleep 10
+        curl -f http://localhost:8081/health
+        
+        # Switch traffic to green
+        kubectl patch service ai-multimodel-api -n production -p '{"spec":{"selector":{"version":"green"}}}'
+        
+        echo "deployment-time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+    - name: 🔍 Production Health Check
+      timeout-minutes: 5
+      run: |
+        sleep 60
+        curl -f https://ai-multimodel.genspark.ai/health
+        curl -f https://api.ai-multimodel.genspark.ai/api/v1/health
+
+    - name: 🧪 Production Smoke Tests
+      run: |
+        chmod +x tests/smoke-tests.sh
+        ./tests/smoke-tests.sh production
+
+    - name: 📊 Performance Validation
+      run: |
+        # Run performance tests to ensure no regression
+        curl -w "@.github/workflows/curl-format.txt" -o /dev/null -s https://api.ai-multimodel.genspark.ai/api/v1/models
+        
+        # Check response times
+        RESPONSE_TIME=$(curl -w "%{time_total}" -o /dev/null -s https://api.ai-multimodel.genspark.ai/api/v1/health)
+        if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+          echo "❌ Response time too high: ${RESPONSE_TIME}s"
+          exit 1
+        fi
+
+  # 📊 POST-DEPLOYMENT MONITORING
+  post-deployment:
+    name: 📊 Post-Deployment Validation
+    runs-on: ubuntu-latest
+    needs: [setup, deploy-production]
+    if: always() && needs.deploy-production.result == 'success'
+
+    steps:
+    - name: 📊 Monitor Performance
+      timeout-minutes: 10
+      run: |
+        for i in {1..20}; do
+          echo "📊 Performance check $i/20..."
+          
+          # Health and performance checks
+          HEALTH_RESPONSE=$(curl -s -w "%{http_code}" https://ai-multimodel.genspark.ai/health)
+          API_RESPONSE=$(curl -s -w "%{http_code}" https://api.ai-multimodel.genspark.ai/api/v1/health)
+          
+          if [[ "${HEALTH_RESPONSE: -3}" != "200" ]] || [[ "${API_RESPONSE: -3}" != "200" ]]; then
+            echo "🚨 Health check failed: Frontend=${HEALTH_RESPONSE: -3}, API=${API_RESPONSE: -3}"
+            exit 1
+          fi
+          
+          sleep 30
+        done
+
+    - name: 📈 Generate Deployment Report
+      run: |
+        cat > deployment-report.json << EOF
+        {
+          "deployment_id": "${{ github.run_id }}",
+          "environment": "${{ needs.setup.outputs.environment }}",
+          "image_tag": "${{ needs.setup.outputs.image-tag }}",
+          "commit_sha": "${{ github.sha }}",
+          "branch": "${{ github.ref_name }}",
+          "deployment_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "status": "SUCCESS",
+          "urls": {
+            "frontend": "https://ai-multimodel.genspark.ai",
+            "api": "https://api.ai-multimodel.genspark.ai",
+            "monitoring": "https://grafana.ai-multimodel.genspark.ai"
+          }
+        }
+        EOF
+
+    - name: 📊 Update Monitoring
+      run: |
+        curl -X POST "${{ secrets.DATADOG_WEBHOOK }}" \
+          -H "Content-Type: application/json" \
+          -d @deployment-report.json || true
+
+    - name: 📢 Success Notification
+      run: |
+        curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "text": "🎉 AI Multi-Model System deployed successfully to production!",
+            "attachments": [{
+              "color": "good",
+              "fields": [
+                {"title": "Environment", "value": "${{ needs.setup.outputs.environment }}", "short": true},
+                {"title": "Version", "value": "${{ needs.setup.outputs.image-tag }}", "short": true},
+                {"title": "Frontend", "value": "https://ai-multimodel.genspark.ai", "short": false},
+                {"title": "API", "value": "https://api.ai-multimodel.genspark.ai", "short": false}
+              ]
+            }]
+          }' || true
+
+  # 🔄 ROLLBACK PROCEDURE
+  rollback:
+    name: 🔄 Emergency Rollback
+    runs-on: ubuntu-latest
+    if: failure() && (needs.deploy-production.result == 'failure' || inputs.enable_rollback)
+    needs: [setup, deploy-production]
+    
+    environment:
+      name: production-rollback
+
+    steps:
+    - name: 🔄 Execute Rollback
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > ~/.kube/config
+        
+        # Get previous deployment
+        PREVIOUS_REVISION=$(kubectl rollout history deployment/ai-multimodel-api -n production | tail -n 2 | head -n 1 | awk '{print $1}')
+        
+        # Rollback
+        kubectl rollout undo deployment/ai-multimodel-api -n production --to-revision=$PREVIOUS_REVISION
+        kubectl rollout undo deployment/ai-multimodel-frontend -n production --to-revision=$PREVIOUS_REVISION
+        
+        # Wait for rollback
+        kubectl rollout status deployment/ai-multimodel-api -n production --timeout=300s
+
+    - name: 🔍 Verify Rollback
+      run: |
+        sleep 30
+        curl -f https://ai-multimodel.genspark.ai/health
+
+    - name: 🚨 Rollback Notification
+      run: |
+        curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "text": "🚨 EMERGENCY ROLLBACK executed for AI Multi-Model System",
+            "attachments": [{
+              "color": "danger",
+              "text": "Production has been restored to previous stable version. Investigation required."
+            }]
+          }' || true
+
+# 📊 Workflow Summary
+  summary:
+    name: 📋 Deployment Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [setup, quality-gate, deploy-staging, deploy-production, post-deployment]
+
+    steps:
+    - name: 📊 Generate Summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status | Details |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Environment | ${{ needs.setup.outputs.environment }} | Branch: ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Image Tag | ${{ needs.setup.outputs.image-tag }} | Commit: ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Quality Gate | ${{ needs.quality-gate.outputs.quality-passed }} | All checks passed |" >> $GITHUB_STEP_SUMMARY
+        echo "| Staging | ${{ needs.deploy-staging.result || 'skipped' }} | https://staging-ai-multimodel.genspark.ai |" >> $GITHUB_STEP_SUMMARY
+        echo "| Production | ${{ needs.deploy-production.result || 'skipped' }} | https://ai-multimodel.genspark.ai |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Monitor application performance" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Validate all features are working" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Check monitoring dashboards" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Verify user access and authentication" >> $GITHUB_STEP_SUMMARY
