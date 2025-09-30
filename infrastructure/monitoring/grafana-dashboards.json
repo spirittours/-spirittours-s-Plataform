@@ -1,0 +1,253 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "🚀 AI Multi-Model Management System - Enterprise Dashboard",
+    "tags": ["ai", "multimodel", "enterprise", "production"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "🎯 System Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"ai-multimodel-api\"}",
+            "legendFormat": "API Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "📊 Request Rate (RPS)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ai_multimodel:requests_per_second_5m",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests per Second"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "⏱️ Response Time Percentiles",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ai_multimodel:api_response_time_p95_5m",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "ai_multimodel:api_response_time_p99_5m", 
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (seconds)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "🧠 AI Model Performance",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "ai_multimodel:model_response_time_avg_5m",
+            "legendFormat": "{{model_name}}",
+            "format": "table"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "model_name": "AI Model",
+                "Value": "Avg Response Time (s)"
+              }
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "❌ Error Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "ai_multimodel:error_rate_5m * 100",
+            "legendFormat": "Error Rate %"
+          }
+        ],
+        "valueMaps": [
+          {
+            "value": "null",
+            "text": "N/A"
+          }
+        ],
+        "thresholds": "2,5",
+        "colorBackground": true,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "💰 Cost Analytics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ai_cost_per_request_usd",
+            "legendFormat": "Cost per Request ($)"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "USD"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 7,
+        "title": "📈 Business Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(user_sessions_total[5m])",
+            "legendFormat": "User Sessions/sec"
+          },
+          {
+            "expr": "rate(revenue_generated_usd_total[5m])",
+            "legendFormat": "Revenue/sec ($)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "🔧 Resource Utilization",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ai_multimodel:cpu_utilization_avg * 100",
+            "legendFormat": "CPU % - {{container_name}}"
+          },
+          {
+            "expr": "ai_multimodel:memory_utilization_avg * 100",
+            "legendFormat": "Memory % - {{container_name}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Percentage",
+            "max": 100
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32}
+      },
+      {
+        "id": 9,
+        "title": "🔐 Security Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(authentication_failures_total[5m])",
+            "legendFormat": "Auth Failures/sec"
+          },
+          {
+            "expr": "rate(api_requests_total{status=\"401\"}[5m])",
+            "legendFormat": "Unauthorized Requests/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40}
+      },
+      {
+        "id": 10,
+        "title": "🌐 WebSocket Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "websocket_connections_active",
+            "legendFormat": "Active Connections"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 40}
+      },
+      {
+        "id": 11,
+        "title": "🗄️ Database Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "postgresql_connections_active",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "postgresql_slow_queries_total",
+            "legendFormat": "Slow Queries"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 48}
+      },
+      {
+        "id": 12,
+        "title": "📦 Redis Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "redis_connected_clients",
+            "legendFormat": "Connected Clients"
+          },
+          {
+            "expr": "redis_keyspace_hits_total - redis_keyspace_misses_total",
+            "legendFormat": "Cache Hit Rate"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 48}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "version": 1,
+    "links": [
+      {
+        "title": "🚨 Alerts",
+        "url": "/alerting/list",
+        "type": "link"
+      },
+      {
+        "title": "📊 Prometheus",
+        "url": "/prometheus",
+        "type": "link"
+      }
+    ]
+  }
+}
