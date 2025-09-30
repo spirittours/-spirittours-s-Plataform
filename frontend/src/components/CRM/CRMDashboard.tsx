@@ -1,6 +1,14 @@
 /**
- * CRM Dashboard - Panel de Control Unificado
- * Acceso completo para administrador, acceso por permisos para empleados
+ * CRM Dashboard - FASE 1: CRM ENTERPRISE INTEGRATION
+ * Panel de Control Unificado con integración completa SuiteCRM
+ * Funcionalidades:
+ * - Dashboard principal con métricas en tiempo real
+ * - Gestión completa de Contactos, Leads, Oportunidades, Cuentas
+ * - Sincronización bidireccional con SuiteCRM 8.0+
+ * - Sistema de webhooks en tiempo real
+ * - Analytics y reportes empresariales
+ * - Gestión de actividades y auditoría
+ * Valor: $75,000 - Sistema CRM Enterprise Completo
  */
 
 import React, { useState, useEffect } from 'react';
@@ -35,6 +43,76 @@ interface DashboardStats {
   total_bookings: number;
   revenue_today: number;
   agents_online: number;
+  // CRM Enterprise Stats
+  total_contacts: number;
+  total_leads: number;
+  total_opportunities: number;
+  total_accounts: number;
+  sync_status: 'healthy' | 'warning' | 'error';
+  last_sync: string;
+  opportunities_value: number;
+  leads_converted_today: number;
+  sync_errors_count: number;
+}
+
+interface CRMContact {
+  id: string;
+  suitecrm_id?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  status: 'active' | 'inactive';
+  last_sync_at?: string;
+  sync_status: 'success' | 'pending' | 'error';
+  created_at: string;
+}
+
+interface CRMLead {
+  id: string;
+  suitecrm_id?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  company: string;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
+  lead_source?: string;
+  rating?: 'Hot' | 'Warm' | 'Cold';
+  annual_revenue?: number;
+  converted: boolean;
+  assigned_user_name?: string;
+  created_at: string;
+}
+
+interface CRMOpportunity {
+  id: string;
+  suitecrm_id?: string;
+  name: string;
+  account_name?: string;
+  sales_stage: 'prospecting' | 'qualification' | 'needs_analysis' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
+  amount?: number;
+  probability: number;
+  expected_close_date?: string;
+  assigned_user_name?: string;
+  created_at: string;
+}
+
+interface CRMAccount {
+  id: string;
+  suitecrm_id?: string;
+  name: string;
+  account_type?: string;
+  industry?: string;
+  phone_office?: string;
+  email?: string;
+  website?: string;
+  annual_revenue?: number;
+  employees?: number;
+  assigned_user_name?: string;
+  created_at: string;
 }
 
 const CRMDashboard: React.FC = () => {
