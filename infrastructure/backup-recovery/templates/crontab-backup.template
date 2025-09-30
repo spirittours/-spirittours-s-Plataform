@@ -1,0 +1,191 @@
+# =============================================================================
+# AI Multi-Model Platform - Backup Crontab Template
+# Automated backup scheduling configuration
+# =============================================================================
+
+# Environment Variables
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=admin@company.com
+HOME=/root
+
+# Backup Configuration
+BACKUP_SCRIPT=/opt/ai-platform/infrastructure/backup-recovery/scripts/automated-backup.sh
+SCHEDULER_SCRIPT=/opt/ai-platform/infrastructure/backup-recovery/scripts/backup-scheduler.sh
+DR_TEST_SCRIPT=/opt/ai-platform/infrastructure/backup-recovery/scripts/dr-test-runner.sh
+
+# =============================================================================
+# PRODUCTION BACKUP SCHEDULE
+# =============================================================================
+
+# Daily Full Backup (2:00 AM every day)
+# Comprehensive backup of all system components
+0 2 * * * $BACKUP_SCRIPT >/dev/null 2>&1
+
+# Incremental Database Backup (every 4 hours during business hours)
+# Quick database snapshots for minimal RPO
+0 6,10,14,18,22 * * * $BACKUP_SCRIPT --type incremental --components database >/dev/null 2>&1
+
+# Configuration Backup (daily at 1:30 AM)
+# Backup system configurations and certificates
+30 1 * * * $BACKUP_SCRIPT --type configuration >/dev/null 2>&1
+
+# Weekly Comprehensive Backup (Sunday 3:00 AM)
+# Full system backup with extended retention
+0 3 * * 0 $BACKUP_SCRIPT --type full --retention-days 90 >/dev/null 2>&1
+
+# Monthly Archive Backup (1st of month, 4:00 AM)
+# Long-term archive with extended retention
+0 4 1 * * $BACKUP_SCRIPT --type archive --retention-days 365 >/dev/null 2>&1
+
+# =============================================================================
+# DISASTER RECOVERY TESTING
+# =============================================================================
+
+# Monthly DR Test (2nd Sunday of month, 5:00 AM)
+# Comprehensive disaster recovery testing
+0 5 8-14 * 0 $DR_TEST_SCRIPT run --environment staging >/dev/null 2>&1
+
+# Weekly Backup Integrity Check (Wednesday 3:30 AM)
+# Verify backup files integrity
+30 3 * * 3 $DR_TEST_SCRIPT test-integrity >/dev/null 2>&1
+
+# Bi-weekly Database Recovery Test (1st and 3rd Friday, 6:00 AM)
+# Test database recovery procedures
+0 6 1-7,15-21 * 5 $DR_TEST_SCRIPT test-database --environment staging >/dev/null 2>&1
+
+# =============================================================================
+# BACKUP MAINTENANCE
+# =============================================================================
+
+# Daily Backup Health Check (7:00 AM every day)
+# Monitor backup system health and performance
+0 7 * * * $SCHEDULER_SCRIPT health-check >/dev/null 2>&1
+
+# Weekly Backup Cleanup (Saturday 11:00 PM)
+# Remove expired backups and cleanup old files
+0 23 * * 6 $SCHEDULER_SCRIPT cleanup --retention-days 30 >/dev/null 2>&1
+
+# Monthly Backup Statistics Report (1st of month, 8:00 AM)
+# Generate and send backup statistics report
+0 8 1 * * $SCHEDULER_SCRIPT status --days 30 --report-email admin@company.com >/dev/null 2>&1
+
+# =============================================================================
+# MONITORING AND ALERTING
+# =============================================================================
+
+# Backup Status Check (every 30 minutes during business hours)
+# Monitor ongoing backup operations
+*/30 8-18 * * 1-5 $SCHEDULER_SCRIPT status --check-running >/dev/null 2>&1
+
+# Daily Backup Success Verification (8:30 AM every day)
+# Verify previous day's backups completed successfully
+30 8 * * * $SCHEDULER_SCRIPT verify --date yesterday >/dev/null 2>&1
+
+# =============================================================================
+# DEVELOPMENT/STAGING SCHEDULE (Uncomment for non-production)
+# =============================================================================
+
+# # Staging Daily Backup (11:00 PM every day)
+# 0 23 * * * $BACKUP_SCRIPT --environment staging >/dev/null 2>&1
+
+# # Development Weekly Backup (Sunday 10:00 PM)
+# 0 22 * * 0 $BACKUP_SCRIPT --environment development >/dev/null 2>&1
+
+# =============================================================================
+# CONDITIONAL BACKUP JOBS
+# =============================================================================
+
+# Before Major Deployments (Manual trigger recommended)
+# Use: echo "0 * * * * $BACKUP_SCRIPT --type pre-deployment" | crontab -
+
+# Before Security Updates (Manual trigger recommended)  
+# Use: echo "0 * * * * $BACKUP_SCRIPT --type pre-security-update" | crontab -
+
+# =============================================================================
+# EMERGENCY PROCEDURES
+# =============================================================================
+
+# Emergency Backup (can be triggered manually)
+# Use: $BACKUP_SCRIPT --type emergency --priority high
+
+# Emergency DR Test (can be triggered manually)
+# Use: $DR_TEST_SCRIPT run --emergency --timeout 3600
+
+# =============================================================================
+# BACKUP RETENTION POLICIES
+# =============================================================================
+
+# Daily backups: 30 days retention
+# Weekly backups: 90 days retention  
+# Monthly backups: 365 days retention
+# Archive backups: 7 years retention (compliance)
+
+# =============================================================================
+# NOTIFICATION SETUP
+# =============================================================================
+
+# All backup jobs send notifications via webhook and email
+# Configure NOTIFICATION_WEBHOOK and NOTIFICATION_EMAIL in backup.conf
+# Slack notifications configured via SLACK_WEBHOOK_URL
+# PagerDuty integration via PAGERDUTY_INTEGRATION_KEY
+
+# =============================================================================
+# PERFORMANCE CONSIDERATIONS
+# =============================================================================
+
+# Backup jobs scheduled during off-peak hours (1:00 AM - 6:00 AM)
+# Staggered execution to avoid resource conflicts
+# I/O priority set to minimize impact on production workloads
+# Bandwidth limits configured for remote storage uploads
+
+# =============================================================================
+# SECURITY NOTES
+# =============================================================================
+
+# All backups encrypted with AES-256-GCM
+# Encryption keys stored securely in /etc/ai-platform/backup.key
+# Remote storage uses IAM roles and encrypted transport
+# Backup files have restricted permissions (640, root:backup)
+
+# =============================================================================
+# TROUBLESHOOTING
+# =============================================================================
+
+# Check backup logs: tail -f /var/log/ai-platform/backup.log
+# Check cron logs: grep CRON /var/log/syslog
+# Manual backup test: $BACKUP_SCRIPT --dry-run
+# Manual DR test: $DR_TEST_SCRIPT test-integrity --dry-run
+
+# =============================================================================
+# CUSTOMIZATION NOTES
+# =============================================================================
+
+# 1. Adjust backup times based on your maintenance window
+# 2. Modify retention policies based on compliance requirements  
+# 3. Update notification endpoints in backup configuration
+# 4. Add custom backup hooks for application-specific procedures
+# 5. Configure bandwidth limits for remote storage based on network capacity
+
+# =============================================================================
+# INSTALLATION INSTRUCTIONS
+# =============================================================================
+
+# 1. Copy this template to /etc/cron.d/ai-platform-backup
+# 2. Ensure scripts have execute permissions:
+#    chmod +x /opt/ai-platform/infrastructure/backup-recovery/scripts/*.sh
+# 3. Test configuration: 
+#    crontab -T /etc/cron.d/ai-platform-backup
+# 4. Install crontab:
+#    crontab /etc/cron.d/ai-platform-backup
+# 5. Verify installation:
+#    crontab -l
+
+# =============================================================================
+# MAINTENANCE SCHEDULE
+# =============================================================================
+
+# Monthly review of backup schedules and retention policies
+# Quarterly DR test execution and procedure validation
+# Annual review of backup and recovery procedures
+# Update backup schedules after major system changes
