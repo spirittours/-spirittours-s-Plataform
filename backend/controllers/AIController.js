@@ -6,6 +6,7 @@
 
 const AgentManager = require('../ai/AgentManager');
 const MultiModelAI = require('../ai/MultiModelAI');
+const AIMultiModelManager = require('../services/ai/AIMultiModelManager');
 const logger = require('../services/logging/logger');
 const Redis = require('redis');
 const { validateInput } = require('../utils/validation');
@@ -24,6 +25,16 @@ class AIController {
 
         // Sistema AI independiente para operaciones directas
         this.multiAI = new MultiModelAI();
+
+        // FASE 2: AI Multi-Model Manager Enterprise
+        this.aiManager = new AIMultiModelManager({
+            defaultModel: process.env.AI_DEFAULT_MODEL || 'gpt-4',
+            cacheEnabled: true,
+            rateLimitEnabled: true,
+            loadBalancing: true,
+            maxRetries: 3,
+            timeout: 120000
+        });
 
         // Redis para cache y sesiones
         this.redis = Redis.createClient({
@@ -270,7 +281,453 @@ class AIController {
         }
     }
 
-    // ===== OPERACIONES DIRECTAS DE AI =====
+    // ===== FASE 2: OPERACIONES AI MULTI-MODELO =====
+
+    /**
+     * Procesar request con modelo específico (FASE 2)
+     */
+    async processAIRequest(req, res) {
+        try {
+            const { 
+                prompt, 
+                modelId = 'auto', 
+                temperature = 0.7,
+                maxTokens = null,
+                useCase = 'general',
+                priority = 'normal',
+                metadata = {}
+            } = req.body;
+            const userId = req.user?.id;
+
+            // Validaciones
+            if (!prompt) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Prompt is required'
+                });
+            }
+
+            if (prompt.length > 50000) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Prompt too long. Maximum 50,000 characters.'
+                });
+            }
+
+            logger.info('AI Multi-Model request', {
+                modelId,
+                useCase,
+                promptLength: prompt.length,
+                userId
+            });
+
+            // Procesar con AI Manager
+            const result = await this.aiManager.processRequest({
+                prompt,
+                modelId,
+                temperature,
+                maxTokens,
+                useCase,
+                priority,
+                userId,
+                metadata
+            });
+
+            // Registrar para analytics
+            await this.logAIRequest(userId, modelId, useCase, result);
+
+            res.json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Error in AI multi-model request', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to process AI request',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Procesar múltiples requests en paralelo (FASE 2)
+     */
+    async processMultipleRequests(req, res) {
+        try {
+            const { requests = [] } = req.body;
+            const userId = req.user?.id;
+
+            if (!Array.isArray(requests) || requests.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Requests array is required'
+                });
+            }
+
+            if (requests.length > 10) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Maximum 10 parallel requests allowed'
+                });
+            }
+
+            logger.info('Multiple AI requests', {
+                requestCount: requests.length,
+                userId
+            });
+
+            // Agregar userId a cada request
+            const enrichedRequests = requests.map(req => ({
+                ...req,
+                userId,
+                metadata: {
+                    ...req.metadata,
+                    batchRequest: true,
+                    batchId: Date.now()
+                }
+            }));
+
+            const results = await this.aiManager.processMultipleRequests(enrichedRequests);
+
+            res.json({
+                success: true,
+                data: {
+                    results,
+                    summary: {
+                        total: results.length,
+                        successful: results.filter(r => r.success).length,
+                        failed: results.filter(r => !r.success).length
+                    }
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error in multiple AI requests', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to process multiple requests',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Procesar request con consenso entre modelos (FASE 2)
+     */
+    async processConsensusRequest(req, res) {
+        try {
+            const { 
+                prompt, 
+                modelIds = ['gpt-4', 'claude-3.5-sonnet', 'gemini-2.0-flash'], 
+                options = {} 
+            } = req.body;
+            const userId = req.user?.id;
+
+            if (!prompt) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Prompt is required'
+                });
+            }
+
+            if (modelIds.length < 2) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'At least 2 models required for consensus'
+                });
+            }
+
+            logger.info('AI consensus request', {
+                modelIds,
+                promptLength: prompt.length,
+                userId
+            });
+
+            const result = await this.aiManager.processConsensusRequest(prompt, modelIds, {
+                ...options,
+                userId,
+                metadata: {
+                    consensusRequest: true,
+                    timestamp: new Date()
+                }
+            });
+
+            res.json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Error in consensus request', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to process consensus request',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener modelos disponibles (FASE 2)
+     */
+    async getAvailableModels(req, res) {
+        try {
+            const models = this.aiManager.getAvailableModels();
+
+            res.json({
+                success: true,
+                data: {
+                    models,
+                    totalModels: models.length,
+                    availableModels: models.filter(m => m.available).length,
+                    providers: [...new Set(models.map(m => m.provider))],
+                    timestamp: new Date()
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error getting available models', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get available models',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener métricas de AI Manager (FASE 2)
+     */
+    async getAIManagerMetrics(req, res) {
+        try {
+            const metrics = this.aiManager.getMetrics();
+
+            res.json({
+                success: true,
+                data: metrics
+            });
+
+        } catch (error) {
+            logger.error('Error getting AI manager metrics', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get AI manager metrics',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Configurar modelo por defecto (FASE 2)
+     */
+    async setDefaultModel(req, res) {
+        try {
+            const { modelId } = req.body;
+
+            if (!modelId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Model ID is required'
+                });
+            }
+
+            this.aiManager.setDefaultModel(modelId);
+
+            logger.info('Default model updated', { 
+                modelId, 
+                userId: req.user?.id 
+            });
+
+            res.json({
+                success: true,
+                message: `Default model set to ${modelId}`,
+                data: {
+                    defaultModel: modelId,
+                    timestamp: new Date()
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error setting default model', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to set default model',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Test de modelos individuales o consenso (FASE 2)
+     */
+    async testModels(req, res) {
+        try {
+            const { 
+                prompt, 
+                modelIds = [], 
+                consensusMode = false,
+                options = {} 
+            } = req.body;
+            const userId = req.user?.id;
+
+            if (!prompt) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Prompt is required for testing'
+                });
+            }
+
+            logger.info('AI models test request', {
+                modelIds,
+                consensusMode,
+                promptLength: prompt.length,
+                userId
+            });
+
+            let result;
+
+            if (consensusMode && modelIds.length > 1) {
+                // Test de consenso
+                result = await this.aiManager.processConsensusRequest(prompt, modelIds, {
+                    ...options,
+                    testMode: true,
+                    userId
+                });
+            } else {
+                // Test individual
+                const modelId = modelIds[0] || this.aiManager.config.defaultModel;
+                result = await this.aiManager.processRequest({
+                    prompt,
+                    modelId,
+                    ...options,
+                    testMode: true,
+                    userId
+                });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    testType: consensusMode ? 'consensus' : 'individual',
+                    ...result
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error in model testing', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to test models',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener configuración de AI Manager (FASE 2)
+     */
+    async getAIConfig(req, res) {
+        try {
+            const config = {
+                defaultModel: this.aiManager.config.defaultModel,
+                cacheEnabled: this.aiManager.config.cacheEnabled,
+                rateLimitEnabled: this.aiManager.config.rateLimitEnabled,
+                loadBalancing: this.aiManager.config.loadBalancing,
+                maxRetries: this.aiManager.config.maxRetries,
+                timeout: this.aiManager.config.timeout,
+                availableModels: Object.keys(this.aiManager.models)
+            };
+
+            res.json({
+                success: true,
+                data: config
+            });
+
+        } catch (error) {
+            logger.error('Error getting AI config', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get AI configuration',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Actualizar configuración de AI Manager (FASE 2)
+     */
+    async updateAIConfig(req, res) {
+        try {
+            const { 
+                defaultModel,
+                cacheEnabled,
+                rateLimitEnabled,
+                loadBalancing,
+                maxRetries,
+                timeout 
+            } = req.body;
+
+            // Actualizar configuración
+            if (defaultModel !== undefined) {
+                this.aiManager.setDefaultModel(defaultModel);
+            }
+
+            if (cacheEnabled !== undefined) {
+                this.aiManager.config.cacheEnabled = cacheEnabled;
+            }
+
+            if (rateLimitEnabled !== undefined) {
+                this.aiManager.config.rateLimitEnabled = rateLimitEnabled;
+            }
+
+            if (loadBalancing !== undefined) {
+                this.aiManager.config.loadBalancing = loadBalancing;
+            }
+
+            if (maxRetries !== undefined) {
+                this.aiManager.config.maxRetries = maxRetries;
+            }
+
+            if (timeout !== undefined) {
+                this.aiManager.config.timeout = timeout;
+            }
+
+            logger.info('AI configuration updated', {
+                userId: req.user?.id,
+                updates: req.body
+            });
+
+            res.json({
+                success: true,
+                message: 'AI configuration updated successfully',
+                data: {
+                    config: this.aiManager.config,
+                    timestamp: new Date()
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error updating AI config', error);
+
+            res.status(500).json({
+                success: false,
+                message: 'Failed to update AI configuration',
+                error: error.message
+            });
+        }
+    }
+
+    // ===== OPERACIONES DIRECTAS DE AI ORIGINALES =====
 
     /**
      * Generar respuesta directa con modelo específico
@@ -819,6 +1276,34 @@ Síntesis:`;
     }
 
     /**
+     * FASE 2: Registrar request de AI Manager
+     */
+    async logAIRequest(userId, modelId, useCase, result) {
+        try {
+            const aiRequest = {
+                userId,
+                requestedModel: modelId,
+                actualModel: result.model,
+                useCase,
+                success: result.success,
+                cached: result.cached || false,
+                processingTime: result.processingTime,
+                tokensUsed: result.tokensUsed || 0,
+                estimatedCost: result.estimatedCost || 0,
+                timestamp: new Date()
+            };
+
+            const key = `ai_request:${Date.now()}:${Math.random().toString(36).substr(2, 9)}`;
+            await this.redis.setex(key, this.CACHE_TTL.conversations, JSON.stringify(aiRequest));
+
+            logger.debug('AI request logged', { key, userId, modelId, useCase });
+
+        } catch (error) {
+            logger.error('Error logging AI request', error);
+        }
+    }
+
+    /**
      * Registrar comparación de modelos
      */
     async logModelComparison(userId, prompt, result) {
@@ -891,6 +1376,348 @@ Síntesis:`;
         }
     }
 
+    // ===== FASE 2: AI MULTI-MODELO ENTERPRISE METHODS =====
+
+    /**
+     * Procesar request con AI Multi-Modelo Manager
+     */
+    async processAIRequest(req, res) {
+        try {
+            const { prompt, modelId, temperature, maxTokens, useCase, priority, metadata } = req.body;
+            const userId = req.user?.id;
+
+            logger.info('AI Multi-Model request', {
+                modelId,
+                useCase,
+                priority,
+                promptLength: prompt.length,
+                userId
+            });
+
+            const result = await this.aiManager.processRequest({
+                prompt,
+                modelId,
+                temperature,
+                maxTokens,
+                useCase,
+                priority,
+                userId,
+                metadata
+            });
+
+            // Registrar request
+            await this.logAIRequest(userId, modelId, useCase, result);
+
+            res.json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Error in AI Multi-Model request', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to process AI request',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Procesar múltiples requests en paralelo
+     */
+    async processMultipleRequests(req, res) {
+        try {
+            const { requests } = req.body;
+            const userId = req.user?.id;
+
+            logger.info('Multiple AI requests', {
+                requestCount: requests.length,
+                userId
+            });
+
+            const results = await Promise.allSettled(
+                requests.map(request => 
+                    this.aiManager.processRequest({
+                        ...request,
+                        userId
+                    })
+                )
+            );
+
+            const processedResults = results.map((result, index) => ({
+                index,
+                success: result.status === 'fulfilled',
+                data: result.status === 'fulfilled' ? result.value : null,
+                error: result.status === 'rejected' ? result.reason.message : null
+            }));
+
+            res.json({
+                success: true,
+                data: {
+                    results: processedResults,
+                    totalRequests: requests.length,
+                    successfulRequests: processedResults.filter(r => r.success).length
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error in multiple AI requests', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to process multiple AI requests',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Procesar request con consenso entre múltiples modelos
+     */
+    async processConsensusRequest(req, res) {
+        try {
+            const { prompt, modelIds } = req.body;
+            const userId = req.user?.id;
+
+            logger.info('AI Consensus request', {
+                modelIds,
+                promptLength: prompt.length,
+                userId
+            });
+
+            const result = await this.aiManager.processConsensusRequest({
+                prompt,
+                modelIds,
+                userId
+            });
+
+            res.json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Error in AI consensus request', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to process consensus request',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener modelos disponibles (FASE 2)
+     */
+    async getAvailableModels(req, res) {
+        try {
+            const models = this.aiManager.getAvailableModels();
+            
+            res.json({
+                success: true,
+                data: {
+                    models,
+                    totalModels: Object.keys(models).length,
+                    defaultModel: this.aiManager.config.defaultModel
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error getting available models', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get available models',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener métricas del AI Manager (FASE 2)
+     */
+    async getAIManagerMetrics(req, res) {
+        try {
+            const metrics = await this.aiManager.getMetrics();
+            
+            res.json({
+                success: true,
+                data: metrics
+            });
+
+        } catch (error) {
+            logger.error('Error getting AI Manager metrics', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get AI Manager metrics',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Configurar modelo por defecto (FASE 2)
+     */
+    async setDefaultModel(req, res) {
+        try {
+            const { modelId } = req.body;
+            const userId = req.user?.id;
+
+            logger.info('Setting default model', {
+                modelId,
+                userId
+            });
+
+            await this.aiManager.setDefaultModel(modelId);
+
+            res.json({
+                success: true,
+                message: 'Default model updated successfully',
+                data: {
+                    defaultModel: modelId
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error setting default model', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to set default model',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Test de modelos individuales o consenso (FASE 2)
+     */
+    async testModels(req, res) {
+        try {
+            const { prompt, modelIds, consensusMode } = req.body;
+            const userId = req.user?.id;
+
+            logger.info('Testing AI models', {
+                modelIds: modelIds || 'all',
+                consensusMode,
+                userId
+            });
+
+            let result;
+            if (consensusMode) {
+                result = await this.aiManager.processConsensusRequest({
+                    prompt,
+                    modelIds,
+                    userId
+                });
+            } else {
+                // Test individual models
+                const testModelIds = modelIds || Object.keys(this.aiManager.getAvailableModels());
+                const testResults = await Promise.allSettled(
+                    testModelIds.map(modelId =>
+                        this.aiManager.processRequest({
+                            prompt,
+                            modelId,
+                            userId,
+                            metadata: { isTest: true }
+                        })
+                    )
+                );
+
+                result = {
+                    testType: 'individual',
+                    results: testResults.map((test, index) => ({
+                        modelId: testModelIds[index],
+                        success: test.status === 'fulfilled',
+                        data: test.status === 'fulfilled' ? test.value : null,
+                        error: test.status === 'rejected' ? test.reason.message : null
+                    }))
+                };
+            }
+
+            res.json({
+                success: true,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Error testing models', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to test models',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Obtener configuración de AI Manager (FASE 2)
+     */
+    async getAIConfig(req, res) {
+        try {
+            const config = {
+                defaultModel: this.aiManager.config.defaultModel,
+                cacheEnabled: this.aiManager.config.cacheEnabled,
+                rateLimitEnabled: this.aiManager.config.rateLimitEnabled,
+                loadBalancing: this.aiManager.config.loadBalancing,
+                maxRetries: this.aiManager.config.maxRetries,
+                timeout: this.aiManager.config.timeout,
+                availableModels: Object.keys(this.aiManager.getAvailableModels()),
+                totalModels: Object.keys(this.aiManager.getAvailableModels()).length
+            };
+
+            res.json({
+                success: true,
+                data: config
+            });
+
+        } catch (error) {
+            logger.error('Error getting AI config', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get AI configuration',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Actualizar configuración de AI Manager (FASE 2)
+     */
+    async updateAIConfig(req, res) {
+        try {
+            const updates = req.body;
+            const userId = req.user?.id;
+
+            logger.info('Updating AI config', {
+                updates,
+                userId
+            });
+
+            // Aplicar actualizaciones
+            Object.keys(updates).forEach(key => {
+                if (this.aiManager.config.hasOwnProperty(key)) {
+                    this.aiManager.config[key] = updates[key];
+                }
+            });
+
+            res.json({
+                success: true,
+                message: 'AI configuration updated successfully',
+                data: {
+                    updatedConfig: updates,
+                    currentConfig: this.aiManager.config
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error updating AI config', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to update AI configuration',
+                error: error.message
+            });
+        }
+    }
+
     /**
      * Cerrar conexiones
      */
@@ -898,6 +1725,10 @@ Síntesis:`;
         try {
             await this.agentManager.disconnect();
             await this.multiAI.disconnect();
+            // FASE 2: Desconectar AI Manager
+            if (this.aiManager && this.aiManager.redis) {
+                await this.aiManager.redis.quit();
+            }
             await this.redis.quit();
             logger.info('AI Controller disconnected');
         } catch (error) {
