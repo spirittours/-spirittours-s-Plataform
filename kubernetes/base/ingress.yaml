@@ -1,0 +1,276 @@
+# Ingress Configuration for Spirit Tours Platform
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spirit-tours-ingress
+  namespace: default
+  annotations:
+    # SSL/TLS Configuration
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
+    nginx.ingress.kubernetes.io/limit-connections: "20"
+    
+    # Security Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.spirit-tours.com wss://ws.spirit-tours.com";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      more_set_headers "Permissions-Policy: geolocation=(self), microphone=(), camera=()";
+    
+    # Compression
+    nginx.ingress.kubernetes.io/enable-compression: "true"
+    nginx.ingress.kubernetes.io/compression-types: "text/plain text/css text/xml text/javascript application/javascript application/json application/xml+rss application/pdf image/svg+xml"
+    
+    # Timeouts
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    
+    # CORS Configuration
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://spirit-tours.com, https://www.spirit-tours.com, https://app.spirit-tours.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    nginx.ingress.kubernetes.io/cors-max-age: "86400"
+    
+    # WebSocket Support
+    nginx.ingress.kubernetes.io/websocket-services: "spirit-tours-backend"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-set-headers: |
+      Upgrade $http_upgrade
+      Connection "upgrade"
+    
+    # Cache Configuration
+    nginx.ingress.kubernetes.io/proxy-cache-bypass: "$http_upgrade"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|otf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+      }
+      
+      location ~* \.(html|htm)$ {
+        expires 1h;
+        add_header Cache-Control "public, must-revalidate";
+      }
+    
+    # Load Balancing
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$remote_addr"
+    nginx.ingress.kubernetes.io/load-balance: "ip_hash"
+    
+    # Health Check
+    nginx.ingress.kubernetes.io/healthcheck-path: "/health"
+    nginx.ingress.kubernetes.io/healthcheck-interval: "10s"
+    nginx.ingress.kubernetes.io/healthcheck-timeout: "5s"
+    
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - spirit-tours.com
+        - www.spirit-tours.com
+        - api.spirit-tours.com
+        - app.spirit-tours.com
+        - admin.spirit-tours.com
+      secretName: spirit-tours-tls
+  
+  rules:
+    # Main Website
+    - host: spirit-tours.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-frontend
+                port:
+                  number: 80
+    
+    - host: www.spirit-tours.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-frontend
+                port:
+                  number: 80
+    
+    # API Backend
+    - host: api.spirit-tours.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-backend
+                port:
+                  number: 8000
+          
+          # WebSocket endpoint
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-backend
+                port:
+                  number: 8000
+          
+          # GraphQL endpoint
+          - path: /graphql
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-backend
+                port:
+                  number: 8000
+    
+    # Mobile App API
+    - host: app.spirit-tours.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-backend
+                port:
+                  number: 8000
+          
+          # Mobile-specific endpoints
+          - path: /mobile
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-mobile-backend
+                port:
+                  number: 8001
+    
+    # Admin Dashboard
+    - host: admin.spirit-tours.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-admin
+                port:
+                  number: 3000
+          
+          # Admin API
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: spirit-tours-backend
+                port:
+                  number: 8000
+
+---
+# Additional Ingress for AI Agents (Internal)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-agents-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    nginx.ingress.kubernetes.io/grpc-backend: "true"
+    
+    # Internal only - not exposed to internet
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    
+    # Circuit Breaker
+    nginx.ingress.kubernetes.io/custom-http-errors: "503"
+    nginx.ingress.kubernetes.io/default-backend: "circuit-breaker"
+    
+spec:
+  ingressClassName: nginx-internal
+  tls:
+    - hosts:
+        - agents.spirit-tours.local
+      secretName: ai-agents-tls
+  
+  rules:
+    - host: agents.spirit-tours.local
+      http:
+        paths:
+          # Customer & Revenue Track
+          - path: /customer-insight
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-insight-agent
+                port:
+                  number: 50051
+          
+          - path: /pricing-optimizer
+            pathType: Prefix
+            backend:
+              service:
+                name: pricing-optimizer-agent
+                port:
+                  number: 50052
+          
+          - path: /personalization
+            pathType: Prefix
+            backend:
+              service:
+                name: personalization-agent
+                port:
+                  number: 50053
+          
+          # Security & Market Track
+          - path: /fraud-detector
+            pathType: Prefix
+            backend:
+              service:
+                name: fraud-detector-agent
+                port:
+                  number: 50061
+          
+          - path: /market-analyzer
+            pathType: Prefix
+            backend:
+              service:
+                name: market-analyzer-agent
+                port:
+                  number: 50062
+          
+          # Ethics & Sustainability Track
+          - path: /carbon-optimizer
+            pathType: Prefix
+            backend:
+              service:
+                name: carbon-optimizer-agent
+                port:
+                  number: 50071
+          
+          - path: /ethical-advisor
+            pathType: Prefix
+            backend:
+              service:
+                name: ethical-advisor-agent
+                port:
+                  number: 50072
+          
+          - path: /accessibility
+            pathType: Prefix
+            backend:
+              service:
+                name: accessibility-agent
+                port:
+                  number: 50073

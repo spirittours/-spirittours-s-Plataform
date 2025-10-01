@@ -1,0 +1,534 @@
+# Grafana Dashboard ConfigMaps for Spirit Tours Platform
+
+---
+# Main Platform Dashboard
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-main
+  namespace: default
+  labels:
+    grafana_dashboard: "1"
+data:
+  main-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Spirit Tours - Main Platform Dashboard",
+        "tags": ["spirit-tours", "main"],
+        "timezone": "browser",
+        "schemaVersion": 16,
+        "version": 0,
+        "refresh": "10s",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Total Active Users",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{app=\"spirit-tours-backend\"}[5m]))",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": null, "color": "green"},
+                    {"value": 1000, "color": "yellow"},
+                    {"value": 5000, "color": "red"}
+                  ]
+                },
+                "unit": "reqps"
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "API Response Time (p95)",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0},
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app=\"spirit-tours-backend\"}[5m])) by (le))",
+                "refId": "A",
+                "legendFormat": "p95 Response Time"
+              }
+            ],
+            "yaxes": [
+              {"format": "s", "show": true},
+              {"format": "short", "show": false}
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Booking Conversion Rate",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+            "targets": [
+              {
+                "expr": "sum(rate(bookings_completed_total[5m])) / sum(rate(bookings_initiated_total[5m])) * 100",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": null, "color": "red"},
+                    {"value": 20, "color": "yellow"},
+                    {"value": 40, "color": "green"}
+                  ]
+                },
+                "unit": "percent"
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Database Performance",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "rate(postgres_queries_total[5m])",
+                "refId": "A",
+                "legendFormat": "Queries/sec"
+              },
+              {
+                "expr": "postgres_connections_active",
+                "refId": "B",
+                "legendFormat": "Active Connections"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Cache Hit Rate",
+            "type": "gauge",
+            "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(redis_hits_total[5m])) / (sum(rate(redis_hits_total[5m])) + sum(rate(redis_misses_total[5m]))) * 100",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": null, "color": "red"},
+                    {"value": 70, "color": "yellow"},
+                    {"value": 90, "color": "green"}
+                  ]
+                },
+                "unit": "percent",
+                "min": 0,
+                "max": 100
+              }
+            }
+          },
+          {
+            "id": 6,
+            "title": "Error Rate",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{app=\"spirit-tours-backend\",status=~\"5..\"}[5m]))",
+                "refId": "A",
+                "legendFormat": "5xx Errors"
+              },
+              {
+                "expr": "sum(rate(http_requests_total{app=\"spirit-tours-backend\",status=~\"4..\"}[5m]))",
+                "refId": "B",
+                "legendFormat": "4xx Errors"
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+---
+# AI Agents Performance Dashboard
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-ai-agents
+  namespace: default
+  labels:
+    grafana_dashboard: "1"
+data:
+  ai-agents-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Spirit Tours - AI Agents Performance",
+        "tags": ["spirit-tours", "ai-agents"],
+        "timezone": "browser",
+        "schemaVersion": 16,
+        "version": 0,
+        "refresh": "30s",
+        "panels": [
+          {
+            "id": 1,
+            "title": "AI Agent Request Rate",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "sum(rate(ai_agent_requests_total[5m])) by (agent_name)",
+                "refId": "A",
+                "legendFormat": "{{agent_name}}"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "AI Model Inference Time",
+            "type": "heatmap",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.99, sum(rate(ai_inference_duration_seconds_bucket[5m])) by (le, model))",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Agent Success Rate",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(ai_agent_success_total[5m])) / sum(rate(ai_agent_requests_total[5m])) * 100",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"value": null, "color": "red"},
+                    {"value": 95, "color": "yellow"},
+                    {"value": 99, "color": "green"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Carbon Optimization Savings",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 6, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(carbon_savings_kg_co2)",
+                "refId": "A",
+                "legendFormat": "CO2 Saved (kg)"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Fraud Detection Alerts",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(increase(fraud_alerts_total[1h]))",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "steps": [
+                    {"value": null, "color": "green"},
+                    {"value": 5, "color": "yellow"},
+                    {"value": 10, "color": "red"}
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+
+---
+# Infrastructure Dashboard
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-infrastructure
+  namespace: default
+  labels:
+    grafana_dashboard: "1"
+data:
+  infrastructure-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Spirit Tours - Infrastructure",
+        "tags": ["spirit-tours", "infrastructure"],
+        "timezone": "browser",
+        "schemaVersion": 16,
+        "version": 0,
+        "refresh": "30s",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Cluster CPU Usage",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                "refId": "A",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "yaxes": [
+              {"format": "percent", "show": true},
+              {"format": "short", "show": false}
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Memory Usage",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+                "refId": "A",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "yaxes": [
+              {"format": "percent", "show": true},
+              {"format": "short", "show": false}
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Pod Status",
+            "type": "piechart",
+            "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(kube_pod_status_phase) by (phase)",
+                "refId": "A",
+                "legendFormat": "{{phase}}"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Network I/O",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(container_network_receive_bytes_total[5m]))",
+                "refId": "A",
+                "legendFormat": "Receive"
+              },
+              {
+                "expr": "sum(rate(container_network_transmit_bytes_total[5m]))",
+                "refId": "B",
+                "legendFormat": "Transmit"
+              }
+            ],
+            "yaxes": [
+              {"format": "Bps", "show": true},
+              {"format": "short", "show": false}
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Disk Usage",
+            "type": "stat",
+            "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+            "targets": [
+              {
+                "expr": "(sum(node_filesystem_size_bytes) - sum(node_filesystem_avail_bytes)) / sum(node_filesystem_size_bytes) * 100",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"value": null, "color": "green"},
+                    {"value": 70, "color": "yellow"},
+                    {"value": 85, "color": "red"}
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+
+---
+# Business Metrics Dashboard
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-business
+  namespace: default
+  labels:
+    grafana_dashboard: "1"
+data:
+  business-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Spirit Tours - Business Metrics",
+        "tags": ["spirit-tours", "business"],
+        "timezone": "browser",
+        "schemaVersion": 16,
+        "version": 0,
+        "refresh": "1m",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Revenue (Real-time)",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "sum(increase(revenue_total[1h]))",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD"
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Active Tours",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "targets": [
+              {
+                "expr": "tours_active_count",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Customer Satisfaction",
+            "type": "gauge",
+            "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "avg(customer_satisfaction_score)",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "min": 0,
+                "max": 5,
+                "thresholds": {
+                  "steps": [
+                    {"value": null, "color": "red"},
+                    {"value": 3, "color": "yellow"},
+                    {"value": 4, "color": "green"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Top Destinations",
+            "type": "bargauge",
+            "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+            "targets": [
+              {
+                "expr": "topk(5, sum by (destination) (bookings_by_destination))",
+                "refId": "A",
+                "legendFormat": "{{destination}}"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Booking Trend",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "sum(rate(bookings_completed_total[1h]))",
+                "refId": "A",
+                "legendFormat": "Bookings/hour"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "Sustainability Score",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8},
+            "targets": [
+              {
+                "expr": "avg(sustainability_score)",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"value": null, "color": "red"},
+                    {"value": 60, "color": "yellow"},
+                    {"value": 80, "color": "green"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 7,
+            "title": "Local Impact Score",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8},
+            "targets": [
+              {
+                "expr": "avg(local_impact_score)",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent"
+              }
+            }
+          }
+        ]
+      }
+    }
