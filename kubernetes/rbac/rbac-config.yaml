@@ -1,0 +1,490 @@
+# RBAC Configuration for Spirit Tours Platform
+# Implements Principle of Least Privilege
+
+---
+# Service Accounts
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spirit-tours-backend
+  namespace: default
+  labels:
+    app: spirit-tours-backend
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spirit-tours-frontend
+  namespace: default
+  labels:
+    app: spirit-tours-frontend
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-agents-controller
+  namespace: default
+  labels:
+    tier: ai-agent
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: database-admin
+  namespace: default
+  labels:
+    app: database
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: monitoring-agent
+  namespace: default
+  labels:
+    app: monitoring
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-operator
+  namespace: default
+  labels:
+    app: backup
+
+---
+# ClusterRoles
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: spirit-tours-backend-role
+rules:
+  # Read secrets for database credentials
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["postgres-secret", "redis-secret", "api-keys"]
+    verbs: ["get"]
+  
+  # Read ConfigMaps
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  
+  # Access to services
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get", "list"]
+  
+  # Create and manage jobs for async tasks
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  
+  # Access to persistent volumes
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ai-agents-role
+rules:
+  # Read secrets for API keys and model credentials
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["ai-models-secret", "api-keys"]
+    verbs: ["get"]
+  
+  # Read/Write ConfigMaps for model configs
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  
+  # Access to services and endpoints
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get", "list"]
+  
+  # Manage AI training jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+  
+  # Access to metrics
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+  
+  # Manage custom resources for AI models
+  - apiGroups: ["ml.spirit-tours.com"]
+    resources: ["aimodels", "trainingjobs", "inferences"]
+    verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: database-admin-role
+rules:
+  # Full access to StatefulSets for database management
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    resourceNames: ["postgres", "redis"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  
+  # Manage database secrets
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["postgres-secret", "redis-secret", "backup-credentials"]
+    verbs: ["get", "update", "patch"]
+  
+  # Manage PVCs for database storage
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["*"]
+  
+  # Create backup jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["*"]
+  
+  # Access to pods for maintenance
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "pods/log"]
+    verbs: ["get", "list", "create", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-role
+rules:
+  # Read all resources for monitoring
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  
+  # Access to metrics
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list"]
+  
+  # Create alerts and notifications
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backup-operator-role
+rules:
+  # Access to create backup jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["*"]
+  
+  # Read database pods
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec"]
+    verbs: ["get", "list", "create"]
+  
+  # Access to PVCs for snapshots
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list"]
+  
+  # Manage volume snapshots
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots", "volumesnapshotcontents"]
+    verbs: ["*"]
+  
+  # Access backup secrets
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["backup-credentials", "s3-credentials"]
+    verbs: ["get"]
+
+---
+# Roles for namespace-specific permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: frontend-role
+  namespace: default
+rules:
+  # Read ConfigMaps for frontend config
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["frontend-config", "feature-flags"]
+    verbs: ["get", "watch"]
+  
+  # Read secrets for API keys
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["frontend-api-keys"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: admin-dashboard-role
+  namespace: default
+rules:
+  # Full access to view and manage resources
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  
+  # Manage deployments and services
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "update", "patch", "scale"]
+  
+  # Manage jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["*"]
+  
+  # View and delete pods
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "delete", "create"]
+
+---
+# ClusterRoleBindings
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spirit-tours-backend-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: spirit-tours-backend-role
+subjects:
+  - kind: ServiceAccount
+    name: spirit-tours-backend
+    namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ai-agents-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ai-agents-role
+subjects:
+  - kind: ServiceAccount
+    name: ai-agents-controller
+    namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: database-admin-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: database-admin-role
+subjects:
+  - kind: ServiceAccount
+    name: database-admin
+    namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: monitoring-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-role
+subjects:
+  - kind: ServiceAccount
+    name: monitoring-agent
+    namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backup-operator-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: backup-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: backup-operator
+    namespace: default
+
+---
+# RoleBindings for namespace-specific permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: frontend-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: frontend-role
+subjects:
+  - kind: ServiceAccount
+    name: spirit-tours-frontend
+    namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: admin-dashboard-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: admin-dashboard-role
+subjects:
+  - kind: ServiceAccount
+    name: admin-dashboard
+    namespace: default
+
+---
+# Security Policies
+apiVersion: policy/v1
+kind: PodSecurityPolicy
+metadata:
+  name: restricted
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+
+---
+apiVersion: policy/v1
+kind: PodSecurityPolicy
+metadata:
+  name: database-psp
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  allowedCapabilities:
+    - 'CHOWN'
+    - 'DAC_OVERRIDE'
+    - 'FSETID'
+    - 'FOWNER'
+    - 'SETGID'
+    - 'SETUID'
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: false
+
+---
+# ClusterRole for using PSPs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: psp-restricted
+rules:
+  - apiGroups: ['policy']
+    resources: ['podsecuritypolicies']
+    verbs: ['use']
+    resourceNames:
+      - restricted
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: psp-database
+rules:
+  - apiGroups: ['policy']
+    resources: ['podsecuritypolicies']
+    verbs: ['use']
+    resourceNames:
+      - database-psp
+
+---
+# Bind PSPs to service accounts
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: psp-restricted-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: psp-restricted
+subjects:
+  - kind: ServiceAccount
+    name: spirit-tours-backend
+    namespace: default
+  - kind: ServiceAccount
+    name: spirit-tours-frontend
+    namespace: default
+  - kind: ServiceAccount
+    name: ai-agents-controller
+    namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: psp-database-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: psp-database
+subjects:
+  - kind: ServiceAccount
+    name: database-admin
+    namespace: default
