@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 
 // Componentes principales
 import Header from './components/Header';
@@ -30,7 +31,7 @@ import SearchResults from './components/booking/SearchResults';
 import TourDetails from './components/booking/TourDetails';
 import BookingCart from './components/booking/BookingCart';
 import CheckoutProcess from './components/booking/CheckoutProcess';
-import BookingConfirmation from './components/booking/BookingConfirmation';
+import OrderConfirmation from './components/booking/OrderConfirmation';
 
 // Componente de IA
 import AIAssistant from './components/ai/AIAssistant';
@@ -91,7 +92,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen">
+        <CartProvider>
+          <div className="min-h-screen">
           <Routes>
             {/* Rutas públicas */}
             <Route path="/" element={<HomePage />} />
@@ -126,13 +128,11 @@ function App() {
               </MainLayout>
             } />
             
-            {/* Rutas privadas - Proceso de reserva */}
+            {/* Rutas de proceso de reserva (carrito público, checkout privado) */}
             <Route path="/cart" element={
-              <PrivateRoute>
-                <MainLayout>
-                  <BookingCart />
-                </MainLayout>
-              </PrivateRoute>
+              <MainLayout>
+                <BookingCart />
+              </MainLayout>
             } />
             <Route path="/checkout" element={
               <PrivateRoute>
@@ -141,10 +141,10 @@ function App() {
                 </MainLayout>
               </PrivateRoute>
             } />
-            <Route path="/booking-confirmation/:bookingId" element={
+            <Route path="/order-confirmation/:orderId" element={
               <PrivateRoute>
                 <MainLayout>
-                  <BookingConfirmation />
+                  <OrderConfirmation />
                 </MainLayout>
               </PrivateRoute>
             } />
@@ -202,6 +202,7 @@ function App() {
             } />
           </Routes>
         </div>
+        </CartProvider>
       </AuthProvider>
     </Router>
   );
