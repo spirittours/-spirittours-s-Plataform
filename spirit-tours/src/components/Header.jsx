@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Phone, Mail, Globe, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Menu, X, Phone, Mail, Globe, User, LogOut, Settings } from 'lucide-react';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -14,13 +19,29 @@ const Header = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Inicio', href: '#home' },
-    { name: 'Destinos', href: '#destinations' },
-    { name: 'Experiencias', href: '#experiences' },
-    { name: 'Testimonios', href: '#testimonials' },
-    { name: 'Sobre Nosotros', href: '#about' },
-    { name: 'Contacto', href: '#contact' }
+    { name: 'Inicio', href: '/' },
+    { name: 'Destinos', href: '/#destinations' },
+    { name: 'Experiencias', href: '/#experiences' },
+    { name: 'Testimonios', href: '/#testimonials' },
+    { name: 'Sobre Nosotros', href: '/#about' },
+    { name: 'Contacto', href: '/#contact' }
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+    setShowUserMenu(false);
+  };
+
+  const getDashboardRoute = () => {
+    if (!user) return '/dashboard';
+    switch (user.role) {
+      case 'admin': return '/admin/dashboard';
+      case 'agent': return '/agent/dashboard';
+      case 'operator': return '/operator/dashboard';
+      default: return '/dashboard';
+    }
+  };
 
   return (
     <>
@@ -43,10 +64,54 @@ const Header = () => {
                 <Globe className="w-3 h-3" />
                 ES
               </button>
-              <button className="flex items-center gap-2 hover:text-primary-200">
-                <User className="w-3 h-3" />
-                Mi Cuenta
-              </button>
+              {isAuthenticated ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 hover:text-primary-200"
+                  >
+                    <User className="w-3 h-3" />
+                    {user?.first_name || 'Mi Cuenta'}
+                  </button>
+                  
+                  {showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                      <Link
+                        to={getDashboardRoute()}
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <Settings className="inline w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        to="/profile"
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <User className="inline w-4 h-4 mr-2" />
+                        Mi Perfil
+                      </Link>
+                      <hr className="my-2" />
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                      >
+                        <LogOut className="inline w-4 h-4 mr-2" />
+                        Cerrar Sesión
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2 hover:text-primary-200"
+                >
+                  <User className="w-3 h-3" />
+                  Iniciar Sesión
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -60,7 +125,7 @@ const Header = () => {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center">
-              <a href="#home" className="flex items-center gap-3">
+              <Link to="/" className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xl">S</span>
                 </div>
@@ -70,27 +135,55 @@ const Header = () => {
                   </h1>
                   <p className="text-xs text-gray-600">Viajes Espirituales</p>
                 </div>
-              </a>
+              </Link>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.name}
-                  href={link.href}
+                  to={link.href}
                   className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
                 >
                   {link.name}
-                </a>
+                </Link>
               ))}
             </nav>
 
-            {/* CTA Button */}
-            <div className="hidden lg:block">
-              <button className="bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl">
-                Reservar Ahora
-              </button>
+            {/* CTA Buttons */}
+            <div className="hidden lg:flex items-center gap-4">
+              {isAuthenticated ? (
+                <>
+                  <Link 
+                    to="/cart"
+                    className="text-gray-700 hover:text-primary-600 font-medium"
+                  >
+                    🛒 Carrito
+                  </Link>
+                  <Link
+                    to={getDashboardRoute()}
+                    className="bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Mi Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="text-gray-700 hover:text-primary-600 font-medium"
+                  >
+                    Registrarse
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -113,18 +206,60 @@ const Header = () => {
             <div className="container mx-auto px-4 py-4">
               <nav className="flex flex-col gap-4">
                 {navLinks.map((link) => (
-                  <a
+                  <Link
                     key={link.name}
-                    href={link.href}
+                    to={link.href}
                     className="text-gray-700 hover:text-primary-600 font-medium py-2"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 ))}
-                <button className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white px-6 py-3 rounded-lg font-semibold mt-4">
-                  Reservar Ahora
-                </button>
+                
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      to="/cart"
+                      className="text-gray-700 hover:text-primary-600 font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      🛒 Mi Carrito
+                    </Link>
+                    <Link
+                      to={getDashboardRoute()}
+                      className="text-gray-700 hover:text-primary-600 font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-red-600 hover:text-red-700 font-medium py-2 text-left"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="text-gray-700 hover:text-primary-600 font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Iniciar Sesión
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white px-6 py-3 rounded-lg font-semibold text-center"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Registrarse
+                    </Link>
+                  </>
+                )}
               </nav>
             </div>
           </div>
