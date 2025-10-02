@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, Phone, Mail, Globe, User, LogOut, Settings } from 'lucide-react';
+import { Menu, X, Phone, Mail, Globe, User, LogOut, Settings, ShoppingCart } from 'lucide-react';
+import NotificationCenter from './notifications/NotificationCenter';
+import { useCart } from '../contexts/CartContext';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -155,11 +158,20 @@ const Header = () => {
             <div className="hidden lg:flex items-center gap-4">
               {isAuthenticated ? (
                 <>
+                  {/* Notifications */}
+                  <NotificationCenter />
+                  
+                  {/* Cart */}
                   <Link 
                     to="/cart"
-                    className="text-gray-700 hover:text-primary-600 font-medium"
+                    className="relative text-gray-700 hover:text-primary-600 font-medium p-2"
                   >
-                    🛒 Carrito
+                    <ShoppingCart className="w-6 h-6" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount > 9 ? '9+' : cartCount}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to={getDashboardRoute()}
@@ -170,6 +182,19 @@ const Header = () => {
                 </>
               ) : (
                 <>
+                  {/* Cart for non-authenticated users */}
+                  <Link 
+                    to="/cart"
+                    className="relative text-gray-700 hover:text-primary-600 font-medium p-2"
+                  >
+                    <ShoppingCart className="w-6 h-6" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount > 9 ? '9+' : cartCount}
+                      </span>
+                    )}
+                  </Link>
+                  
                   <Link
                     to="/register"
                     className="text-gray-700 hover:text-primary-600 font-medium"
