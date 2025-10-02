@@ -38,6 +38,9 @@ from .api import (
     advanced_voice_api
 )
 
+# Import open-source services router
+from .routers.opensource_router import router as opensource_router
+
 # Import services for startup initialization
 from .services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
 from .services.omnichannel_crm_service import OmnichannelCRMService
@@ -90,6 +93,9 @@ app.include_router(omnichannel_communications_api.router)
 app.include_router(ai_voice_agents_api.router)
 app.include_router(webrtc_signaling_api.router)
 app.include_router(advanced_voice_api.router)
+
+# Include open-source services router
+app.include_router(opensource_router)
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -199,8 +205,28 @@ async def startup_event():
                 
         except Exception as e:
             logger.warning(f"⚠️ Advanced Voice AI service initialization error: {str(e)}")
+        
+        # Initialize Open Source Services
+        try:
+            from .services.opensource.opensource_integration_manager import opensource_manager
             
-        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents + WebRTC + Advanced Voice AI")
+            services_status = await opensource_manager.initialize_all_services()
+            
+            if all(services_status.values()):
+                logger.info("✅ All open-source services initialized successfully")
+                
+                # Log cost savings
+                savings = opensource_manager.get_total_savings()
+                logger.info(f"💰 Monthly savings: ${savings['monthly']}")
+                logger.info(f"💰 Annual savings: ${savings['annual']}")
+            else:
+                failed_services = [name for name, status in services_status.items() if not status]
+                logger.warning(f"⚠️ Some open-source services failed to initialize: {failed_services}")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Open-source services initialization error: {str(e)}")
+            
+        logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents + WebRTC + Advanced Voice AI + Open Source Services")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {str(e)}")
