@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
+import { NotificationToast } from './components/notifications/NotificationCenter';
 
 // Componentes principales
 import Header from './components/Header';
@@ -93,7 +95,9 @@ function App() {
     <Router>
       <AuthProvider>
         <CartProvider>
-          <div className="min-h-screen">
+          <WebSocketProvider>
+            <div className="min-h-screen">
+              <NotificationToast />
           <Routes>
             {/* Rutas públicas */}
             <Route path="/" element={<HomePage />} />
@@ -201,7 +205,8 @@ function App() {
               </MainLayout>
             } />
           </Routes>
-        </div>
+            </div>
+          </WebSocketProvider>
         </CartProvider>
       </AuthProvider>
     </Router>

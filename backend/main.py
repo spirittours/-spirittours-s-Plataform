@@ -3,7 +3,7 @@ Spirit Tours - Backend Principal con B2C/B2B/B2B2C
 Plataforma IA Completa con 25 Agentes Especializados + Sistema Reservas Empresarial
 """
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -44,6 +44,9 @@ from .services.omnichannel_crm_service import OmnichannelCRMService
 from .services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
 from .services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
 from .services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
+
+# Import WebSocket handler
+from .websocket_handler import websocket_endpoint
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -87,6 +90,12 @@ app.include_router(omnichannel_communications_api.router)
 app.include_router(ai_voice_agents_api.router)
 app.include_router(webrtc_signaling_api.router)
 app.include_router(advanced_voice_api.router)
+
+# WebSocket endpoint
+@app.websocket("/ws")
+async def websocket_route(websocket: WebSocket, token: Optional[str] = None):
+    """WebSocket endpoint for real-time communication"""
+    await websocket_endpoint(websocket, token)
 
 # Global service instances
 pbx_service: Optional[PBX3CXIntegrationService] = None
