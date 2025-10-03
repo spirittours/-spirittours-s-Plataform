@@ -12,11 +12,11 @@ from typing import Optional
 import logging
 
 # Import configurations and database
-from .config import settings, DatabaseManager, get_db
+from backend.config import settings, DatabaseManager, get_db
 from sqlalchemy.orm import Session
 
 # Import API routers
-from .api import (
+from backend.api import (
     admin_api,
     auth_api, 
     communications_api,
@@ -39,17 +39,17 @@ from .api import (
 )
 
 # Import open-source services router
-from .routers.opensource_router import router as opensource_router
+from backend.routers.opensource_router import router as opensource_router
 
 # Import services for startup initialization
-from .services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
-from .services.omnichannel_crm_service import OmnichannelCRMService
-from .services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
-from .services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
-from .services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
+from backend.services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
+from backend.services.omnichannel_crm_service import OmnichannelCRMService
+from backend.services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
+from backend.services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
+from backend.services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
 
 # Import WebSocket handler
-from .websocket_handler import websocket_endpoint
+from backend.websocket_handler import websocket_endpoint
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -208,7 +208,7 @@ async def startup_event():
         
         # Initialize Open Source Services
         try:
-            from .services.opensource.opensource_integration_manager import opensource_manager
+            from backend.services.opensource.opensource_integration_manager import opensource_manager
             
             services_status = await opensource_manager.initialize_all_services()
             
