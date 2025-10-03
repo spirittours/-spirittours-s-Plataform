@@ -1,0 +1,309 @@
+# 🚨 Prometheus Alert Rules - AI Multi-Model Management System
+# Comprehensive alerting for enterprise monitoring
+
+groups:
+  # 🔥 Critical System Alerts
+  - name: critical_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devops
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute"
+          action: "Immediate investigation required - check service logs and restart if necessary"
+          runbook: "https://runbooks.ai-multimodel.genspark.ai/service-down"
+
+      - alert: HighErrorRate
+        expr: ai_multimodel:error_rate_5m > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (>5%) for the last 2 minutes"
+          action: "Check application logs for errors and investigate root cause"
+
+      - alert: APIResponseTimeHigh
+        expr: ai_multimodel:api_response_time_p95_5m > 2
+        for: 3m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API response time is too high"
+          description: "95th percentile response time is {{ $value }}s (>2s) for the last 3 minutes"
+          action: "Check system resources and optimize slow endpoints"
+
+      - alert: DatabaseConnectionFailure
+        expr: postgresql_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "Database connection failed"
+          description: "PostgreSQL database is not responding"
+          action: "Check database connectivity and restart if necessary"
+
+  # ⚠️ Warning Level Alerts
+  - name: warning_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: ai_multimodel:cpu_utilization_avg > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value | humanizePercentage }} (>80%) for {{ $labels.container_name }}"
+          action: "Monitor system performance and consider scaling if sustained"
+
+      - alert: HighMemoryUsage
+        expr: ai_multimodel:memory_utilization_avg > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} (>85%) for {{ $labels.container_name }}"
+          action: "Monitor memory usage and consider increasing memory limits"
+
+      - alert: DiskSpaceRunningLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "Disk space running low"
+          description: "Disk space is {{ $value | humanizePercentage }} available on {{ $labels.instance }}"
+          action: "Clean up disk space or increase storage capacity"
+
+      - alert: LoadBalancerUnhealthy
+        expr: nginx_ingress_controller_nginx_process_connections_total > 10000
+        for: 3m
+        labels:
+          severity: warning
+          team: networking
+        annotations:
+          summary: "Load balancer has high connection count"
+          description: "Nginx has {{ $value }} active connections (>10k)"
+          action: "Monitor traffic patterns and consider scaling load balancers"
+
+  # 🧠 AI Model Specific Alerts
+  - name: ai_model_alerts
+    rules:
+      - alert: AIModelHighLatency
+        expr: ai_multimodel:model_response_time_avg_5m > 5
+        for: 2m
+        labels:
+          severity: warning
+          team: ai-platform
+          model: "{{ $labels.model_name }}"
+        annotations:
+          summary: "AI Model {{ $labels.model_name }} has high latency"
+          description: "Average response time for {{ $labels.model_name }} is {{ $value }}s (>5s)"
+          action: "Check AI provider status and model performance"
+
+      - alert: AIModelFailureRate
+        expr: rate(ai_model_requests_failed_total[5m]) / rate(ai_model_requests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: ai-platform
+          model: "{{ $labels.model_name }}"
+        annotations:
+          summary: "AI Model {{ $labels.model_name }} has high failure rate"
+          description: "Failure rate for {{ $labels.model_name }} is {{ $value | humanizePercentage }} (>10%)"
+          action: "Immediate investigation - check API keys and model availability"
+
+      - alert: AIProviderQuotaExceeded
+        expr: ai_provider_quota_remaining < 100
+        for: 1m
+        labels:
+          severity: warning
+          team: ai-platform
+          provider: "{{ $labels.provider }}"
+        annotations:
+          summary: "AI Provider {{ $labels.provider }} quota running low"
+          description: "{{ $labels.provider }} has {{ $value }} requests remaining"
+          action: "Review usage patterns and consider upgrading quota"
+
+      - alert: LoadBalancerImbalance
+        expr: abs(rate(ai_model_requests_total[5m]) - avg(rate(ai_model_requests_total[5m]))) > avg(rate(ai_model_requests_total[5m])) * 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: ai-platform
+        annotations:
+          summary: "AI Model load balancer is imbalanced"
+          description: "Load distribution is uneven across AI models"
+          action: "Review load balancing algorithm configuration"
+
+  # 📊 Business Metrics Alerts
+  - name: business_alerts
+    rules:
+      - alert: LowUserActivity
+        expr: rate(user_sessions_total[1h]) < 10
+        for: 15m
+        labels:
+          severity: info
+          team: product
+        annotations:
+          summary: "Low user activity detected"
+          description: "User session rate is {{ $value }} per second (<10/s)"
+          action: "Monitor user engagement and investigate potential issues"
+
+      - alert: HighCostPerRequest
+        expr: ai_cost_per_request_usd > 0.50
+        for: 10m
+        labels:
+          severity: warning
+          team: finance
+        annotations:
+          summary: "High cost per AI request"
+          description: "Average cost per request is ${{ $value }} (>$0.50)"
+          action: "Review AI usage patterns and optimize model selection"
+
+      - alert: RevenueTargetMiss
+        expr: rate(revenue_generated_usd_total[24h]) < 1000
+        for: 1h
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "Daily revenue target at risk"
+          description: "Current revenue rate is ${{ $value }}/day (<$1000/day)"
+          action: "Review business metrics and user engagement"
+
+  # 🔐 Security Alerts
+  - name: security_alerts
+    rules:
+      - alert: AuthenticationFailureSpike
+        expr: rate(authentication_failures_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures: {{ $value }} per second (>10/s)"
+          action: "Investigate potential brute force attack or system issues"
+
+      - alert: SuspiciousAPIUsage
+        expr: rate(api_requests_total{status="401"}[5m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High number of unauthorized API requests"
+          description: "Unauthorized requests: {{ $value }} per second (>50/s)"
+          action: "Check for potential API abuse or compromised credentials"
+
+      - alert: TLSCertificateExpiring
+        expr: (tls_certificate_expiry_timestamp - time()) / 86400 < 7
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "TLS certificate expiring soon"
+          description: "Certificate for {{ $labels.instance }} expires in {{ $value }} days"
+          action: "Renew TLS certificate immediately"
+
+  # 🗄️ Infrastructure Alerts
+  - name: infrastructure_alerts
+    rules:
+      - alert: PodCrashLoopBackOff
+        expr: kube_pod_container_status_restarts_total > 5
+        for: 5m
+        labels:
+          severity: critical
+          team: devops
+          pod: "{{ $labels.pod }}"
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash looping"
+          description: "Pod has restarted {{ $value }} times (>5)"
+          action: "Check pod logs and fix application issues"
+
+      - alert: KubernetesNodeNotReady
+        expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: devops
+          node: "{{ $labels.node }}"
+        annotations:
+          summary: "Kubernetes node {{ $labels.node }} is not ready"
+          description: "Node has been not ready for more than 5 minutes"
+          action: "Investigate node health and restart if necessary"
+
+      - alert: RedisConnectionPoolExhausted
+        expr: redis_connected_clients > 100
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Redis connection pool near exhaustion"
+          description: "Redis has {{ $value }} connected clients (>100)"
+          action: "Review connection usage and increase pool size if needed"
+
+  # 📈 Performance Alerts
+  - name: performance_alerts
+    rules:
+      - alert: HighRequestVolume
+        expr: ai_multimodel:requests_per_second_5m > 1000
+        for: 3m
+        labels:
+          severity: info
+          team: devops
+        annotations:
+          summary: "High request volume detected"
+          description: "Current request rate: {{ $value }} requests/second (>1000/s)"
+          action: "Monitor system performance and prepare for scaling if needed"
+
+      - alert: DatabaseSlowQueries
+        expr: postgresql_slow_queries_total > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "Database has slow queries"
+          description: "{{ $value }} slow queries detected (>10)"
+          action: "Review and optimize slow database queries"
+
+      - alert: WebSocketConnectionDrop
+        expr: websocket_connections_active < websocket_connections_active offset 5m * 0.8
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "WebSocket connections dropping"
+          description: "Active WebSocket connections dropped by {{ (1 - $value) | humanizePercentage }}"
+          action: "Investigate WebSocket connection stability"
+
+# 🎯 Inhibition Rules (prevent alert spam)
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['instance', 'job']
+
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['instance']

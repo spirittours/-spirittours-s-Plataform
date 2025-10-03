@@ -1,0 +1,295 @@
+# Disaster Recovery Configuration for Spirit Tours
+# Comprehensive configuration for automated rollback and disaster recovery
+
+# Recovery system configuration
+recovery:
+  max_rollback_depth: 10
+  verification_timeout: 300  # seconds
+  parallel_recovery_jobs: 3
+  emergency_contact: "admin@spirittours.com"
+  auto_failover: true
+  backup_verification: true
+  rollback_safety_checks: true
+  pre_rollback_validation: true
+  post_rollback_verification: true
+
+# Database configuration
+database:
+  connection_string: "postgresql://spirittours_user:spirittours_pass@localhost:5432/spirittours_db"
+  backup_location: "/backups/database"
+  max_connections: 20
+  query_timeout: 30
+  backup_retention_days: 30
+  incremental_backup_interval: 6  # hours
+  full_backup_interval: 24  # hours
+  point_in_time_recovery: true
+  
+  # Database failover configuration
+  failover:
+    standby_host: "localhost"
+    standby_port: 5433
+    replication_lag_threshold: 60  # seconds
+    auto_promote: true
+
+# Redis configuration
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: null
+  connection_timeout: 5
+  socket_timeout: 5
+  max_connections: 50
+
+# Storage and backup configuration
+storage:
+  s3_bucket: "spirittours-backups"
+  local_backup_path: "/backups"
+  encryption_key_path: "/secrets/backup_encryption_key"
+  
+  retention_policy:
+    days: 30
+    versions: 5
+    cleanup_schedule: "0 2 * * *"  # Daily at 2 AM
+  
+  backup_types:
+    - type: "full"
+      schedule: "0 1 * * 0"  # Weekly on Sunday at 1 AM
+      retention_days: 90
+    - type: "incremental"
+      schedule: "0 */6 * * *"  # Every 6 hours
+      retention_days: 7
+    - type: "configuration"
+      schedule: "0 0 * * *"  # Daily at midnight
+      retention_days: 30
+
+# Kubernetes configuration
+kubernetes:
+  namespace: "spirittours"
+  config_path: "~/.kube/config"
+  deployment_timeout: 600  # seconds
+  
+  # Deployment strategies
+  strategies:
+    blue_green:
+      enabled: true
+      health_check_retries: 5
+      health_check_interval: 30
+    rolling:
+      enabled: true
+      max_unavailable: 1
+      max_surge: 1
+    canary:
+      enabled: true
+      canary_percentage: 10
+      promotion_threshold: 95  # success rate %
+
+# Monitoring and alerting configuration
+monitoring:
+  alert_webhook: null
+  metrics_retention: 168  # hours (7 days)
+  health_check_interval: 30  # seconds
+  
+  # Health check endpoints
+  health_checks:
+    - name: "database"
+      endpoint: "postgresql://localhost:5432"
+      timeout: 10
+      critical: true
+    - name: "redis"
+      endpoint: "redis://localhost:6379"
+      timeout: 5
+      critical: false
+    - name: "api"
+      endpoint: "http://localhost:8000/health"
+      timeout: 15
+      critical: true
+    - name: "frontend"
+      endpoint: "http://localhost:3000"
+      timeout: 10
+      critical: false
+
+# Service configuration
+services:
+  # Backend API service
+  spirittours_api:
+    container_name: "spirittours-api"
+    image_name: "spirittours/api"
+    port: 8000
+    health_check: "/health"
+    dependencies: ["database", "redis"]
+    graceful_shutdown_timeout: 30
+    
+  # Frontend service
+  spirittours_frontend:
+    container_name: "spirittours-frontend"
+    image_name: "spirittours/frontend"
+    port: 3000
+    health_check: "/"
+    dependencies: ["spirittours_api"]
+    graceful_shutdown_timeout: 15
+    
+  # Call processing service
+  call_processor:
+    container_name: "spirittours-calls"
+    image_name: "spirittours/calls"
+    port: 8001
+    health_check: "/health"
+    dependencies: ["database", "redis"]
+    graceful_shutdown_timeout: 45
+    
+  # Scheduling service
+  scheduler:
+    container_name: "spirittours-scheduler"
+    image_name: "spirittours/scheduler"
+    port: 8002
+    health_check: "/health"
+    dependencies: ["database", "redis"]
+    graceful_shutdown_timeout: 30
+
+# Load balancer configuration
+load_balancer:
+  type: "nginx"  # or "haproxy"
+  config_path: "/etc/nginx/nginx.conf"
+  reload_command: "nginx -s reload"
+  health_check_endpoint: "/lb-health"
+  
+  # Failover configuration
+  failover:
+    detection_interval: 10  # seconds
+    failure_threshold: 3
+    recovery_threshold: 2
+    auto_recovery: true
+
+# Security configuration
+security:
+  ssl_certificates:
+    cert_path: "/etc/ssl/certs/spirittours.pem"
+    key_path: "/etc/ssl/private/spirittours.key"
+    ca_path: "/etc/ssl/certs/ca-certificates.crt"
+  
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+    burst_limit: 150
+  
+  authentication:
+    jwt_secret_path: "/secrets/jwt_secret"
+    session_timeout: 3600  # seconds
+
+# External services configuration
+external_services:
+  openai:
+    api_key_path: "/secrets/openai_api_key"
+    timeout: 30
+    retry_attempts: 3
+    
+  twilio:
+    account_sid_path: "/secrets/twilio_account_sid"
+    auth_token_path: "/secrets/twilio_auth_token"
+    timeout: 20
+    
+  sendgrid:
+    api_key_path: "/secrets/sendgrid_api_key"
+    timeout: 15
+    
+  stripe:
+    secret_key_path: "/secrets/stripe_secret_key"
+    timeout: 10
+
+# Disaster recovery scenarios
+disaster_scenarios:
+  # Database failure
+  database_failure:
+    triggers:
+      - "database_connection_failed"
+      - "database_high_error_rate"
+    actions:
+      - "activate_standby_database"
+      - "update_application_config"
+      - "restart_dependent_services"
+    notification_level: "critical"
+    
+  # Application server failure
+  application_failure:
+    triggers:
+      - "high_error_rate"
+      - "service_unavailable"
+      - "memory_exhaustion"
+    actions:
+      - "restart_service"
+      - "scale_up_replicas"
+      - "redirect_traffic"
+    notification_level: "high"
+    
+  # Infrastructure failure
+  infrastructure_failure:
+    triggers:
+      - "node_unreachable"
+      - "storage_failure"
+      - "network_partition"
+    actions:
+      - "failover_to_backup_infrastructure"
+      - "update_dns_records"
+      - "notify_emergency_contacts"
+    notification_level: "critical"
+
+# Rollback configuration
+rollback:
+  # Automatic rollback triggers
+  auto_rollback:
+    enabled: true
+    error_rate_threshold: 5.0  # percent
+    response_time_threshold: 5000  # milliseconds
+    health_check_failures: 3
+    monitoring_window: 300  # seconds
+  
+  # Manual rollback safety
+  manual_rollback:
+    require_confirmation: true
+    admin_approval_required: false
+    backup_before_rollback: true
+  
+  # Rollback verification
+  verification:
+    run_smoke_tests: true
+    check_dependencies: true
+    verify_data_integrity: true
+    test_critical_paths: true
+
+# Logging and audit configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  files:
+    disaster_recovery: "/home/user/webapp/logs/disaster_recovery.log"
+    backup_operations: "/home/user/webapp/logs/backup_operations.log"
+    rollback_operations: "/home/user/webapp/logs/rollback_operations.log"
+  
+  retention_days: 90
+  max_file_size: "100MB"
+
+# Performance tuning
+performance:
+  backup_compression: 9  # gzip compression level
+  parallel_backup_threads: 4
+  parallel_recovery_threads: 4
+  memory_limit: "2GB"
+  timeout_multiplier: 1.5  # for slower systems
+  
+# Testing configuration
+testing:
+  disaster_recovery_drills:
+    enabled: true
+    schedule: "0 3 1 * *"  # Monthly on 1st at 3 AM
+    test_scenarios:
+      - "database_failover"
+      - "application_rollback"
+      - "infrastructure_recovery"
+  
+  validation:
+    smoke_tests_enabled: true
+    integration_tests_enabled: true
+    performance_tests_enabled: false
+    load_tests_enabled: false

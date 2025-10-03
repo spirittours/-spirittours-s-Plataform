@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spirit-tours
+  labels:
+    name: spirit-tours
+    environment: production
+    app.kubernetes.io/name: spirit-tours
+    app.kubernetes.io/part-of: spirit-tours-platform
