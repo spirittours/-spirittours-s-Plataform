@@ -1,0 +1,350 @@
+# 🚨 AI Multi-Model Alert Rules - Enterprise Monitoring
+# Comprehensive alerting for production AI Multi-Model Management System
+
+groups:
+  # 🚨 Critical System Alerts
+  - name: ai-multimodel-critical
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up{job="ai-multimodel-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ai-multimodel
+          team: platform
+        annotations:
+          summary: "AI Multi-Model service is down"
+          description: "AI Multi-Model API has been down for more than 1 minute. Service: {{ $labels.instance }}"
+          runbook_url: "https://runbooks.ai-multimodel.com/service-down"
+
+      - alert: HighErrorRate
+        expr: ai_multimodel:error_rate_5m > 0.10
+        for: 5m
+        labels:
+          severity: critical
+          service: ai-multimodel
+          team: platform
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://runbooks.ai-multimodel.com/high-error-rate"
+
+      - alert: DatabaseConnectionFailure
+        expr: ai_database_connection_errors_total > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+          team: platform
+        annotations:
+          summary: "Database connection failures"
+          description: "Multiple database connection failures detected: {{ $value }} failures in 2 minutes"
+
+      - alert: RedisConnectionFailure
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+          team: platform
+        annotations:
+          summary: "Redis service is down"
+          description: "Redis cache service is not responding"
+
+  # ⚡ Performance Alerts
+  - name: ai-multimodel-performance
+    interval: 60s
+    rules:
+      - alert: HighResponseTime
+        expr: ai_multimodel:response_time_95p > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          service: ai-multimodel
+          team: platform
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile response time is {{ $value }}s (threshold: 2.0s)"
+          runbook_url: "https://runbooks.ai-multimodel.com/high-latency"
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{pod=~"ai-multimodel-api-.*"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: ai-multimodel
+          team: platform
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on pod {{ $labels.pod }}"
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_working_set_bytes{pod=~"ai-multimodel-api-.*"} / container_spec_memory_limit_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: ai-multimodel
+          team: platform
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% on pod {{ $labels.pod }}"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is above 90% on node {{ $labels.instance }}"
+
+  # 🧠 AI Model Specific Alerts
+  - name: ai-model-alerts
+    interval: 60s
+    rules:
+      - alert: AIModelHighLatency
+        expr: ai_model_request_duration_seconds{quantile="0.95"} > 10.0
+        for: 5m
+        labels:
+          severity: warning
+          service: ai-models
+          team: ai-team
+        annotations:
+          summary: "AI model high latency"
+          description: "AI model {{ $labels.model }} has 95p latency of {{ $value }}s (threshold: 10s)"
+
+      - alert: AIModelHighErrorRate
+        expr: rate(ai_model_requests_total{status="error"}[5m]) / rate(ai_model_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: ai-models
+          team: ai-team
+        annotations:
+          summary: "AI model high error rate"
+          description: "AI model {{ $labels.model }} error rate: {{ $value | humanizePercentage }}"
+
+      - alert: AIModelUnavailable
+        expr: ai_model_available{model!=""} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: ai-models
+          team: ai-team
+        annotations:
+          summary: "AI model unavailable"
+          description: "AI model {{ $labels.model }} is not available"
+
+      - alert: LoadBalancerImbalance
+        expr: (max(ai_load_balancer_model_requests_total) - min(ai_load_balancer_model_requests_total)) / avg(ai_load_balancer_model_requests_total) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: load-balancer
+          team: ai-team
+        annotations:
+          summary: "Load balancer imbalance detected"
+          description: "Significant imbalance in AI model request distribution"
+
+  # 🔒 Security Alerts
+  - name: ai-multimodel-security
+    interval: 30s
+    rules:
+      - alert: UnauthorizedAccess
+        expr: increase(ai_security_unauthorized_attempts_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Multiple unauthorized access attempts"
+          description: "{{ $value }} unauthorized access attempts in 5 minutes from {{ $labels.source_ip }}"
+
+      - alert: SecurityThreatDetected
+        expr: ai_security_threat_level > 7
+        for: 0s
+        labels:
+          severity: critical
+          service: security
+          team: security
+        annotations:
+          summary: "Security threat detected"
+          description: "High-level security threat detected: {{ $labels.threat_type }}"
+
+      - alert: AnomalousAPIUsage
+        expr: ai_security_anomaly_score > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: security
+          team: security
+        annotations:
+          summary: "Anomalous API usage pattern"
+          description: "Anomaly score: {{ $value }} for user {{ $labels.user_id }}"
+
+  # 📊 Business Logic Alerts
+  - name: ai-multimodel-business
+    interval: 120s
+    rules:
+      - alert: LowRequestVolume
+        expr: rate(ai_model_requests_total[30m]) < 0.1
+        for: 30m
+        labels:
+          severity: info
+          service: business
+          team: product
+        annotations:
+          summary: "Unusually low request volume"
+          description: "Request rate has been below 0.1 req/s for 30 minutes"
+
+      - alert: HighCostPerRequest
+        expr: ai_cost_per_request_usd > 0.50
+        for: 10m
+        labels:
+          severity: warning
+          service: business
+          team: finance
+        annotations:
+          summary: "High cost per request"
+          description: "Average cost per request: ${{ $value }} (threshold: $0.50)"
+
+      - alert: ModelQuotaExceeded
+        expr: ai_model_quota_usage_ratio > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: business
+          team: product
+        annotations:
+          summary: "AI model quota near limit"
+          description: "Model {{ $labels.model }} quota usage: {{ $value | humanizePercentage }}"
+
+  # 🌐 Infrastructure Alerts
+  - name: infrastructure-alerts
+    interval: 60s
+    rules:
+      - alert: KubernetesNodeNotReady
+        expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: kubernetes
+          team: infrastructure
+        annotations:
+          summary: "Kubernetes node not ready"
+          description: "Node {{ $labels.node }} has been not ready for more than 5 minutes"
+
+      - alert: KubernetesPodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: kubernetes
+          team: platform
+        annotations:
+          summary: "Pod crash looping"
+          description: "Pod {{ $labels.pod }} is crash looping in namespace {{ $labels.namespace }}"
+
+      - alert: PersistentVolumeUsageHigh
+        expr: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: storage
+          team: infrastructure
+        annotations:
+          summary: "Persistent volume usage high"
+          description: "PV {{ $labels.persistentvolumeclaim }} usage: {{ $value }}%"
+
+  # 📈 Deployment and Release Alerts
+  - name: deployment-alerts
+    interval: 30s
+    rules:
+      - alert: DeploymentReplicasMismatch
+        expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+        for: 10m
+        labels:
+          severity: warning
+          service: deployment
+          team: platform
+        annotations:
+          summary: "Deployment replicas mismatch"
+          description: "Deployment {{ $labels.deployment }} has {{ $value }} replica mismatch"
+
+      - alert: RecentDeploymentHighErrorRate
+        expr: ai_multimodel:error_rate_5m > 0.05 and on() ai_deployment_timestamp > (time() - 3600)
+        for: 2m
+        labels:
+          severity: critical
+          service: deployment
+          team: platform
+        annotations:
+          summary: "High error rate after recent deployment"
+          description: "Error rate {{ $value | humanizePercentage }} detected within 1 hour of deployment"
+
+  # 🔄 WebSocket and Real-time Alerts
+  - name: websocket-alerts
+    interval: 30s
+    rules:
+      - alert: WebSocketConnectionDrops
+        expr: rate(websocket_connections_closed_total[5m]) > rate(websocket_connections_opened_total[5m]) * 1.5
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket
+          team: platform
+        annotations:
+          summary: "High WebSocket connection drop rate"
+          description: "WebSocket connections dropping faster than opening"
+
+      - alert: WebSocketHighLatency
+        expr: websocket_message_latency_seconds{quantile="0.95"} > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket
+          team: platform
+        annotations:
+          summary: "High WebSocket message latency"
+          description: "WebSocket 95p latency: {{ $value }}s (threshold: 1.0s)"
+
+  # 📊 Analytics and Monitoring Alerts  
+  - name: monitoring-alerts
+    interval: 60s
+    rules:
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+          team: platform
+        annotations:
+          summary: "Prometheus target down"
+          description: "Target {{ $labels.instance }} has been down for 5 minutes"
+
+      - alert: AlertManagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: monitoring
+          team: platform
+        annotations:
+          summary: "AlertManager is down"
+          description: "AlertManager service is not responding"
+
+      - alert: MetricsIngestionLag
+        expr: (time() - prometheus_tsdb_head_max_time / 1000) > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+          team: platform
+        annotations:
+          summary: "Metrics ingestion lag"
+          description: "Prometheus metrics ingestion is {{ $value }}s behind"

@@ -1,0 +1,220 @@
+# 📊 Prometheus Configuration - AI Multi-Model Management System
+# Enterprise monitoring configuration with comprehensive metrics collection
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'ai-multimodel-production'
+    environment: 'production'
+
+# 📋 Rule files for alerting
+rule_files:
+  - "alerts/*.yml"
+  - "rules/*.yml"
+
+# 🚨 Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# 🎯 Scrape configurations
+scrape_configs:
+  # 📊 Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 🧠 AI Multi-Model API
+  - job_name: 'ai-multimodel-api'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - production
+            - staging
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: ai-multimodel-api
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+  # 🌐 Frontend Nginx
+  - job_name: 'ai-multimodel-frontend'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - production
+            - staging
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: ai-multimodel-frontend
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+
+  # 🗄️ PostgreSQL
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['postgresql-exporter:9187']
+    scrape_interval: 30s
+
+  # 📦 Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # ☸️ Kubernetes components
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+            - default
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  - job_name: 'kubernetes-cadvisor'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+  # 🔄 Load Balancer Metrics
+  - job_name: 'nginx-ingress'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - ingress-nginx
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+        action: keep
+        regex: ingress-nginx
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+
+  # 📊 Custom Application Metrics
+  - job_name: 'ai-model-metrics'
+    static_configs:
+      - targets: ['ai-multimodel-api:3001']
+    metrics_path: '/api/v1/metrics/ai-models'
+    scrape_interval: 30s
+
+  - job_name: 'load-balancer-metrics'
+    static_configs:
+      - targets: ['ai-multimodel-api:3001']
+    metrics_path: '/api/v1/metrics/load-balancer'
+    scrape_interval: 15s
+
+  - job_name: 'security-metrics'
+    static_configs:
+      - targets: ['ai-multimodel-api:3001']
+    metrics_path: '/api/v1/metrics/security'
+    scrape_interval: 30s
+
+  - job_name: 'analytics-metrics'
+    static_configs:
+      - targets: ['ai-multimodel-api:3001']
+    metrics_path: '/api/v1/metrics/analytics'
+    scrape_interval: 60s
+
+# 🎯 Remote write configuration (for long-term storage)
+remote_write:
+  - url: "https://prometheus-remote-write.example.com/api/v1/write"
+    basic_auth:
+      username: "prometheus"
+      password: "secure-password"
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'ai_.*'
+        action: keep
+
+# 📊 Recording rules for aggregations
+recording_rules:
+  - name: ai_multimodel_aggregations
+    interval: 30s
+    rules:
+      - record: ai_multimodel:request_rate_5m
+        expr: rate(http_requests_total{job="ai-multimodel-api"}[5m])
+      
+      - record: ai_multimodel:error_rate_5m
+        expr: rate(http_requests_total{job="ai-multimodel-api",status=~"5.."}[5m]) / rate(http_requests_total{job="ai-multimodel-api"}[5m])
+      
+      - record: ai_multimodel:response_time_95p
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ai-multimodel-api"}[5m]))
+      
+      - record: ai_multimodel:ai_model_usage_rate
+        expr: rate(ai_model_requests_total[5m])
+      
+      - record: ai_multimodel:load_balancer_efficiency
+        expr: ai_load_balancer_successful_routes / ai_load_balancer_total_routes
+
+# 🔧 Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 50GB
+    wal-compression: true

@@ -1,0 +1,19 @@
+# 🚀 Base Kubernetes Namespace Configuration
+# AI Multi-Model Management System - Enterprise Deployment
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-multimodel
+  labels:
+    name: ai-multimodel
+    tier: application
+    app.kubernetes.io/name: ai-multimodel-system
+    app.kubernetes.io/component: namespace
+    app.kubernetes.io/part-of: genspark-ai-platform
+    app.kubernetes.io/managed-by: kubernetes
+    environment: base
+  annotations:
+    description: "AI Multi-Model Management System - Phase 2 Extended"
+    contact: "ai-team@genspark.ai"
+    cost-center: "genspark-ai-development"
