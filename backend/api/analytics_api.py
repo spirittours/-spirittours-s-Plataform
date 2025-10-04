@@ -27,7 +27,8 @@ import csv
 
 from backend.database import get_db
 from backend.services.analytics_service import AnalyticsService
-# from backend.dependencies import get_current_admin_user  # Uncomment when auth ready
+from backend.auth.rbac_middleware import get_current_active_user
+from backend.models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ async def get_dashboard(
     platform: Optional[str] = Query(None, description="Filter by platform"),
     days: int = Query(30, ge=1, le=365, description="Number of days"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)  # Uncomment when auth ready
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get comprehensive dashboard overview with all metrics
@@ -192,7 +193,7 @@ async def get_roi_analysis(
     platform: Optional[str] = Query(None, description="Filter by platform"),
     days: int = Query(30, ge=1, le=365, description="Number of days"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get ROI (Return on Investment) analysis for social media efforts
@@ -266,7 +267,7 @@ async def get_engagement_metrics(
     start_date: Optional[str] = Query(None, description="Start date (ISO)"),
     end_date: Optional[str] = Query(None, description="End date (ISO)"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get detailed engagement metrics for a time period
@@ -342,7 +343,7 @@ async def get_follower_growth(
     platform: Optional[str] = Query(None, description="Filter by platform"),
     days: int = Query(30, ge=1, le=365, description="Number of days"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get follower growth metrics and trends
@@ -400,7 +401,7 @@ async def get_sentiment_trends(
     platform: Optional[str] = Query(None, description="Filter by platform"),
     days: int = Query(30, ge=1, le=365, description="Number of days"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get sentiment analysis trends over time
@@ -470,7 +471,7 @@ async def get_top_performing_posts(
     limit: int = Query(10, ge=1, le=50, description="Number of posts"),
     metric: str = Query("engagement_rate", description="Sort metric"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get top performing posts ranked by engagement
@@ -519,7 +520,7 @@ async def get_top_performing_posts(
 async def get_platform_comparison(
     days: int = Query(30, ge=1, le=365, description="Number of days"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Compare performance across all platforms
@@ -575,7 +576,7 @@ async def get_platform_comparison(
 async def export_analytics(
     request: ExportRequest,
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Export analytics data to CSV format

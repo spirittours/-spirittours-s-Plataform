@@ -22,7 +22,8 @@ import logging
 
 from backend.database import get_db
 from backend.services.scheduling_service import SchedulingService
-# from backend.dependencies import get_current_admin_user  # Uncomment when auth ready
+from backend.auth.rbac_middleware import get_current_active_user
+from backend.models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +139,7 @@ class OptimalTimesRequest(BaseModel):
 async def schedule_post(
     request: SchedulePostRequest,
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)  # Uncomment when auth ready
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Schedule a post for future publication
@@ -167,7 +168,7 @@ async def schedule_post(
             platform=request.platform,
             content=request.content,
             scheduled_time=scheduled_time,
-            admin_id=1,  # Replace with current_admin.id
+            admin_id=current_admin.id,
             media_urls=request.media_urls,
             hashtags=request.hashtags,
             recurring=request.recurring,
@@ -200,7 +201,7 @@ async def schedule_post(
 async def schedule_with_ai(
     request: ScheduleWithAIRequest,
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Generate content with AI and schedule for publication
@@ -224,7 +225,7 @@ async def schedule_with_ai(
             prompt=request.prompt,
             platform=request.platform,
             scheduled_time=scheduled_time,
-            admin_id=1,  # Replace with current_admin.id
+            admin_id=current_admin.id,
             language=request.language,
             tone=request.tone,
             timezone=request.timezone
@@ -250,7 +251,7 @@ async def schedule_with_ai(
 async def bulk_schedule(
     request: BulkScheduleRequest,
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Schedule multiple posts at once
@@ -273,7 +274,7 @@ async def bulk_schedule(
         
         result = await service.bulk_schedule(
             posts=request.posts,
-            admin_id=1  # Replace with current_admin.id
+            admin_id=current_admin.id
         )
         
         if not result.get('success'):
@@ -300,7 +301,7 @@ async def get_scheduled_posts(
     end_date: Optional[str] = Query(None, description="End date (ISO)"),
     limit: int = Query(100, ge=1, le=500, description="Maximum results"),
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get list of scheduled posts
@@ -361,7 +362,7 @@ async def reschedule_post(
     post_id: int,
     request: RescheduleRequest,
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Reschedule a pending post to a new time
@@ -404,7 +405,7 @@ async def reschedule_post(
 async def cancel_post(
     post_id: int,
     db: AsyncSession = Depends(get_db),
-    # current_admin = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Cancel a scheduled post
