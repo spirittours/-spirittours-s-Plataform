@@ -25,7 +25,8 @@ celery_app = Celery(
     backend=RESULT_BACKEND,
     include=[
         'backend.tasks.social_media_tasks',
-        'backend.tasks.analytics_tasks'
+        'backend.tasks.analytics_tasks',
+        'backend.tasks.email_tasks'
     ]
 )
 
@@ -48,6 +49,11 @@ celery_app.conf.update(
         'backend.tasks.social_media_tasks.generate_and_schedule': {'queue': 'social_media'},
         'backend.tasks.analytics_tasks.calculate_engagement': {'queue': 'analytics'},
         'backend.tasks.analytics_tasks.update_analytics': {'queue': 'analytics'},
+        'backend.tasks.email_tasks.fetch_new_emails': {'queue': 'email'},
+        'backend.tasks.email_tasks.classify_pending_emails': {'queue': 'email'},
+        'backend.tasks.email_tasks.send_auto_responses': {'queue': 'email'},
+        'backend.tasks.email_tasks.check_sla_breaches': {'queue': 'email'},
+        'backend.tasks.email_tasks.aggregate_daily_analytics': {'queue': 'email'},
     },
     
     # Worker settings
@@ -83,6 +89,27 @@ celery_app.conf.update(
         'cleanup-old-tasks': {
             'task': 'backend.tasks.maintenance_tasks.cleanup_completed_tasks',
             'schedule': crontab(hour=3, minute=0),
+        },
+        # Email tasks
+        'fetch-emails-every-5min': {
+            'task': 'backend.tasks.email_tasks.fetch_new_emails',
+            'schedule': timedelta(minutes=5),
+        },
+        'classify-emails-every-2min': {
+            'task': 'backend.tasks.email_tasks.classify_pending_emails',
+            'schedule': timedelta(minutes=2),
+        },
+        'send-auto-responses-every-3min': {
+            'task': 'backend.tasks.email_tasks.send_auto_responses',
+            'schedule': timedelta(minutes=3),
+        },
+        'check-sla-breaches-every-15min': {
+            'task': 'backend.tasks.email_tasks.check_sla_breaches',
+            'schedule': timedelta(minutes=15),
+        },
+        'aggregate-email-analytics-daily': {
+            'task': 'backend.tasks.email_tasks.aggregate_daily_analytics',
+            'schedule': crontab(hour=1, minute=0),  # Daily at 1 AM
         },
     },
 )
