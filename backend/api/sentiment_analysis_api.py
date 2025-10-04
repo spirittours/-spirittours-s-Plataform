@@ -20,6 +20,8 @@ import logging
 
 from backend.database import get_db
 from backend.services.sentiment_analysis_service import SentimentAnalysisService
+from backend.auth.rbac_middleware import get_current_active_user
+from backend.models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +73,8 @@ class SentimentSummaryRequest(BaseModel):
 @router.post("/analyze")
 async def analyze_text(
     request: AnalyzeTextRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Analyze sentiment and intent of a text
@@ -117,7 +120,8 @@ async def analyze_text(
 @router.post("/analyze/batch")
 async def batch_analyze(
     request: BatchAnalyzeRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Analyze multiple texts in batch
@@ -170,7 +174,8 @@ async def batch_analyze(
 @router.post("/summary")
 async def get_sentiment_summary(
     request: SentimentSummaryRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Get sentiment analysis summary for a time period
