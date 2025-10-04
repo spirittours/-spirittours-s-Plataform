@@ -28,6 +28,7 @@ import PostsPanel from './SocialMedia/PostsPanel';
 import InteractionsPanel from './SocialMedia/InteractionsPanel';
 import AnalyticsPanel from './SocialMedia/AnalyticsPanel';
 import AIConfigPanel from './SocialMedia/AIConfigPanel';
+import AIContentGenerator from './AIContentGenerator';
 
 // Types
 interface PlatformStatus {
@@ -231,6 +232,7 @@ const SocialMediaManager: React.FC = () => {
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab label="Platforms" />
+          <Tab label="🤖 AI Content" />
           <Tab label="Publications" />
           <Tab label="Interactions" />
           <Tab label="Analytics" />
@@ -259,17 +261,20 @@ const SocialMediaManager: React.FC = () => {
           </Grid>
         )}
         
+        {/* AI Content Generator Tab */}
+        {currentTab === 1 && <AIContentGenerator />}
+        
         {/* Publications Tab */}
-        {currentTab === 1 && <PostsPanel />}
+        {currentTab === 2 && <PostsPanel />}
         
         {/* Interactions Tab */}
-        {currentTab === 2 && <InteractionsPanel />}
+        {currentTab === 3 && <InteractionsPanel />}
         
         {/* Analytics Tab */}
-        {currentTab === 3 && <AnalyticsPanel />}
+        {currentTab === 4 && <AnalyticsPanel />}
         
         {/* AI Configuration Tab */}
-        {currentTab === 4 && <AIConfigPanel />}
+        {currentTab === 5 && <AIConfigPanel />}
       </Box>
       
       {/* Credentials Dialog */}
