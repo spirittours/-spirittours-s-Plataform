@@ -30,6 +30,11 @@ import AnalyticsPanel from './SocialMedia/AnalyticsPanel';
 import AIConfigPanel from './SocialMedia/AIConfigPanel';
 import AIContentGenerator from './AIContentGenerator';
 
+// Import new dashboard components
+import SchedulerDashboard from './Scheduler/SchedulerDashboard';
+import AnalyticsDashboard from './Analytics/AnalyticsDashboard';
+import SentimentViewer from './Sentiment/SentimentViewer';
+
 // Types
 interface PlatformStatus {
   platform: string;
@@ -233,9 +238,12 @@ const SocialMediaManager: React.FC = () => {
         >
           <Tab label="Platforms" />
           <Tab label="🤖 AI Content" />
+          <Tab label="📅 Scheduler" />
+          <Tab label="📊 Analytics" />
+          <Tab label="💭 Sentiment" />
           <Tab label="Publications" />
           <Tab label="Interactions" />
-          <Tab label="Analytics" />
+          <Tab label="Old Analytics" />
           <Tab label="AI Configuration" />
         </Tabs>
       </Paper>
@@ -264,17 +272,26 @@ const SocialMediaManager: React.FC = () => {
         {/* AI Content Generator Tab */}
         {currentTab === 1 && <AIContentGenerator />}
         
+        {/* Scheduler Tab - NEW */}
+        {currentTab === 2 && <SchedulerDashboard />}
+        
+        {/* Analytics Dashboard Tab - NEW */}
+        {currentTab === 3 && <AnalyticsDashboard />}
+        
+        {/* Sentiment Viewer Tab - NEW */}
+        {currentTab === 4 && <SentimentViewer />}
+        
         {/* Publications Tab */}
-        {currentTab === 2 && <PostsPanel />}
+        {currentTab === 5 && <PostsPanel />}
         
         {/* Interactions Tab */}
-        {currentTab === 3 && <InteractionsPanel />}
+        {currentTab === 6 && <InteractionsPanel />}
         
-        {/* Analytics Tab */}
-        {currentTab === 4 && <AnalyticsPanel />}
+        {/* Old Analytics Tab */}
+        {currentTab === 7 && <AnalyticsPanel />}
         
         {/* AI Configuration Tab */}
-        {currentTab === 5 && <AIConfigPanel />}
+        {currentTab === 8 && <AIConfigPanel />}
       </Box>
       
       {/* Credentials Dialog */}
