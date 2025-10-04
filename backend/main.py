@@ -35,7 +35,9 @@ from backend.api import (
     omnichannel_communications_api,
     ai_voice_agents_api,
     webrtc_signaling_api,
-    advanced_voice_api
+    advanced_voice_api,
+    social_media_credentials_api,
+    ai_content_api
 )
 
 # Import open-source services router
@@ -93,6 +95,8 @@ app.include_router(omnichannel_communications_api.router)
 app.include_router(ai_voice_agents_api.router)
 app.include_router(webrtc_signaling_api.router)
 app.include_router(advanced_voice_api.router)
+app.include_router(social_media_credentials_api.router)
+app.include_router(ai_content_api.router)
 
 # Include open-source services router
 app.include_router(opensource_router)
