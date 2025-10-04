@@ -23,6 +23,15 @@ from .enhanced_audit_models import (
     BookingAuditLog, AIAgentUsageLog, LoginActivityLog, DataAccessLog
 )
 
+from .email_models import (
+    EmailAccount, EmailMessage, EmailClassification, EmailResponse,
+    EmailAnalytics, EmailTemplate, EmailCategory, EmailIntent,
+    EmailPriority, EmailStatus, ResponseType, EmailLanguage,
+    EmailAccountResponse, EmailMessageResponse, EmailClassificationResponse,
+    EmailAnalyticsResponse, EmailDashboardResponse, ClassifyEmailRequest,
+    SendResponseRequest, CreateEmailTemplateRequest
+)
+
 __all__ = [
     # Base
     'Base',
@@ -42,5 +51,13 @@ __all__ = [
     
     # Audit Models
     'ActionType', 'RiskLevel', 'EnhancedAuditLog',
-    'BookingAuditLog', 'AIAgentUsageLog', 'LoginActivityLog', 'DataAccessLog'
+    'BookingAuditLog', 'AIAgentUsageLog', 'LoginActivityLog', 'DataAccessLog',
+    
+    # Email Models
+    'EmailAccount', 'EmailMessage', 'EmailClassification', 'EmailResponse',
+    'EmailAnalytics', 'EmailTemplate', 'EmailCategory', 'EmailIntent',
+    'EmailPriority', 'EmailStatus', 'ResponseType', 'EmailLanguage',
+    'EmailAccountResponse', 'EmailMessageResponse', 'EmailClassificationResponse',
+    'EmailAnalyticsResponse', 'EmailDashboardResponse', 'ClassifyEmailRequest',
+    'SendResponseRequest', 'CreateEmailTemplateRequest'
 ]
