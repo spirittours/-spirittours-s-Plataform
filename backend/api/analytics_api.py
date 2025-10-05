@@ -1,753 +1,419 @@
 """
-Advanced Analytics API Endpoints
-
-RESTful API for:
-- Dashboard overview with real-time metrics
-- ROI analysis and cost tracking
-- Engagement metrics and trends
-- Follower growth tracking
-- Platform comparisons
-- Data export functionality
-
-Requires admin authentication for all endpoints.
-
-Author: Spirit Tours Development Team
-Created: 2025-10-04
+Analytics API endpoints for real-time business intelligence
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, validator
-from typing import Optional
-from datetime import datetime
-import logging
-import io
-import csv
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from typing import Optional, Dict, List, Any
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+import asyncio
+import json
 
 from backend.database import get_db
+from backend.auth import get_current_user
 from backend.services.analytics_service import AnalyticsService
-from backend.auth.rbac_middleware import get_current_active_user
-from backend.models.rbac_models import User
-
-logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix="/api/analytics", tags=["Advanced Analytics"])
+from backend.models.database import User
 
 
-# ===== Request/Response Models =====
+router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
-class DashboardRequest(BaseModel):
-    """Request model for dashboard overview"""
-    platform: Optional[str] = Field(None, description="Filter by platform")
-    days: int = Field(default=30, ge=1, le=365, description="Number of days to analyze")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "platform": "instagram",
-                "days": 30
-            }
-        }
-
-
-class ROIRequest(BaseModel):
-    """Request model for ROI analysis"""
-    platform: Optional[str] = Field(None, description="Filter by platform")
-    days: int = Field(default=30, ge=1, le=365, description="Number of days to analyze")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "platform": None,
-                "days": 90
-            }
-        }
-
-
-class EngagementRequest(BaseModel):
-    """Request model for engagement metrics"""
-    platform: Optional[str] = Field(None, description="Filter by platform")
-    start_date: Optional[str] = Field(None, description="Start date (ISO format)")
-    end_date: Optional[str] = Field(None, description="End date (ISO format)")
-    
-    @validator('start_date', 'end_date')
-    def validate_date(cls, v):
-        if v:
-            try:
-                datetime.fromisoformat(v)
-                return v
-            except ValueError:
-                raise ValueError('Invalid date format. Use ISO format (YYYY-MM-DD)')
-        return v
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "platform": "facebook",
-                "start_date": "2025-09-01",
-                "end_date": "2025-10-01"
-            }
-        }
-
-
-class ExportRequest(BaseModel):
-    """Request model for data export"""
-    export_type: str = Field(..., description="Type of data to export")
-    platform: Optional[str] = Field(None, description="Filter by platform")
-    start_date: Optional[str] = Field(None, description="Start date (ISO format)")
-    end_date: Optional[str] = Field(None, description="End date (ISO format)")
-    format: str = Field(default="csv", description="Export format")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "export_type": "engagement",
-                "platform": "instagram",
-                "start_date": "2025-09-01",
-                "end_date": "2025-10-01",
-                "format": "csv"
-            }
-        }
-
-
-# ===== API Endpoints =====
 
 @router.get("/dashboard")
-async def get_dashboard(
-    platform: Optional[str] = Query(None, description="Filter by platform"),
-    days: int = Query(30, ge=1, le=365, description="Number of days"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
+async def get_dashboard_metrics(
+    start_date: Optional[datetime] = Query(None, description="Start date for metrics"),
+    end_date: Optional[datetime] = Query(None, description="End date for metrics"),
+    business_model: Optional[str] = Query(None, description="Filter by business model (b2c/b2b/b2b2c)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
-    Get comprehensive dashboard overview with all metrics
-    
-    **Authentication**: Admin only
-    
-    **Features:**
-    - Total posts and average posts per day
-    - Total engagement (likes, comments, shares, reach)
-    - Follower growth with percentages
-    - Overall sentiment score
-    - Top 5 performing posts
-    - Platform breakdown comparison
-    - Daily engagement trends
-    - Content performance insights
-    
-    **Returns:**
-    Comprehensive dashboard object with all metrics organized by category
-    
-    **Example Response:**
-    ```json
-    {
-      "success": true,
-      "period": {
-        "start": "2025-09-04T00:00:00",
-        "end": "2025-10-04T00:00:00",
-        "days": 30
-      },
-      "total_posts": {"total": 45, "avg_per_day": 1.5},
-      "total_engagement": {
-        "likes": 1250,
-        "comments": 340,
-        "shares": 89,
-        "engagement_rate": 3.45
-      },
-      "follower_growth": {
-        "total_growth": 523,
-        "by_platform": {...}
-      },
-      "top_performing_posts": [...],
-      "platform_breakdown": [...],
-      "engagement_by_day": [...]
-    }
-    ```
+    Get comprehensive dashboard metrics
     """
+    # Check permissions
+    if current_user.role not in ['admin', 'operator', 'agency']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    analytics_service = AnalyticsService(db)
+    
     try:
-        service = AnalyticsService(db)
-        
-        result = await service.get_dashboard_overview(
-            platform=platform,
-            days=days
-        )
-        
-        if not result.get('success'):
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result.get('error', 'Dashboard retrieval failed')
-            )
-        
-        return result
-        
-    except Exception as e:
-        logger.error(f"Dashboard endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-
-@router.get("/roi")
-async def get_roi_analysis(
-    platform: Optional[str] = Query(None, description="Filter by platform"),
-    days: int = Query(30, ge=1, le=365, description="Number of days"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
-):
-    """
-    Get ROI (Return on Investment) analysis for social media efforts
-    
-    **Authentication**: Admin only
-    
-    **Calculation Method:**
-    - AI Cost: $0.01 per post generated
-    - Engagement Value: 
-      - Likes: $0.05 each
-      - Comments: $0.25 each
-      - Shares: $0.50 each
-    - ROI = ((Value - Cost) / Cost) × 100%
-    
-    **Use Case:**
-    Demonstrate the financial value of AI-powered social media
-    automation compared to manual content creation costs.
-    
-    **Returns:**
-    - Total costs breakdown
-    - Estimated engagement value
-    - ROI percentage
-    - Value breakdown by engagement type
-    
-    **Example Response:**
-    ```json
-    {
-      "success": true,
-      "period_days": 30,
-      "costs": {
-        "ai_content_generation": 0.45,
-        "total": 0.45
-      },
-      "estimated_value": 148.75,
-      "roi_percentage": 32944.44,
-      "engagement_value_breakdown": {
-        "likes_value": 62.50,
-        "comments_value": 85.00,
-        "shares_value": 44.50
-      }
-    }
-    ```
-    """
-    try:
-        service = AnalyticsService(db)
-        
-        result = await service.get_roi_analysis(
-            platform=platform,
-            days=days
-        )
-        
-        if not result.get('success'):
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result.get('error', 'ROI analysis failed')
-            )
-        
-        return result
-        
-    except Exception as e:
-        logger.error(f"ROI endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-
-@router.get("/engagement")
-async def get_engagement_metrics(
-    platform: Optional[str] = Query(None, description="Filter by platform"),
-    start_date: Optional[str] = Query(None, description="Start date (ISO)"),
-    end_date: Optional[str] = Query(None, description="End date (ISO)"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
-):
-    """
-    Get detailed engagement metrics for a time period
-    
-    **Authentication**: Admin only
-    
-    **Metrics Included:**
-    - Total likes, comments, shares
-    - Impressions and reach
-    - Average engagement rate
-    - Engagement by day (time series)
-    - Platform comparison
-    
-    **Use Case:**
-    Track engagement trends, identify high-performing content
-    patterns, and optimize posting strategy.
-    
-    **Returns:**
-    Daily engagement breakdown with totals and averages
-    """
-    try:
-        service = AnalyticsService(db)
-        
-        # Parse dates if provided
-        start = datetime.fromisoformat(start_date) if start_date else None
-        end = datetime.fromisoformat(end_date) if end_date else None
-        
-        # If no dates provided, default to last 30 days
-        if not start and not end:
-            end = datetime.utcnow()
-            start = end - timedelta(days=30)
-        
-        # Get engagement by day
-        engagement_by_day = await service._get_engagement_by_day(
-            start_date=start,
-            end_date=end,
-            platform=platform
-        )
-        
-        # Get total engagement
-        total_engagement = await service._get_total_engagement(
-            start_date=start,
-            end_date=end,
-            platform=platform
+        metrics = await analytics_service.get_dashboard_metrics(
+            start_date=start_date,
+            end_date=end_date,
+            business_model=business_model
         )
         
         return {
-            'success': True,
-            'period': {
-                'start': start.isoformat() if start else None,
-                'end': end.isoformat() if end else None
-            },
-            'platform': platform or 'all',
-            'total_engagement': total_engagement,
-            'engagement_by_day': engagement_by_day
+            "success": True,
+            "data": metrics,
+            "generated_at": datetime.utcnow().isoformat()
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/realtime")
+async def get_realtime_metrics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get real-time metrics for live dashboard
+    """
+    if current_user.role not in ['admin', 'operator']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    analytics_service = AnalyticsService(db)
+    
+    try:
+        metrics = await analytics_service.get_realtime_metrics()
+        return {
+            "success": True,
+            "data": metrics
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.websocket("/ws/realtime")
+async def websocket_realtime_metrics(
+    websocket: WebSocket,
+    db: Session = Depends(get_db)
+):
+    """
+    WebSocket endpoint for real-time metrics streaming
+    """
+    await websocket.accept()
+    analytics_service = AnalyticsService(db)
+    
+    try:
+        while True:
+            # Send metrics every 5 seconds
+            metrics = await analytics_service.get_realtime_metrics()
+            await websocket.send_json(metrics)
+            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        await websocket.send_json({"error": str(e)})
+        await websocket.close()
+
+
+@router.get("/reports/{report_type}")
+async def get_custom_report(
+    report_type: str,
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    group_by: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate custom reports
+    
+    Available report types:
+    - revenue_by_operator: Revenue breakdown by tour operator
+    - agent_performance: Sales agent performance metrics
+    - tour_profitability: Tour profitability analysis
+    - customer_acquisition: Customer acquisition funnel
+    """
+    if current_user.role not in ['admin', 'operator', 'agency']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    analytics_service = AnalyticsService(db)
+    
+    filters = {
+        "start_date": start_date or datetime.utcnow() - timedelta(days=30),
+        "end_date": end_date or datetime.utcnow()
+    }
+    
+    try:
+        report = await analytics_service.get_custom_report(
+            report_type=report_type,
+            filters=filters,
+            group_by=group_by
+        )
         
+        return {
+            "success": True,
+            "report_type": report_type,
+            "data": report,
+            "filters": filters,
+            "generated_at": datetime.utcnow().isoformat()
+        }
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid date format: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Engagement endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/growth")
-async def get_follower_growth(
-    platform: Optional[str] = Query(None, description="Filter by platform"),
-    days: int = Query(30, ge=1, le=365, description="Number of days"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
+@router.get("/kpis")
+async def get_key_performance_indicators(
+    period: str = Query("month", description="Period for KPIs (day/week/month/quarter/year)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
-    Get follower growth metrics and trends
-    
-    **Authentication**: Admin only
-    
-    **Metrics Included:**
-    - Total follower growth (net new followers)
-    - Growth by platform
-    - Growth percentage
-    - Starting and ending follower counts
-    
-    **Use Case:**
-    Monitor audience growth, evaluate platform effectiveness,
-    track long-term trends in follower acquisition.
-    
-    **Returns:**
-    Growth metrics with breakdown by platform
+    Get key performance indicators (KPIs)
     """
+    if current_user.role not in ['admin', 'operator']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    # Calculate period dates
+    end_date = datetime.utcnow()
+    if period == "day":
+        start_date = end_date - timedelta(days=1)
+    elif period == "week":
+        start_date = end_date - timedelta(weeks=1)
+    elif period == "month":
+        start_date = end_date - timedelta(days=30)
+    elif period == "quarter":
+        start_date = end_date - timedelta(days=90)
+    elif period == "year":
+        start_date = end_date - timedelta(days=365)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period")
+    
+    analytics_service = AnalyticsService(db)
+    
     try:
-        from datetime import timedelta
-        
-        service = AnalyticsService(db)
-        
-        end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=days)
-        
-        growth = await service._get_follower_growth(
-            start_date=start_date,
-            end_date=end_date,
-            platform=platform
-        )
-        
-        return {
-            'success': True,
-            'period': {
-                'start': start_date.isoformat(),
-                'end': end_date.isoformat(),
-                'days': days
-            },
-            'platform': platform or 'all',
-            **growth
-        }
-        
-    except Exception as e:
-        logger.error(f"Growth endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-
-@router.get("/sentiment-trends")
-async def get_sentiment_trends(
-    platform: Optional[str] = Query(None, description="Filter by platform"),
-    days: int = Query(30, ge=1, le=365, description="Number of days"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
-):
-    """
-    Get sentiment analysis trends over time
-    
-    **Authentication**: Admin only
-    
-    **Metrics Included:**
-    - Overall sentiment score (-1.0 to +1.0)
-    - Positive/negative/neutral counts
-    - Sentiment distribution percentages
-    - Total interactions analyzed
-    
-    **Use Case:**
-    Track brand perception, identify reputation issues early,
-    measure customer satisfaction trends.
-    
-    **Returns:**
-    Sentiment metrics with distribution breakdown
-    """
-    try:
-        from datetime import timedelta
-        
-        service = AnalyticsService(db)
-        
-        end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=days)
-        
-        sentiment = await service._get_sentiment_score(
-            start_date=start_date,
-            end_date=end_date,
-            platform=platform
-        )
-        
-        # Calculate percentages
-        total = sentiment['total_interactions']
-        if total > 0:
-            sentiment['positive_percentage'] = (sentiment['positive_count'] / total * 100)
-            sentiment['negative_percentage'] = (sentiment['negative_count'] / total * 100)
-            sentiment['neutral_percentage'] = (sentiment['neutral_count'] / total * 100)
-        else:
-            sentiment['positive_percentage'] = 0
-            sentiment['negative_percentage'] = 0
-            sentiment['neutral_percentage'] = 0
-        
-        return {
-            'success': True,
-            'period': {
-                'start': start_date.isoformat(),
-                'end': end_date.isoformat(),
-                'days': days
-            },
-            'platform': platform or 'all',
-            **sentiment
-        }
-        
-    except Exception as e:
-        logger.error(f"Sentiment trends endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-
-@router.get("/top-posts")
-async def get_top_performing_posts(
-    platform: Optional[str] = Query(None, description="Filter by platform"),
-    limit: int = Query(10, ge=1, le=50, description="Number of posts"),
-    metric: str = Query("engagement_rate", description="Sort metric"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
-):
-    """
-    Get top performing posts ranked by engagement
-    
-    **Authentication**: Admin only
-    
-    **Sort Metrics:**
-    - engagement_rate: Overall engagement percentage
-    - likes: Total likes count
-    - comments: Total comments count
-    - shares: Total shares count
-    
-    **Use Case:**
-    Identify successful content patterns, learn what resonates
-    with audience, replicate winning strategies.
-    
-    **Returns:**
-    List of top posts with full engagement metrics
-    """
-    try:
-        service = AnalyticsService(db)
-        
-        top_posts = await service._get_top_posts(
-            platform=platform,
-            limit=limit
-        )
-        
-        return {
-            'success': True,
-            'platform': platform or 'all',
-            'limit': limit,
-            'metric': metric,
-            'posts': top_posts,
-            'count': len(top_posts)
-        }
-        
-    except Exception as e:
-        logger.error(f"Top posts endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-
-@router.get("/platform-comparison")
-async def get_platform_comparison(
-    days: int = Query(30, ge=1, le=365, description="Number of days"),
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
-):
-    """
-    Compare performance across all platforms
-    
-    **Authentication**: Admin only
-    
-    **Metrics per Platform:**
-    - Total posts published
-    - Total engagement (likes, comments, shares)
-    - Average engagement rate
-    - Follower growth
-    
-    **Use Case:**
-    Identify which platforms are most effective, allocate
-    resources accordingly, optimize multi-platform strategy.
-    
-    **Returns:**
-    Side-by-side comparison of all platforms
-    """
-    try:
-        from datetime import timedelta
-        
-        service = AnalyticsService(db)
-        
-        end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=days)
-        
-        breakdown = await service._get_platform_breakdown(
+        # Get comprehensive metrics
+        metrics = await analytics_service.get_dashboard_metrics(
             start_date=start_date,
             end_date=end_date
         )
         
-        return {
-            'success': True,
-            'period': {
-                'start': start_date.isoformat(),
-                'end': end_date.isoformat(),
-                'days': days
+        # Calculate KPIs
+        kpis = {
+            "financial": {
+                "total_revenue": metrics["revenue"]["total_revenue"],
+                "net_revenue": metrics["revenue"]["net_revenue"],
+                "revenue_growth": metrics["revenue"]["revenue_growth_rate"],
+                "average_order_value": metrics["overview"]["average_order_value"],
+                "refund_rate": (metrics["revenue"]["total_refunds"] / 
+                               max(metrics["revenue"]["total_revenue"], 1)) * 100
             },
-            'platforms': breakdown,
-            'total_platforms': len(breakdown)
+            "operational": {
+                "total_bookings": metrics["bookings"]["total_bookings"],
+                "conversion_rate": metrics["overview"]["conversion_rate"],
+                "cancellation_rate": metrics["bookings"]["cancellation_rate"],
+                "active_users": metrics["overview"]["active_users"],
+                "system_uptime": metrics["operational"]["system_uptime"]
+            },
+            "customer": {
+                "new_customers": metrics["customers"]["new_customers"],
+                "retention_rate": metrics["customers"]["retention_rate"],
+                "customer_lifetime_value": metrics["customers"]["customer_lifetime_value"],
+                "repeat_customers": metrics["customers"]["repeat_customers"]
+            },
+            "ai_performance": {
+                "total_queries": metrics["ai_usage"]["total_queries"],
+                "success_rate": metrics["ai_usage"]["success_rate"],
+                "avg_response_time": metrics["ai_usage"]["average_response_time"]
+            }
         }
         
+        return {
+            "success": True,
+            "period": period,
+            "kpis": kpis,
+            "generated_at": datetime.utcnow().isoformat()
+        }
     except Exception as e:
-        logger.error(f"Platform comparison endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/export")
-async def export_analytics(
-    request: ExportRequest,
-    db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_active_user)
+@router.get("/trends")
+async def get_trend_analysis(
+    metric: str = Query(..., description="Metric to analyze (revenue/bookings/users)"),
+    period: int = Query(30, description="Number of days to analyze"),
+    forecast_days: int = Query(7, description="Number of days to forecast"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
-    Export analytics data to CSV format
-    
-    **Authentication**: Admin only
-    
-    **Export Types:**
-    - engagement: Daily engagement metrics
-    - posts: All published posts with metrics
-    - sentiment: Sentiment analysis results
-    - growth: Follower growth data
-    - roi: ROI analysis data
-    
-    **Use Case:**
-    Generate reports for stakeholders, perform deeper analysis
-    in Excel/Google Sheets, archive historical data.
-    
-    **Returns:**
-    CSV file download stream
+    Get trend analysis and forecasting
     """
+    if current_user.role not in ['admin', 'operator']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    analytics_service = AnalyticsService(db)
+    
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=period)
+    
     try:
-        service = AnalyticsService(db)
-        
-        # Parse dates
-        start_date = datetime.fromisoformat(request.start_date) if request.start_date else None
-        end_date = datetime.fromisoformat(request.end_date) if request.end_date else None
-        
-        if not start_date or not end_date:
-            end_date = datetime.utcnow()
-            start_date = end_date - timedelta(days=30)
-        
-        # Generate CSV based on export type
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        if request.export_type == 'engagement':
-            # Get engagement data
-            engagement_data = await service._get_engagement_by_day(
-                start_date=start_date,
-                end_date=end_date,
-                platform=request.platform
-            )
-            
-            # Write CSV
-            writer.writerow(['Date', 'Likes', 'Comments', 'Shares', 'Total Engagement'])
-            for row in engagement_data:
-                writer.writerow([
-                    row['date'],
-                    row['likes'],
-                    row['comments'],
-                    row['shares'],
-                    row['total_engagement']
-                ])
-        
-        elif request.export_type == 'posts':
-            # Get top posts
-            posts = await service._get_top_posts(platform=request.platform, limit=1000)
-            
-            writer.writerow(['Post ID', 'Platform', 'Content', 'Published At', 
-                           'Likes', 'Comments', 'Shares', 'Engagement Rate'])
-            for post in posts:
-                writer.writerow([
-                    post['id'],
-                    post['platform'],
-                    post['content'],
-                    post['published_at'],
-                    post['likes'],
-                    post['comments'],
-                    post['shares'],
-                    post['engagement_rate']
-                ])
-        
-        elif request.export_type == 'roi':
-            # Get ROI data
-            roi_data = await service.get_roi_analysis(
-                platform=request.platform,
-                days=(end_date - start_date).days
-            )
-            
-            writer.writerow(['Metric', 'Value'])
-            writer.writerow(['Period (days)', roi_data.get('period_days', 0)])
-            writer.writerow(['Total Costs', roi_data.get('costs', {}).get('total', 0)])
-            writer.writerow(['Estimated Value', roi_data.get('estimated_value', 0)])
-            writer.writerow(['ROI Percentage', roi_data.get('roi_percentage', 0)])
-        
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported export type: {request.export_type}"
-            )
-        
-        # Prepare response
-        output.seek(0)
-        
-        filename = f"spirit_tours_analytics_{request.export_type}_{datetime.utcnow().strftime('%Y%m%d')}.csv"
-        
-        return StreamingResponse(
-            iter([output.getvalue()]),
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
+        metrics = await analytics_service.get_dashboard_metrics(
+            start_date=start_date,
+            end_date=end_date
         )
         
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid date format: {str(e)}"
-        )
+        trend_data = {
+            "historical": metrics["trends"],
+            "forecast": metrics["trends"]["growth_forecast"],
+            "seasonality": metrics["trends"]["seasonality_index"],
+            "metric": metric,
+            "period_analyzed": period,
+            "forecast_period": forecast_days
+        }
+        
+        return {
+            "success": True,
+            "data": trend_data,
+            "generated_at": datetime.utcnow().isoformat()
+        }
     except Exception as e:
-        logger.error(f"Export endpoint error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/config")
-async def get_analytics_config():
+@router.get("/export/{format}")
+async def export_analytics(
+    format: str,
+    report_type: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Get analytics configuration and available metrics
+    Export analytics data in various formats
     
-    **Returns:**
-    - Available export types
-    - Supported metrics
-    - Date range limits
-    - ROI calculation parameters
+    Supported formats: json, csv, excel
     """
-    return {
-        'success': True,
-        'config': {
-            'export_types': ['engagement', 'posts', 'sentiment', 'growth', 'roi'],
-            'metrics': {
-                'engagement': ['likes', 'comments', 'shares', 'impressions', 'reach'],
-                'growth': ['follower_count', 'follower_growth_rate'],
-                'sentiment': ['positive', 'negative', 'neutral', 'sentiment_score'],
-                'roi': ['costs', 'value', 'roi_percentage']
-            },
-            'date_range_limits': {
-                'min_days': 1,
-                'max_days': 365,
-                'default_days': 30
-            },
-            'roi_calculation': {
-                'ai_cost_per_post': 0.01,
-                'like_value': 0.05,
-                'comment_value': 0.25,
-                'share_value': 0.50
-            },
-            'platforms': ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube']
+    if current_user.role not in ['admin', 'operator']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    if format not in ['json', 'csv', 'excel']:
+        raise HTTPException(status_code=400, detail="Invalid export format")
+    
+    analytics_service = AnalyticsService(db)
+    
+    try:
+        # Get data based on report type
+        if report_type:
+            data = await analytics_service.get_custom_report(
+                report_type=report_type,
+                filters={
+                    "start_date": start_date or datetime.utcnow() - timedelta(days=30),
+                    "end_date": end_date or datetime.utcnow()
+                }
+            )
+        else:
+            data = await analytics_service.get_dashboard_metrics(
+                start_date=start_date,
+                end_date=end_date
+            )
+        
+        # Format data based on export type
+        if format == 'json':
+            return {
+                "success": True,
+                "data": data,
+                "export_format": "json",
+                "generated_at": datetime.utcnow().isoformat()
+            }
+        elif format == 'csv':
+            # Convert to CSV format (simplified for example)
+            csv_data = "metric,value\n"
+            for key, value in data.get("overview", {}).items():
+                csv_data += f"{key},{value}\n"
+            
+            return {
+                "success": True,
+                "data": csv_data,
+                "export_format": "csv",
+                "generated_at": datetime.utcnow().isoformat()
+            }
+        elif format == 'excel':
+            # For Excel, we'd typically use openpyxl or xlsxwriter
+            # Returning structured data that can be converted to Excel
+            return {
+                "success": True,
+                "data": data,
+                "export_format": "excel",
+                "note": "Excel export requires additional processing",
+                "generated_at": datetime.utcnow().isoformat()
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/benchmarks")
+async def get_industry_benchmarks(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get industry benchmarks for comparison
+    """
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Industry standard benchmarks for tourism
+    benchmarks = {
+        "conversion_rate": {
+            "industry_average": 2.5,
+            "top_performers": 5.0,
+            "description": "Visitor to booking conversion rate (%)"
+        },
+        "cancellation_rate": {
+            "industry_average": 15.0,
+            "top_performers": 8.0,
+            "description": "Booking cancellation rate (%)"
+        },
+        "customer_retention": {
+            "industry_average": 25.0,
+            "top_performers": 40.0,
+            "description": "Customer retention rate (%)"
+        },
+        "average_order_value": {
+            "industry_average": 850.0,
+            "top_performers": 1500.0,
+            "description": "Average booking value (USD)"
+        },
+        "customer_lifetime_value": {
+            "industry_average": 2500.0,
+            "top_performers": 5000.0,
+            "description": "Customer lifetime value (USD)"
+        },
+        "ai_adoption": {
+            "industry_average": 35.0,
+            "top_performers": 75.0,
+            "description": "AI feature utilization rate (%)"
         }
     }
-
-
-@router.get("/health")
-async def health_check():
-    """
-    Health check endpoint for analytics service
     
-    **Returns:** Service status and availability
-    """
+    # Get current performance
+    analytics_service = AnalyticsService(db)
+    current_metrics = await analytics_service.get_dashboard_metrics(
+        start_date=datetime.utcnow() - timedelta(days=30)
+    )
+    
+    # Compare with benchmarks
+    comparison = {}
+    for metric, benchmark in benchmarks.items():
+        current_value = 0
+        if metric == "conversion_rate":
+            current_value = current_metrics["overview"]["conversion_rate"]
+        elif metric == "cancellation_rate":
+            current_value = current_metrics["bookings"]["cancellation_rate"]
+        elif metric == "customer_retention":
+            current_value = current_metrics["customers"]["retention_rate"]
+        elif metric == "average_order_value":
+            current_value = current_metrics["overview"]["average_order_value"]
+        elif metric == "customer_lifetime_value":
+            current_value = current_metrics["customers"]["customer_lifetime_value"]
+        
+        comparison[metric] = {
+            "current": current_value,
+            "benchmark": benchmark,
+            "performance": "above_average" if current_value > benchmark["industry_average"] else "below_average",
+            "gap_to_average": current_value - benchmark["industry_average"],
+            "gap_to_top": benchmark["top_performers"] - current_value
+        }
+    
     return {
-        'status': 'healthy',
-        'service': 'Advanced Analytics',
-        'features': {
-            'dashboard': True,
-            'roi_analysis': True,
-            'engagement_tracking': True,
-            'sentiment_trends': True,
-            'data_export': True
-        },
-        'version': '1.0.0',
-        'timestamp': datetime.utcnow().isoformat()
+        "success": True,
+        "benchmarks": benchmarks,
+        "comparison": comparison,
+        "generated_at": datetime.utcnow().isoformat()
     }
