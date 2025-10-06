@@ -1,0 +1,291 @@
+/* Spirit Tours Logo Styles */
+
+.spirit-tours-logo {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spirit-tours-logo--full {
+  gap: 12px;
+}
+
+.spirit-tours-logo--compact {
+  gap: 8px;
+}
+
+.spirit-tours-logo--icon {
+  padding: 4px;
+}
+
+.logo-link {
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.logo-link:hover {
+  transform: translateY(-2px);
+}
+
+.logo-link:active {
+  transform: translateY(0);
+}
+
+.logo-image {
+  display: block;
+  height: auto;
+  max-width: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease;
+}
+
+.logo-link:hover .logo-image {
+  filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.3));
+}
+
+.logo-tagline {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  font-style: italic;
+  color: #475569;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+/* Animated Logo Styles */
+.animated-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px;
+}
+
+.animated-logo {
+  position: relative;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.pegasus-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 60%;
+  z-index: 2;
+  animation: pegasusGallop 2s ease-in-out infinite;
+}
+
+@keyframes pegasusGallop {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-5deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(5deg) scale(0.95);
+  }
+}
+
+.pegasus-svg {
+  width: 100%;
+  height: 100%;
+  color: #2563eb;
+}
+
+.pegasus-wing-left {
+  animation: wingFlap 1s ease-in-out infinite;
+  transform-origin: 35% 50%;
+}
+
+.pegasus-wing-right {
+  animation: wingFlap 1s ease-in-out infinite 0.5s;
+  transform-origin: 65% 50%;
+}
+
+@keyframes wingFlap {
+  0%, 100% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(30deg);
+  }
+}
+
+.globe-animation {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 60%;
+  height: 60%;
+  animation: globeSpin 20s linear infinite;
+}
+
+@keyframes globeSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.globe-sphere {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #0284c7 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 0 40px rgba(14, 165, 233, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.globe-lines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 11px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 11px
+    );
+  border-radius: 50%;
+}
+
+.globe-continents {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 30% 40%,
+    rgba(255, 255, 255, 0.2) 10%,
+    transparent 15%
+  ),
+  radial-gradient(
+    circle at 60% 30%,
+    rgba(255, 255, 255, 0.15) 8%,
+    transparent 12%
+  ),
+  radial-gradient(
+    circle at 70% 60%,
+    rgba(255, 255, 255, 0.18) 12%,
+    transparent 16%
+  );
+  animation: continentDrift 15s ease-in-out infinite;
+}
+
+@keyframes continentDrift {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.loading-text {
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb 0%, #9333ea 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.loading-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9333ea;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.loading-dots .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .spirit-tours-logo--full {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .logo-tagline {
+    font-size: 12px;
+  }
+  
+  .animated-logo-container {
+    padding: 16px;
+  }
+  
+  .loading-text {
+    font-size: 18px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .logo-tagline {
+    color: #cbd5e1;
+  }
+  
+  .logo-image {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+  
+  .logo-link:hover .logo-image {
+    filter: drop-shadow(0 4px 8px rgba(147, 51, 234, 0.4));
+  }
+}
