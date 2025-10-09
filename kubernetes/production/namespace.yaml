@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spirit-tours-prod
+  labels:
+    name: spirit-tours-prod
+    environment: production
+    managed-by: kubectl
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: spirit-tours-quota
+  namespace: spirit-tours-prod
+spec:
+  hard:
+    requests.cpu: "100"
+    requests.memory: "200Gi"
+    requests.storage: "500Gi"
+    persistentvolumeclaims: "20"
+    services.loadbalancers: "5"
+    services.nodeports: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: spirit-tours-limits
+  namespace: spirit-tours-prod
+spec:
+  limits:
+  - max:
+      cpu: "8"
+      memory: "16Gi"
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    default:
+      cpu: "1"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "500m"
+      memory: "512Mi"
+    type: Container
+  - max:
+      storage: "50Gi"
+    min:
+      storage: "1Gi"
+    type: PersistentVolumeClaim
