@@ -1,0 +1,491 @@
+version: '3.8'
+
+services:
+  # API Gateway Service
+  api-gateway:
+    build: 
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: spirit-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - RATE_LIMIT_ENABLED=true
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: spirit-auth-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres-auth:5432/auth_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVICE_NAME=auth-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - postgres-auth
+      - redis
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Booking Service
+  booking-service:
+    build:
+      context: ./services/booking
+      dockerfile: Dockerfile
+    container_name: spirit-booking-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres-booking:5432/booking_db
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:9092
+      - SERVICE_NAME=booking-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - postgres-booking
+      - redis
+      - kafka
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./services/payment
+      dockerfile: Dockerfile
+    container_name: spirit-payment-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres-payment:5432/payment_db
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_SECRET=${PAYPAL_SECRET}
+      - KAFKA_BROKERS=kafka:9092
+      - SERVICE_NAME=payment-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - postgres-payment
+      - kafka
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    container_name: spirit-notification-service
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:9092
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - TWILIO_SID=${TWILIO_SID}
+      - TWILIO_TOKEN=${TWILIO_TOKEN}
+      - SERVICE_NAME=notification-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - redis
+      - kafka
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Tour Management Service
+  tour-service:
+    build:
+      context: ./services/tour
+      dockerfile: Dockerfile
+    container_name: spirit-tour-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres-tour:5432/tour_db
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SERVICE_NAME=tour-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - postgres-tour
+      - redis
+      - elasticsearch
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./services/ai
+      dockerfile: Dockerfile
+    container_name: spirit-ai-service
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:9092
+      - MODEL_PATH=/models
+      - SERVICE_NAME=ai-service
+      - CONSUL_HOST=consul
+    volumes:
+      - ./models:/models
+    depends_on:
+      - redis
+      - kafka
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Analytics Service
+  analytics-service:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+    container_name: spirit-analytics-service
+    environment:
+      - CLICKHOUSE_URL=clickhouse://clickhouse:8123
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - SERVICE_NAME=analytics-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - clickhouse
+      - kafka
+      - redis
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # User Service
+  user-service:
+    build:
+      context: ./services/user
+      dockerfile: Dockerfile
+    container_name: spirit-user-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres-user:5432/user_db
+      - REDIS_URL=redis://redis:6379
+      - SERVICE_NAME=user-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - postgres-user
+      - redis
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Search Service
+  search-service:
+    build:
+      context: ./services/search
+      dockerfile: Dockerfile
+    container_name: spirit-search-service
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379
+      - SERVICE_NAME=search-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - elasticsearch
+      - redis
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Image Processing Service
+  image-service:
+    build:
+      context: ./services/image
+      dockerfile: Dockerfile
+    container_name: spirit-image-service
+    environment:
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - REDIS_URL=redis://redis:6379
+      - SERVICE_NAME=image-service
+      - CONSUL_HOST=consul
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - spirit-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Databases
+  postgres-auth:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+
+  postgres-booking:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-booking-data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+
+  postgres-payment:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+
+  postgres-tour:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: tour_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-tour-data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+
+  postgres-user:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+
+  # Message Queue
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    networks:
+      - spirit-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - spirit-network
+
+  # Cache
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - spirit-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Search Engine
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - spirit-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  # Analytics Database
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    networks:
+      - spirit-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  # Service Discovery
+  consul:
+    image: consul:latest
+    command: agent -server -bootstrap-expect=1 -ui -client=0.0.0.0
+    ports:
+      - "8500:8500"
+    volumes:
+      - consul-data:/consul/data
+    networks:
+      - spirit-network
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    networks:
+      - spirit-network
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - spirit-network
+
+  # Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "9411:9411"
+    networks:
+      - spirit-network
+
+networks:
+  spirit-network:
+    driver: bridge
+
+volumes:
+  postgres-auth-data:
+  postgres-booking-data:
+  postgres-payment-data:
+  postgres-tour-data:
+  postgres-user-data:
+  redis-data:
+  elasticsearch-data:
+  clickhouse-data:
+  consul-data:
+  prometheus-data:
+  grafana-data:
