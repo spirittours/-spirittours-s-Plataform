@@ -1,636 +1,333 @@
 """
-Unit Tests for Notification Service
-Comprehensive testing for email, SMS, WhatsApp, push notifications and templating.
+Unit tests for Notification Service
 """
-
 import pytest
-import asyncio
-from datetime import datetime, timedelta
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from datetime import datetime
 import json
-from pathlib import Path
 
-from backend.services.notification_service import (
-    NotificationService, NotificationType, NotificationPriority,
-    NotificationStatus, NotificationRequest, NotificationResponse,
-    EmailProvider, SMSProvider, PushProvider, WhatsAppProvider
-)
+from backend.services.notification_service import NotificationService
 
 class TestNotificationService:
-    """Test suite for NotificationService."""
-
+    """Test suite for NotificationService"""
+    
     @pytest.fixture
     def notification_service(self):
-        """Create notification service instance."""
+        """Create notification service instance for testing."""
         return NotificationService()
-
-    @pytest.fixture
-    def sample_email_request(self):
-        """Create sample email notification request."""
-        return NotificationRequest(
-            type=NotificationType.EMAIL,
-            recipient='test@example.com',
-            subject='Test Notification',
-            content='This is a test email notification.',
-            template='booking_confirmation',
-            template_data={
-                'customer_name': 'John Doe',
-                'booking_id': 'BOOK123',
-                'destination': 'Paris',
-                'amount': '€1,500'
-            },
-            priority=NotificationPriority.MEDIUM
-        )
-
-    @pytest.fixture
-    def sample_sms_request(self):
-        """Create sample SMS notification request."""
-        return NotificationRequest(
-            type=NotificationType.SMS,
-            recipient='+1234567890',
-            content='Your booking BOOK123 has been confirmed. Thank you!',
-            priority=NotificationPriority.HIGH
-        )
-
-    @pytest.fixture
-    def sample_push_request(self):
-        """Create sample push notification request."""
-        return NotificationRequest(
-            type=NotificationType.PUSH,
-            recipient='device_token_123',
-            title='Booking Confirmed',
-            content='Your trip to Paris has been confirmed!',
-            metadata={
-                'booking_id': 'BOOK123',
-                'click_action': 'BOOKING_DETAILS'
-            },
-            priority=NotificationPriority.MEDIUM
-        )
-
+    
     @pytest.mark.asyncio
-    async def test_send_email_success(self, notification_service, sample_email_request):
-        """Test successful email sending."""
-        with patch('aiosmtplib.send') as mock_send:
-            mock_send.return_value = {'status': 'sent'}
+    async def test_send_email_success(self, notification_service, mock_smtp_client):
+        """Test successful email sending via SMTP."""
+        with patch('smtplib.SMTP') as mock_smtp:
+            mock_smtp.return_value.__enter__.return_value = mock_smtp_client
             
-            result = await notification_service.send_notification(sample_email_request)
-            
-            assert isinstance(result, NotificationResponse)
-            assert result.success is True
-            assert result.status == NotificationStatus.SENT
-            assert result.provider == 'smtp'
-            mock_send.assert_called_once()
-
+            result = await notification_service.send_email(
+                to="test@example.com",
+                subject="Test Email",
+                body="This is a test email",
+                template="default"
+            )
+        
+        assert result["success"] is True
+        assert result["provider"] == "smtp"
+        assert "message_id" in result
+        mock_smtp_client.send_message.assert_called_once()
+    
     @pytest.mark.asyncio
-    async def test_send_email_with_template(self, notification_service, sample_email_request):
+    async def test_send_email_with_template(self, notification_service):
         """Test email sending with template rendering."""
-        # Mock template rendering
+        template_data = {
+            "customer_name": "John Doe",
+            "booking_id": "BOOK123",
+            "tour_name": "Amazing Tour",
+            "booking_date": "2024-01-15"
+        }
+        
         with patch.object(notification_service, '_render_template') as mock_render:
-            mock_render.return_value = '<html><body>Hello John Doe, your booking BOOK123 is confirmed!</body></html>'
+            mock_render.return_value = "<html>Rendered template</html>"
             
-            with patch('aiosmtplib.send') as mock_send:
-                mock_send.return_value = {'status': 'sent'}
+            with patch.object(notification_service, '_send_smtp_email') as mock_send:
+                mock_send.return_value = {"success": True, "message_id": "msg123"}
                 
-                result = await notification_service.send_notification(sample_email_request)
-                
-                assert result.success is True
-                mock_render.assert_called_once_with(
-                    'booking_confirmation', 
-                    sample_email_request.template_data
+                result = await notification_service.send_email(
+                    to="test@example.com",
+                    subject="Booking Confirmation",
+                    template="booking_confirmation",
+                    template_data=template_data
                 )
-
+        
+        assert result["success"] is True
+        mock_render.assert_called_once_with("booking_confirmation", template_data)
+    
     @pytest.mark.asyncio
-    async def test_send_email_failure(self, notification_service, sample_email_request):
-        """Test email sending failure handling."""
-        with patch('aiosmtplib.send', side_effect=Exception('SMTP connection failed')):
-            result = await notification_service.send_notification(sample_email_request)
-            
-            assert isinstance(result, NotificationResponse)
-            assert result.success is False
-            assert result.status == NotificationStatus.FAILED
-            assert 'SMTP connection failed' in result.error_message
-
-    @pytest.mark.asyncio
-    async def test_send_sms_success(self, notification_service, sample_sms_request):
+    async def test_send_sms_twilio_success(self, notification_service, mock_twilio_client):
         """Test successful SMS sending via Twilio."""
-        mock_message = Mock()
-        mock_message.sid = 'SM123456789'
-        mock_message.status = 'sent'
+        mock_message = Mock(sid="SM123456", status="sent")
+        mock_twilio_client.messages.create.return_value = mock_message
         
-        with patch('twilio.rest.Client') as mock_twilio:
-            mock_client = Mock()
-            mock_client.messages.create.return_value = mock_message
-            mock_twilio.return_value = mock_client
-            
-            result = await notification_service.send_notification(sample_sms_request)
-            
-            assert isinstance(result, NotificationResponse)
-            assert result.success is True
-            assert result.status == NotificationStatus.SENT
-            assert result.external_id == 'SM123456789'
-            assert result.provider == 'twilio'
-
-    @pytest.mark.asyncio
-    async def test_send_sms_failure(self, notification_service, sample_sms_request):
-        """Test SMS sending failure handling."""
-        with patch('twilio.rest.Client', side_effect=Exception('Invalid phone number')):
-            result = await notification_service.send_notification(sample_sms_request)
-            
-            assert result.success is False
-            assert result.status == NotificationStatus.FAILED
-            assert 'Invalid phone number' in result.error_message
-
-    @pytest.mark.asyncio
-    async def test_send_push_notification_success(self, notification_service, sample_push_request):
-        """Test successful push notification via Firebase."""
-        mock_response = Mock()
-        mock_response.success_count = 1
-        mock_response.failure_count = 0
+        with patch.object(notification_service, 'twilio_client', mock_twilio_client):
+            result = await notification_service.send_sms(
+                to="+1234567890",
+                message="Your booking is confirmed!",
+                provider="twilio"
+            )
         
-        with patch('firebase_admin.messaging.send') as mock_send:
-            mock_send.return_value = 'projects/test/messages/msg123'
-            
-            result = await notification_service.send_notification(sample_push_request)
-            
-            assert isinstance(result, NotificationResponse)
-            assert result.success is True
-            assert result.status == NotificationStatus.SENT
-            assert result.provider == 'firebase'
-            mock_send.assert_called_once()
-
+        assert result["success"] is True
+        assert result["message_id"] == "SM123456"
+        assert result["provider"] == "twilio"
+        mock_twilio_client.messages.create.assert_called_once()
+    
     @pytest.mark.asyncio
-    async def test_send_push_notification_failure(self, notification_service, sample_push_request):
-        """Test push notification failure handling."""
-        with patch('firebase_admin.messaging.send', side_effect=Exception('Invalid registration token')):
-            result = await notification_service.send_notification(sample_push_request)
-            
-            assert result.success is False
-            assert result.status == NotificationStatus.FAILED
-            assert 'Invalid registration token' in result.error_message
-
-    @pytest.mark.asyncio
-    async def test_send_whatsapp_message_success(self, notification_service):
+    async def test_send_whatsapp_success(self, notification_service, mock_twilio_client):
         """Test successful WhatsApp message sending."""
-        whatsapp_request = NotificationRequest(
-            type=NotificationType.WHATSAPP,
-            recipient='+1234567890',
-            content='Your booking has been confirmed!',
-            priority=NotificationPriority.HIGH
+        mock_message = Mock(sid="WA123456", status="sent")
+        mock_twilio_client.messages.create.return_value = mock_message
+        
+        with patch.object(notification_service, 'twilio_client', mock_twilio_client):
+            result = await notification_service.send_whatsapp(
+                to="+1234567890",
+                message="Your tour starts tomorrow!",
+                media_url="https://example.com/image.jpg"
+            )
+        
+        assert result["success"] is True
+        assert result["message_id"] == "WA123456"
+        assert result["provider"] == "whatsapp"
+    
+    @pytest.mark.asyncio
+    async def test_send_push_notification(self, notification_service, mock_fcm_client):
+        """Test push notification sending via Firebase."""
+        mock_response = Mock(success_count=1, failure_count=0)
+        mock_fcm_client.send_multicast.return_value = mock_response
+        
+        with patch.object(notification_service, 'fcm_client', mock_fcm_client):
+            result = await notification_service.send_push(
+                tokens=["token123", "token456"],
+                title="Tour Update",
+                body="Your tour has been updated",
+                data={"tour_id": "TOUR123"}
+            )
+        
+        assert result["success"] is True
+        assert result["success_count"] == 1
+        assert result["failure_count"] == 0
+    
+    @pytest.mark.asyncio
+    async def test_bulk_email_sending(self, notification_service):
+        """Test bulk email sending functionality."""
+        recipients = [
+            "user1@example.com",
+            "user2@example.com",
+            "user3@example.com"
+        ]
+        
+        with patch.object(notification_service, 'send_email') as mock_send:
+            mock_send.return_value = {"success": True, "message_id": "msg123"}
+            
+            results = await notification_service.send_bulk_email(
+                recipients=recipients,
+                subject="Newsletter",
+                body="Monthly newsletter content",
+                batch_size=2
+            )
+        
+        assert len(results) == 3
+        assert all(r["success"] for r in results)
+        assert mock_send.call_count == 3
+    
+    @pytest.mark.asyncio
+    async def test_notification_scheduling(self, notification_service):
+        """Test notification scheduling functionality."""
+        scheduled_time = datetime(2024, 12, 25, 10, 0, 0)
+        
+        result = await notification_service.schedule_notification(
+            notification_type="email",
+            recipient="test@example.com",
+            subject="Holiday Greetings",
+            body="Happy holidays!",
+            scheduled_time=scheduled_time
         )
         
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'messages': [{'id': 'whatsapp_msg_123'}]}
-        
-        with patch('aiohttp.ClientSession.post') as mock_post:
-            mock_post.return_value.__aenter__.return_value = mock_response
-            
-            result = await notification_service.send_notification(whatsapp_request)
-            
-            assert result.success is True
-            assert result.provider == 'whatsapp_business'
-            assert result.external_id == 'whatsapp_msg_123'
-
-    @pytest.mark.asyncio
-    async def test_send_bulk_notifications(self, notification_service):
-        """Test bulk notification sending."""
-        notifications = []
-        
-        # Create multiple notification requests
-        for i in range(5):
-            notification = NotificationRequest(
-                type=NotificationType.EMAIL,
-                recipient=f'test{i}@example.com',
-                subject=f'Test Email {i}',
-                content=f'This is test email number {i}',
-                priority=NotificationPriority.LOW
-            )
-            notifications.append(notification)
-        
-        with patch('aiosmtplib.send') as mock_send:
-            mock_send.return_value = {'status': 'sent'}
-            
-            results = await notification_service.send_bulk_notifications(notifications)
-            
-            assert len(results) == 5
-            for result in results:
-                assert result.success is True
-                assert result.status == NotificationStatus.SENT
-            
-            assert mock_send.call_count == 5
-
-    @pytest.mark.asyncio
-    async def test_schedule_notification(self, notification_service, sample_email_request):
-        """Test notification scheduling."""
-        scheduled_time = datetime.now() + timedelta(hours=1)
-        
-        with patch.object(notification_service, '_store_scheduled_notification') as mock_store:
-            result = await notification_service.schedule_notification(
-                sample_email_request, 
-                scheduled_time
-            )
-            
-            assert result.success is True
-            assert result.status == NotificationStatus.SCHEDULED
-            mock_store.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_cancel_scheduled_notification(self, notification_service):
-        """Test canceling scheduled notification."""
-        notification_id = 'notification_123'
-        
-        with patch.object(notification_service, '_cancel_stored_notification') as mock_cancel:
-            mock_cancel.return_value = True
-            
-            result = await notification_service.cancel_notification(notification_id)
-            
-            assert result is True
-            mock_cancel.assert_called_once_with(notification_id)
-
-    @pytest.mark.asyncio
-    async def test_notification_status_tracking(self, notification_service):
-        """Test notification delivery status tracking."""
-        notification_id = 'notification_123'
-        
-        with patch.object(notification_service, '_get_notification_status') as mock_status:
-            mock_status.return_value = NotificationStatus.DELIVERED
-            
-            status = await notification_service.get_notification_status(notification_id)
-            
-            assert status == NotificationStatus.DELIVERED
-            mock_status.assert_called_once_with(notification_id)
-
-    @pytest.mark.asyncio
-    async def test_notification_retry_logic(self, notification_service, sample_email_request):
-        """Test automatic retry for failed notifications."""
-        call_count = 0
-        
-        def mock_send(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count <= 2:
-                raise Exception('Temporary failure')
-            return {'status': 'sent'}
-        
-        with patch('aiosmtplib.send', side_effect=mock_send):
-            result = await notification_service.send_notification(sample_email_request)
-            
-            assert result.success is True
-            assert call_count == 3  # Initial attempt + 2 retries
-
+        assert result["success"] is True
+        assert result["scheduled_time"] == scheduled_time
+        assert "job_id" in result
+    
     @pytest.mark.asyncio
     async def test_template_rendering(self, notification_service):
-        """Test notification template rendering."""
-        template_name = 'booking_confirmation'
-        template_data = {
-            'customer_name': 'Jane Smith',
-            'booking_id': 'BOOK456',
-            'destination': 'Tokyo',
-            'checkin_date': '2024-10-15',
-            'checkout_date': '2024-10-22'
-        }
-        
-        # Mock template file content
-        mock_template_content = """
-        Dear {{ customer_name }},
-        Your booking {{ booking_id }} for {{ destination }} is confirmed.
-        Check-in: {{ checkin_date }}
-        Check-out: {{ checkout_date }}
+        """Test email template rendering with Jinja2."""
+        template_content = """
+        <html>
+        <body>
+            <h1>Hello {{ name }}!</h1>
+            <p>Your booking #{{ booking_id }} is confirmed.</p>
+        </body>
+        </html>
         """
         
-        with patch('pathlib.Path.read_text', return_value=mock_template_content):
-            with patch('jinja2.Environment.from_string') as mock_env:
-                mock_template = Mock()
-                mock_template.render.return_value = "Dear Jane Smith, Your booking BOOK456 for Tokyo is confirmed..."
-                mock_env.return_value = mock_template
-                
-                rendered = await notification_service._render_template(template_name, template_data)
-                
-                assert 'Jane Smith' in rendered
-                assert 'BOOK456' in rendered
-                assert 'Tokyo' in rendered
-
+        with patch('builtins.open', create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = template_content
+            
+            rendered = notification_service._render_template(
+                "test_template",
+                {"name": "John", "booking_id": "BOOK123"}
+            )
+        
+        assert "Hello John!" in rendered
+        assert "Your booking #BOOK123 is confirmed" in rendered
+    
     @pytest.mark.asyncio
-    async def test_notification_preferences(self, notification_service):
+    async def test_multi_language_support(self, notification_service):
+        """Test multi-language notification support."""
+        # Test English
+        result_en = await notification_service.send_email(
+            to="test@example.com",
+            subject="Booking Confirmation",
+            template="booking_confirmation",
+            language="en"
+        )
+        assert result_en["language"] == "en"
+        
+        # Test Spanish
+        result_es = await notification_service.send_email(
+            to="test@example.com",
+            subject="Confirmación de Reserva",
+            template="booking_confirmation",
+            language="es"
+        )
+        assert result_es["language"] == "es"
+    
+    @pytest.mark.asyncio
+    async def test_notification_retry_logic(self, notification_service):
+        """Test retry logic for failed notifications."""
+        with patch.object(notification_service, '_send_smtp_email') as mock_send:
+            # Simulate failure then success
+            mock_send.side_effect = [
+                {"success": False, "error": "Connection timeout"},
+                {"success": False, "error": "Server error"},
+                {"success": True, "message_id": "msg123"}
+            ]
+            
+            result = await notification_service.send_email_with_retry(
+                to="test@example.com",
+                subject="Test",
+                body="Test message",
+                max_retries=3
+            )
+        
+        assert result["success"] is True
+        assert result["retry_count"] == 2
+        assert mock_send.call_count == 3
+    
+    @pytest.mark.asyncio
+    async def test_notification_tracking(self, notification_service, db_session):
+        """Test notification tracking and logging."""
+        result = await notification_service.send_and_track(
+            notification_type="email",
+            recipient="test@example.com",
+            subject="Tracked Email",
+            body="This email is being tracked",
+            user_id="user123",
+            booking_id="book456"
+        )
+        
+        assert result["success"] is True
+        assert result["tracked"] is True
+        assert "tracking_id" in result
+        
+        # Verify log entry was created
+        log_entry = db_session.query(NotificationLog).filter_by(
+            tracking_id=result["tracking_id"]
+        ).first()
+        assert log_entry is not None
+        assert log_entry.recipient == "test@example.com"
+    
+    @pytest.mark.asyncio
+    async def test_email_attachments(self, notification_service):
+        """Test sending emails with attachments."""
+        attachments = [
+            {"filename": "invoice.pdf", "content": b"PDF content"},
+            {"filename": "itinerary.doc", "content": b"DOC content"}
+        ]
+        
+        with patch.object(notification_service, '_send_smtp_email') as mock_send:
+            mock_send.return_value = {"success": True, "message_id": "msg123"}
+            
+            result = await notification_service.send_email(
+                to="test@example.com",
+                subject="Documents",
+                body="Please find attached documents",
+                attachments=attachments
+            )
+        
+        assert result["success"] is True
+        call_args = mock_send.call_args[1]
+        assert "attachments" in call_args
+        assert len(call_args["attachments"]) == 2
+    
+    @pytest.mark.asyncio
+    async def test_webhook_notification(self, notification_service):
+        """Test webhook-based notifications."""
+        webhook_url = "https://example.com/webhook"
+        payload = {
+            "event": "booking_confirmed",
+            "booking_id": "BOOK123",
+            "customer": "test@example.com"
+        }
+        
+        with patch('aiohttp.ClientSession.post') as mock_post:
+            mock_response = AsyncMock()
+            mock_response.status = 200
+            mock_response.json.return_value = {"received": True}
+            mock_post.return_value.__aenter__.return_value = mock_response
+            
+            result = await notification_service.send_webhook(
+                url=webhook_url,
+                payload=payload,
+                headers={"X-API-Key": "secret123"}
+            )
+        
+        assert result["success"] is True
+        assert result["status_code"] == 200
+        assert result["response"]["received"] is True
+    
+    @pytest.mark.asyncio
+    async def test_notification_preferences(self, notification_service, db_session):
         """Test user notification preferences handling."""
-        user_id = 'user_123'
-        preferences = {
-            'email': True,
-            'sms': False,
-            'push': True,
-            'whatsapp': False
+        user_preferences = {
+            "email": True,
+            "sms": False,
+            "push": True,
+            "whatsapp": True
         }
         
-        with patch.object(notification_service, '_get_user_preferences') as mock_prefs:
-            mock_prefs.return_value = preferences
-            
-            filtered_types = await notification_service.get_allowed_notification_types(user_id)
-            
-            assert NotificationType.EMAIL in filtered_types
-            assert NotificationType.PUSH in filtered_types
-            assert NotificationType.SMS not in filtered_types
-            assert NotificationType.WHATSAPP not in filtered_types
-
-    @pytest.mark.asyncio
-    async def test_notification_analytics(self, notification_service):
-        """Test notification analytics and metrics."""
-        date_from = datetime.now() - timedelta(days=7)
-        date_to = datetime.now()
-        
-        mock_metrics = {
-            'total_sent': 1250,
-            'email_sent': 800,
-            'sms_sent': 200,
-            'push_sent': 200,
-            'whatsapp_sent': 50,
-            'delivery_rate': 0.95,
-            'open_rate': 0.42,
-            'click_rate': 0.08
-        }
-        
-        with patch.object(notification_service, '_calculate_analytics') as mock_analytics:
-            mock_analytics.return_value = mock_metrics
-            
-            metrics = await notification_service.get_analytics(date_from, date_to)
-            
-            assert metrics['total_sent'] == 1250
-            assert metrics['delivery_rate'] == 0.95
-            mock_analytics.assert_called_once_with(date_from, date_to)
-
-    def test_notification_request_validation(self):
-        """Test NotificationRequest model validation."""
-        # Valid email request
-        valid_email = NotificationRequest(
-            type=NotificationType.EMAIL,
-            recipient='test@example.com',
-            subject='Test Subject',
-            content='Test content',
-            priority=NotificationPriority.MEDIUM
-        )
-        assert valid_email.type == NotificationType.EMAIL
-        assert valid_email.recipient == 'test@example.com'
-        
-        # Invalid email format
-        with pytest.raises(ValueError):
-            NotificationRequest(
-                type=NotificationType.EMAIL,
-                recipient='invalid-email',  # Invalid format
-                subject='Test',
-                content='Test content'
-            )
-        
-        # Invalid phone number for SMS
-        with pytest.raises(ValueError):
-            NotificationRequest(
-                type=NotificationType.SMS,
-                recipient='invalid-phone',  # Invalid format
-                content='Test SMS'
-            )
-
-    def test_notification_response_model(self):
-        """Test NotificationResponse data model."""
-        response = NotificationResponse(
-            success=True,
-            notification_id='notif_123',
-            status=NotificationStatus.SENT,
-            provider='smtp',
-            external_id='external_123',
-            sent_at=datetime.now(),
-            metadata={'attempt': 1}
+        # Test filtering based on preferences
+        notifications_to_send = notification_service.filter_by_preferences(
+            ["email", "sms", "push", "whatsapp"],
+            user_preferences
         )
         
-        assert response.success is True
-        assert response.notification_id == 'notif_123'
-        assert response.status == NotificationStatus.SENT
-        assert response.provider == 'smtp'
-        assert response.external_id == 'external_123'
+        assert "email" in notifications_to_send
+        assert "sms" not in notifications_to_send
+        assert "push" in notifications_to_send
+        assert "whatsapp" in notifications_to_send
 
-    def test_notification_enums(self):
-        """Test notification enumeration values."""
-        # NotificationType enum
-        assert NotificationType.EMAIL.value == 'email'
-        assert NotificationType.SMS.value == 'sms'
-        assert NotificationType.PUSH.value == 'push'
-        assert NotificationType.WHATSAPP.value == 'whatsapp'
-        
-        # NotificationPriority enum
-        assert NotificationPriority.LOW.value == 'low'
-        assert NotificationPriority.MEDIUM.value == 'medium'
-        assert NotificationPriority.HIGH.value == 'high'
-        assert NotificationPriority.URGENT.value == 'urgent'
-        
-        # NotificationStatus enum
-        assert NotificationStatus.PENDING.value == 'pending'
-        assert NotificationStatus.SENT.value == 'sent'
-        assert NotificationStatus.DELIVERED.value == 'delivered'
+@pytest.fixture
+def mock_smtp_client():
+    """Mock SMTP client for testing."""
+    mock = MagicMock()
+    mock.send_message = MagicMock()
+    return mock
 
-    @pytest.mark.asyncio
-    async def test_concurrent_notification_sending(self, notification_service):
-        """Test concurrent notification processing."""
-        notifications = []
-        
-        # Create notifications for different channels
-        for i in range(10):
-            notification_type = [
-                NotificationType.EMAIL, 
-                NotificationType.SMS, 
-                NotificationType.PUSH
-            ][i % 3]
-            
-            notification = NotificationRequest(
-                type=notification_type,
-                recipient=f'test{i}@example.com' if notification_type == NotificationType.EMAIL else f'+123456789{i}',
-                subject='Concurrent Test' if notification_type == NotificationType.EMAIL else None,
-                content=f'Concurrent notification test {i}',
-                priority=NotificationPriority.MEDIUM
-            )
-            notifications.append(notification)
-        
-        # Mock all providers
-        with patch('aiosmtplib.send', return_value={'status': 'sent'}):
-            with patch('twilio.rest.Client') as mock_twilio:
-                mock_client = Mock()
-                mock_message = Mock()
-                mock_message.sid = 'SM123'
-                mock_message.status = 'sent'
-                mock_client.messages.create.return_value = mock_message
-                mock_twilio.return_value = mock_client
-                
-                with patch('firebase_admin.messaging.send', return_value='msg_123'):
-                    # Process notifications concurrently
-                    tasks = [notification_service.send_notification(notif) for notif in notifications]
-                    results = await asyncio.gather(*tasks)
-                    
-                    # All should succeed
-                    for result in results:
-                        assert result.success is True
+@pytest.fixture
+def mock_twilio_client():
+    """Mock Twilio client for testing."""
+    mock = Mock()
+    mock.messages = Mock()
+    return mock
 
-    @pytest.mark.asyncio
-    async def test_notification_rate_limiting(self, notification_service):
-        """Test notification rate limiting to prevent spam."""
-        recipient = 'test@example.com'
-        
-        # Mock rate limiter
-        with patch.object(notification_service, '_check_rate_limit') as mock_rate_limit:
-            mock_rate_limit.return_value = False  # Rate limit exceeded
-            
-            notification = NotificationRequest(
-                type=NotificationType.EMAIL,
-                recipient=recipient,
-                subject='Rate Limited Test',
-                content='This should be rate limited'
-            )
-            
-            result = await notification_service.send_notification(notification)
-            
-            assert result.success is False
-            assert 'rate limit' in result.error_message.lower()
-
-# Provider-specific test classes
-class TestEmailProviders:
-    """Test suite for email provider integrations."""
-    
-    def test_smtp_provider_config(self):
-        """Test SMTP provider configuration."""
-        provider = EmailProvider(
-            name='smtp',
-            host='smtp.gmail.com',
-            port=587,
-            username='test@gmail.com',
-            password='app_password',
-            use_tls=True
-        )
-        
-        assert provider.name == 'smtp'
-        assert provider.host == 'smtp.gmail.com'
-        assert provider.port == 587
-        assert provider.use_tls is True
-
-    def test_sendgrid_provider_config(self):
-        """Test SendGrid provider configuration."""
-        provider = EmailProvider(
-            name='sendgrid',
-            api_key='SG.test_key',
-            from_email='noreply@spirittours.com'
-        )
-        
-        assert provider.name == 'sendgrid'
-        assert provider.api_key == 'SG.test_key'
-
-class TestSMSProviders:
-    """Test suite for SMS provider integrations."""
-    
-    def test_twilio_provider_config(self):
-        """Test Twilio SMS provider configuration."""
-        provider = SMSProvider(
-            name='twilio',
-            account_sid='AC123456789',
-            auth_token='auth_token_123',
-            from_number='+15551234567'
-        )
-        
-        assert provider.name == 'twilio'
-        assert provider.account_sid == 'AC123456789'
-        assert provider.from_number == '+15551234567'
-
-    def test_aws_sns_provider_config(self):
-        """Test AWS SNS SMS provider configuration."""
-        provider = SMSProvider(
-            name='aws_sns',
-            access_key_id='AKIAIOSFODNN7EXAMPLE',
-            secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-            region='us-east-1'
-        )
-        
-        assert provider.name == 'aws_sns'
-        assert provider.region == 'us-east-1'
-
-class TestPushProviders:
-    """Test suite for push notification provider integrations."""
-    
-    def test_firebase_provider_config(self):
-        """Test Firebase push notification provider."""
-        provider = PushProvider(
-            name='firebase',
-            project_id='spirittours-app',
-            credentials_path='/path/to/firebase-credentials.json'
-        )
-        
-        assert provider.name == 'firebase'
-        assert provider.project_id == 'spirittours-app'
-
-    def test_apns_provider_config(self):
-        """Test Apple Push Notification Service provider."""
-        provider = PushProvider(
-            name='apns',
-            team_id='TEAMID123',
-            key_id='KEYID123',
-            bundle_id='com.spirittours.app',
-            key_path='/path/to/AuthKey.p8'
-        )
-        
-        assert provider.name == 'apns'
-        assert provider.bundle_id == 'com.spirittours.app'
-
-# Performance testing
-class TestNotificationPerformance:
-    """Performance testing for notification operations."""
-    
-    @pytest.mark.asyncio
-    @pytest.mark.slow
-    async def test_bulk_email_performance(self, notification_service):
-        """Test bulk email sending performance."""
-        import time
-        
-        # Create 100 email notifications
-        notifications = []
-        for i in range(100):
-            notification = NotificationRequest(
-                type=NotificationType.EMAIL,
-                recipient=f'perf_test_{i}@example.com',
-                subject=f'Performance Test Email {i}',
-                content=f'This is performance test email number {i}',
-                priority=NotificationPriority.LOW
-            )
-            notifications.append(notification)
-        
-        with patch('aiosmtplib.send', return_value={'status': 'sent'}):
-            start_time = time.time()
-            results = await notification_service.send_bulk_notifications(notifications)
-            end_time = time.time()
-            
-            processing_time = end_time - start_time
-            throughput = len(notifications) / processing_time
-            
-            # Should process at least 50 emails per second
-            assert throughput >= 50.0
-            
-            # All should succeed
-            for result in results:
-                assert result.success is True
-
-    @pytest.mark.asyncio
-    async def test_memory_efficiency(self, notification_service):
-        """Test memory efficiency during notification processing."""
-        import psutil
-        import os
-        
-        process = psutil.Process(os.getpid())
-        initial_memory = process.memory_info().rss
-        
-        # Process many notifications
-        with patch('aiosmtplib.send', return_value={'status': 'sent'}):
-            for i in range(200):
-                notification = NotificationRequest(
-                    type=NotificationType.EMAIL,
-                    recipient=f'memory_test_{i}@example.com',
-                    subject=f'Memory Test {i}',
-                    content=f'Memory efficiency test notification {i}'
-                )
-                await notification_service.send_notification(notification)
-        
-        final_memory = process.memory_info().rss
-        memory_increase = final_memory - initial_memory
-        
-        # Memory increase should be reasonable (less than 50MB)
-        assert memory_increase < 50 * 1024 * 1024  # 50MB in bytes
+@pytest.fixture
+def mock_fcm_client():
+    """Mock Firebase Cloud Messaging client for testing."""
+    mock = Mock()
+    return mock

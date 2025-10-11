@@ -11,6 +11,7 @@ sqlalchemy==2.0.23
 alembic==1.12.1
 psycopg2-binary==2.9.9
 asyncpg==0.29.0
+aiosqlite==0.19.0  # For testing
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
@@ -27,6 +28,17 @@ requests==2.31.0
 aiosmtplib==3.0.1
 sendgrid==6.11.0
 twilio==8.11.1
+
+# Testing Dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-env==1.1.1
+coverage==7.3.2
+faker==20.1.0
+factory-boy==3.3.0
+freezegun==1.2.2
 
 # Payment Processing
 stripe==7.8.0
