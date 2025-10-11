@@ -2,295 +2,266 @@ version: '3.8'
 
 services:
   # PostgreSQL Database
-  postgres-staging:
+  postgres:
     image: postgres:15-alpine
-    container_name: spirit-tours-db-staging
+    container_name: spirit-postgres-staging
     environment:
-      POSTGRES_DB: spirit_tours_staging
-      POSTGRES_USER: spirit_admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD_STAGING}
+      POSTGRES_USER: ${DB_USER:-spirit}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-spirit2024}
+      POSTGRES_DB: ${DB_NAME:-spirit_tours_staging}
       POSTGRES_HOST_AUTH_METHOD: md5
     ports:
       - "5433:5432"
     volumes:
-      - postgres_staging_data:/var/lib/postgresql/data
+      - postgres_data_staging:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
-      - spirit-staging
+      - spirit-network-staging
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U spirit_admin -d spirit_tours_staging"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-spirit}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
   # Redis Cache
-  redis-staging:
+  redis:
     image: redis:7-alpine
-    container_name: spirit-tours-redis-staging
-    command: redis-server --requirepass ${REDIS_PASSWORD_STAGING} --appendonly yes
+    container_name: spirit-redis-staging
     ports:
       - "6380:6379"
     volumes:
-      - redis_staging_data:/data
+      - redis_data_staging:/data
     networks:
-      - spirit-staging
+      - spirit-network-staging
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-spirit2024}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
-  # RabbitMQ Message Queue
-  rabbitmq-staging:
-    image: rabbitmq:3.12-management-alpine
-    container_name: spirit-tours-rabbitmq-staging
-    environment:
-      RABBITMQ_DEFAULT_USER: spirit_mq
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD_STAGING}
-      RABBITMQ_DEFAULT_VHOST: spirit_staging
-    ports:
-      - "5673:5672"
-      - "15673:15672"
-    volumes:
-      - rabbitmq_staging_data:/var/lib/rabbitmq
-    networks:
-      - spirit-staging
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-
-  # Backend API Service
-  backend-staging:
+  # Backend API
+  backend:
     build:
-      context: ../../backend
-      dockerfile: Dockerfile.staging
-      args:
-        - ENVIRONMENT=staging
-    container_name: spirit-tours-backend-staging
+      context: ../../
+      dockerfile: Dockerfile
+      target: production
+    container_name: spirit-backend-staging
     environment:
-      - ENVIRONMENT=staging
-      - DATABASE_URL=postgresql://spirit_admin:${DB_PASSWORD_STAGING}@postgres-staging:5432/spirit_tours_staging
-      - REDIS_URL=redis://:${REDIS_PASSWORD_STAGING}@redis-staging:6379/0
-      - RABBITMQ_URL=amqp://spirit_mq:${RABBITMQ_PASSWORD_STAGING}@rabbitmq-staging:5672/spirit_staging
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY_STAGING}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY_STAGING}
-      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID_STAGING}
-      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET_STAGING}
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID_STAGING}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN_STAGING}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY_STAGING}
-      - OPENAI_API_KEY=${OPENAI_API_KEY_STAGING}
-      - SENTRY_DSN=${SENTRY_DSN_STAGING}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_STAGING}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_STAGING}
-      - CORS_ORIGINS=https://staging.spirit-tours.com
+      ENV: staging
+      DATABASE_URL: postgresql://${DB_USER:-spirit}:${DB_PASSWORD:-spirit2024}@postgres:5432/${DB_NAME:-spirit_tours_staging}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,https://staging.spirit-tours.com}
+      
+      # Twilio Configuration
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
+      
+      # API Keys
+      AMADEUS_API_KEY: ${AMADEUS_API_KEY}
+      AMADEUS_API_SECRET: ${AMADEUS_API_SECRET}
+      SABRE_API_KEY: ${SABRE_API_KEY}
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      
+      # ML Configuration
+      ENABLE_ML_PREDICTIONS: "true"
+      ML_MODEL_PATH: /app/ml_models
+      
+      # WhatsApp NLP
+      WHATSAPP_USE_NLP: ${WHATSAPP_USE_NLP:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
     ports:
       - "8001:8000"
     volumes:
-      - ../../backend:/app
-      - backend_staging_logs:/app/logs
-    depends_on:
-      postgres-staging:
-        condition: service_healthy
-      redis-staging:
-        condition: service_healthy
-      rabbitmq-staging:
-        condition: service_healthy
+      - backend_uploads_staging:/app/uploads
+      - backend_logs_staging:/app/logs
+      - ml_models_staging:/app/ml_models
     networks:
-      - spirit-staging
-    command: >
-      sh -c "
-        alembic upgrade head &&
-        python init_database.py --env staging &&
-        uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
-      "
+      - spirit-network-staging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
-    restart: unless-stopped
+      retries: 3
 
-  # Frontend Web Application
-  frontend-staging:
+  # Frontend
+  frontend:
     build:
       context: ../../frontend
-      dockerfile: Dockerfile.staging
+      dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=https://api-staging.spirit-tours.com
-        - REACT_APP_ENVIRONMENT=staging
-    container_name: spirit-tours-frontend-staging
-    environment:
-      - REACT_APP_API_URL=https://api-staging.spirit-tours.com
-      - REACT_APP_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY_STAGING}
-      - REACT_APP_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY_STAGING}
-      - REACT_APP_FIREBASE_CONFIG=${FIREBASE_CONFIG_STAGING}
-      - REACT_APP_SENTRY_DSN=${SENTRY_DSN_FRONTEND_STAGING}
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-https://staging-api.spirit-tours.com}
+        REACT_APP_ENV: staging
+    container_name: spirit-frontend-staging
     ports:
-      - "3001:3000"
-    volumes:
-      - ../../frontend:/app
-      - frontend_staging_logs:/app/logs
+      - "3001:80"
     networks:
-      - spirit-staging
-    depends_on:
-      - backend-staging
+      - spirit-network-staging
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
-      retries: 5
-    restart: unless-stopped
-
-  # AI Agents Service
-  ai-agents-staging:
-    build:
-      context: ../../ai-agents
-      dockerfile: Dockerfile.staging
-    container_name: spirit-tours-ai-staging
-    environment:
-      - ENVIRONMENT=staging
-      - DATABASE_URL=postgresql://spirit_admin:${DB_PASSWORD_STAGING}@postgres-staging:5432/spirit_tours_staging
-      - REDIS_URL=redis://:${REDIS_PASSWORD_STAGING}@redis-staging:6379/1
-      - OPENAI_API_KEY=${OPENAI_API_KEY_STAGING}
-      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY_STAGING}
-      - PINECONE_API_KEY=${PINECONE_API_KEY_STAGING}
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY_STAGING}
-    ports:
-      - "8002:8080"
-    volumes:
-      - ../../ai-agents:/app
-      - ai_staging_logs:/app/logs
-    depends_on:
-      - postgres-staging
-      - redis-staging
-    networks:
-      - spirit-staging
-    command: python -m agents.main --env staging --workers 2
-    restart: unless-stopped
+      retries: 3
 
   # Nginx Reverse Proxy
-  nginx-staging:
+  nginx:
     image: nginx:alpine
-    container_name: spirit-tours-nginx-staging
+    container_name: spirit-nginx-staging
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.staging.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-      - nginx_staging_logs:/var/log/nginx
-    depends_on:
-      - backend-staging
-      - frontend-staging
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites:/etc/nginx/sites-enabled
+      - ./ssl:/etc/nginx/ssl
+      - nginx_logs_staging:/var/log/nginx
     networks:
-      - spirit-staging
+      - spirit-network-staging
+    depends_on:
+      - backend
+      - frontend
     restart: unless-stopped
 
-  # Monitoring - Prometheus
-  prometheus-staging:
-    image: prom/prometheus:latest
-    container_name: spirit-tours-prometheus-staging
+  # Celery Worker for Background Tasks
+  celery-worker:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: production
+    container_name: spirit-celery-worker-staging
+    command: celery -A backend.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      ENV: staging
+      DATABASE_URL: postgresql://${DB_USER:-spirit}:${DB_PASSWORD:-spirit2024}@postgres:5432/${DB_NAME:-spirit_tours_staging}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/2
     volumes:
-      - ./monitoring/prometheus.staging.yml:/etc/prometheus/prometheus.yml
-      - prometheus_staging_data:/prometheus
+      - backend_logs_staging:/app/logs
+    networks:
+      - spirit-network-staging
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  # Celery Beat for Scheduled Tasks
+  celery-beat:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: production
+    container_name: spirit-celery-beat-staging
+    command: celery -A backend.celery_app beat --loglevel=info
+    environment:
+      ENV: staging
+      DATABASE_URL: postgresql://${DB_USER:-spirit}:${DB_PASSWORD:-spirit2024}@postgres:5432/${DB_NAME:-spirit_tours_staging}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/1
+    volumes:
+      - backend_logs_staging:/app/logs
+    networks:
+      - spirit-network-staging
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  # Flower - Celery Monitoring
+  flower:
+    image: mher/flower:latest
+    container_name: spirit-flower-staging
+    command: celery flower --broker=redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/1 --port=5555
+    ports:
+      - "5556:5555"
+    environment:
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-spirit2024}@redis:6379/1
+      FLOWER_BASIC_AUTH: ${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-spirit2024}
+    networks:
+      - spirit-network-staging
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Prometheus for Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: spirit-prometheus-staging
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data_staging:/prometheus
+    networks:
+      - spirit-network-staging
+    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-    ports:
-      - "9091:9090"
-    networks:
-      - spirit-staging
-    restart: unless-stopped
 
-  # Monitoring - Grafana
-  grafana-staging:
+  # Grafana for Visualization
+  grafana:
     image: grafana/grafana:latest
-    container_name: spirit-tours-grafana-staging
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD_STAGING}
-      - GF_INSTALL_PLUGINS=redis-datasource
-    volumes:
-      - grafana_staging_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    container_name: spirit-grafana-staging
     ports:
       - "3002:3000"
-    depends_on:
-      - prometheus-staging
-    networks:
-      - spirit-staging
-    restart: unless-stopped
-
-  # Elasticsearch for Logging
-  elasticsearch-staging:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: spirit-tours-elastic-staging
     environment:
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.security.enabled=false
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-spirit2024}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
     volumes:
-      - elastic_staging_data:/usr/share/elasticsearch/data
-    ports:
-      - "9201:9200"
+      - grafana_data_staging:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
     networks:
-      - spirit-staging
-    restart: unless-stopped
-
-  # Kibana for Log Visualization
-  kibana-staging:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: spirit-tours-kibana-staging
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch-staging:9200
-    ports:
-      - "5602:5601"
+      - spirit-network-staging
     depends_on:
-      - elasticsearch-staging
-    networks:
-      - spirit-staging
+      - prometheus
     restart: unless-stopped
 
   # Backup Service
-  backup-staging:
-    build:
-      context: ./backup
-      dockerfile: Dockerfile
-    container_name: spirit-tours-backup-staging
+  backup:
+    image: postgres:15-alpine
+    container_name: spirit-backup-staging
     environment:
-      - BACKUP_SCHEDULE="0 2 * * *"
-      - S3_BUCKET=${S3_BACKUP_BUCKET_STAGING}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_STAGING}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_STAGING}
+      PGPASSWORD: ${DB_PASSWORD:-spirit2024}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - backup_staging_data:/backup
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh
     networks:
-      - spirit-staging
-    restart: unless-stopped
+      - spirit-network-staging
+    depends_on:
+      - postgres
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chmod +x /backup.sh && crond -f -d 8"]
 
 networks:
-  spirit-staging:
+  spirit-network-staging:
     driver: bridge
     ipam:
       config:
         - subnet: 172.25.0.0/16
 
 volumes:
-  postgres_staging_data:
-  redis_staging_data:
-  rabbitmq_staging_data:
-  backend_staging_logs:
-  frontend_staging_logs:
-  ai_staging_logs:
-  nginx_staging_logs:
-  prometheus_staging_data:
-  grafana_staging_data:
-  elastic_staging_data:
-  backup_staging_data:
+  postgres_data_staging:
+  redis_data_staging:
+  backend_uploads_staging:
+  backend_logs_staging:
+  ml_models_staging:
+  nginx_logs_staging:
+  prometheus_data_staging:
+  grafana_data_staging:
