@@ -1,533 +1,265 @@
 """
-Pytest Configuration and Fixtures
-Comprehensive testing setup for the enterprise B2C/B2B/B2B2C booking platform.
-
-Features:
-- Database test fixtures with isolation
-- Authentication fixtures for different user types
-- API client fixtures with mocking capabilities
-- WebSocket testing fixtures
-- Performance testing utilities
-- Test data factories
+Configuración global de pytest para todos los tests
 """
-
-import asyncio
 import pytest
-import pytest_asyncio
-from datetime import datetime, timedelta
-from typing import Dict, Any, Generator, AsyncGenerator
-from unittest.mock import Mock, AsyncMock
-import tempfile
+import asyncio
 import os
+import sys
+from typing import Generator, AsyncGenerator
+from unittest.mock import Mock, AsyncMock
+from datetime import datetime, timedelta
 
+# Agregar el directorio backend al path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from fastapi import FastAPI
+import jwt
 
-from backend.main import app
-from backend.database import Base, get_db
-from backend.models.database_models import *
-from backend.services.analytics_service import AnalyticsService
-from backend.services.notification_service import NotificationService
-from backend.services.payment_service import PaymentService
-from backend.auth.auth_manager import create_access_token
+# Import models and database
+from backend.models.base import Base
+from backend.models.user import User
+from backend.models.booking import Booking
+from backend.models.payment import Payment
+from backend.models.notification import NotificationLog
+from backend.config import settings
 
-# Test Database Configuration
+# Test database URL
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-TEST_SYNC_DATABASE_URL = "sqlite:///:memory:"
+TEST_DATABASE_URL_SYNC = "sqlite:///:memory:"
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator:
+def event_loop():
     """Create an instance of the default event loop for the test session."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 @pytest.fixture(scope="function")
-async def db_engine():
-    """Create async database engine for testing."""
-    engine = create_async_engine(
-        TEST_DATABASE_URL,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-        echo=False
-    )
-    
+async def async_engine():
+    """Create async test database engine."""
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
     yield engine
-    
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    
     await engine.dispose()
 
 @pytest.fixture(scope="function")
-async def db_session(db_engine) -> AsyncSession:
-    """Create database session for testing."""
-    async_session = sessionmaker(
-        db_engine, 
-        class_=AsyncSession,
-        expire_on_commit=False
+async def async_session(async_engine) -> AsyncGenerator[AsyncSession, None]:
+    """Create async database session for testing."""
+    async_session_maker = async_sessionmaker(
+        async_engine, class_=AsyncSession, expire_on_commit=False
     )
-    
-    async with async_session() as session:
+    async with async_session_maker() as session:
         yield session
-        await session.rollback()
 
 @pytest.fixture(scope="function")
-def sync_db_engine():
-    """Create sync database engine for testing."""
-    engine = create_engine(
-        TEST_SYNC_DATABASE_URL,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-        echo=False
-    )
-    
-    Base.metadata.create_all(engine)
+def sync_engine():
+    """Create sync test database engine."""
+    engine = create_engine(TEST_DATABASE_URL_SYNC, echo=False)
+    Base.metadata.create_all(bind=engine)
     yield engine
-    Base.metadata.drop_all(engine)
+    Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
 @pytest.fixture(scope="function")
-def sync_db_session(sync_db_engine):
+def db_session(sync_engine) -> Generator[Session, None, None]:
     """Create sync database session for testing."""
-    SessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=sync_db_engine
-    )
-    
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     session = SessionLocal()
     yield session
-    session.rollback()
     session.close()
 
-@pytest.fixture(scope="function")
-def override_get_db(db_session):
-    """Override database dependency for testing."""
-    async def _override_get_db():
-        yield db_session
-    
-    app.dependency_overrides[get_db] = _override_get_db
-    yield
-    app.dependency_overrides.clear()
-
-@pytest.fixture(scope="function")
-def client(override_get_db):
-    """Create test client."""
-    with TestClient(app) as c:
-        yield c
-
-# User Fixtures
 @pytest.fixture
-async def admin_user(db_session):
-    """Create admin user for testing."""
+def test_app() -> FastAPI:
+    """Create FastAPI test application."""
+    from backend.main import app
+    return app
+
+@pytest.fixture
+def client(test_app, db_session) -> TestClient:
+    """Create test client with database override."""
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+    
+    test_app.dependency_overrides[get_db] = override_get_db
+    return TestClient(test_app)
+
+@pytest.fixture
+def auth_headers(test_user):
+    """Create authentication headers for testing."""
+    token = create_test_token(test_user.id)
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture
+def test_user(db_session) -> User:
+    """Create a test user."""
     user = User(
-        id=1,
-        email="admin@spirittours.com",
-        first_name="Admin",
-        last_name="User",
-        hashed_password="$2b$12$test_hashed_password",
+        id="test-user-123",
+        email="test@example.com",
+        username="testuser",
+        password_hash="$2b$12$test_password_hash",
+        full_name="Test User",
+        role="user",
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    db_session.commit()
+    return user
+
+@pytest.fixture
+def test_admin_user(db_session) -> User:
+    """Create a test admin user."""
+    admin = User(
+        id="admin-user-123",
+        email="admin@example.com",
+        username="adminuser",
+        password_hash="$2b$12$admin_password_hash",
+        full_name="Admin User",
         role="admin",
         is_active=True,
-        is_verified=True,
         created_at=datetime.utcnow()
     )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
+    db_session.add(admin)
+    db_session.commit()
+    return admin
 
 @pytest.fixture
-async def b2c_user(db_session):
-    """Create B2C user for testing."""
-    user = User(
-        id=2,
-        email="customer@example.com",
-        first_name="John",
-        last_name="Doe",
-        hashed_password="$2b$12$test_hashed_password",
-        role="customer",
-        is_active=True,
-        is_verified=True,
-        created_at=datetime.utcnow()
-    )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
-
-@pytest.fixture
-async def tour_operator_user(db_session):
-    """Create tour operator user for testing."""
-    user = User(
-        id=3,
-        email="operator@tourcompany.com",
-        first_name="Tour",
-        last_name="Operator",
-        hashed_password="$2b$12$test_hashed_password",
-        role="tour_operator",
-        is_active=True,
-        is_verified=True,
-        created_at=datetime.utcnow()
-    )
-    db_session.add(user)
-    await db_session.commit()
-    
-    # Create tour operator profile
-    operator = TourOperator(
-        user_id=user.id,
-        company_name="Premium Tours Ltd",
-        business_license="LIC123456",
-        commission_rate=10.0,
-        payment_terms="NET_30",
-        is_active=True,
-        created_at=datetime.utcnow()
-    )
-    db_session.add(operator)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
-
-@pytest.fixture
-async def travel_agency_user(db_session):
-    """Create travel agency user for testing."""
-    user = User(
-        id=4,
-        email="agency@travelco.com",
-        first_name="Travel",
-        last_name="Agency",
-        hashed_password="$2b$12$test_hashed_password",
-        role="travel_agency",
-        is_active=True,
-        is_verified=True,
-        created_at=datetime.utcnow()
-    )
-    db_session.add(user)
-    await db_session.commit()
-    
-    # Create travel agency profile
-    agency = TravelAgency(
-        user_id=user.id,
-        agency_name="Best Travel Agency",
-        license_number="AGN789012",
-        commission_rate=8.0,
-        payment_terms="NET_15",
-        is_active=True,
-        created_at=datetime.utcnow()
-    )
-    db_session.add(agency)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
-
-# Authentication Fixtures
-@pytest.fixture
-def admin_token(admin_user):
-    """Create admin authentication token."""
-    return create_access_token(
-        data={"sub": admin_user.email, "user_id": admin_user.id, "role": admin_user.role}
-    )
-
-@pytest.fixture
-def b2c_token(b2c_user):
-    """Create B2C user authentication token."""
-    return create_access_token(
-        data={"sub": b2c_user.email, "user_id": b2c_user.id, "role": b2c_user.role}
-    )
-
-@pytest.fixture
-def tour_operator_token(tour_operator_user):
-    """Create tour operator authentication token."""
-    return create_access_token(
-        data={"sub": tour_operator_user.email, "user_id": tour_operator_user.id, "role": tour_operator_user.role}
-    )
-
-@pytest.fixture
-def travel_agency_token(travel_agency_user):
-    """Create travel agency authentication token."""
-    return create_access_token(
-        data={"sub": travel_agency_user.email, "user_id": travel_agency_user.id, "role": travel_agency_user.role}
-    )
-
-@pytest.fixture
-def auth_headers(admin_token):
-    """Create authorization headers."""
-    return {"Authorization": f"Bearer {admin_token}"}
-
-@pytest.fixture
-def b2c_auth_headers(b2c_token):
-    """Create B2C authorization headers."""
-    return {"Authorization": f"Bearer {b2c_token}"}
-
-@pytest.fixture
-def tour_operator_auth_headers(tour_operator_token):
-    """Create tour operator authorization headers."""
-    return {"Authorization": f"Bearer {tour_operator_token}"}
-
-# Service Fixtures
-@pytest.fixture
-def analytics_service(db_session):
-    """Create analytics service for testing."""
-    return AnalyticsService(db_session)
-
-@pytest.fixture
-def notification_service():
-    """Create notification service for testing."""
-    return NotificationService()
-
-@pytest.fixture
-def payment_service():
-    """Create payment service for testing."""
-    return PaymentService()
-
-# Mock Fixtures
-@pytest.fixture
-def mock_stripe():
-    """Mock Stripe service."""
-    mock = Mock()
-    mock.PaymentIntent.create = Mock(return_value=Mock(
-        id="pi_test_123",
-        status="succeeded",
-        amount=10000,
-        currency="eur",
-        client_secret="pi_test_123_secret"
-    ))
-    mock.PaymentIntent.retrieve = Mock(return_value=Mock(
-        id="pi_test_123",
-        status="succeeded",
-        amount=10000,
-        currency="eur"
-    ))
-    return mock
-
-@pytest.fixture
-def mock_sendgrid():
-    """Mock SendGrid service."""
-    mock = Mock()
-    mock.send = AsyncMock(return_value=Mock(status_code=202))
-    return mock
-
-@pytest.fixture
-def mock_twilio():
-    """Mock Twilio service."""
-    mock = Mock()
-    mock.messages.create = Mock(return_value=Mock(
-        sid="SM123456789",
-        status="sent",
-        to="+1234567890",
-        body="Test message"
-    ))
-    return mock
-
-# Data Fixtures
-@pytest.fixture
-async def sample_booking_request(db_session, b2c_user):
-    """Create sample booking request for testing."""
-    booking = BookingRequest(
-        user_id=b2c_user.id,
-        product_name="Madrid City Tour",
-        destination="Madrid, Spain",
-        travel_date=datetime.utcnow() + timedelta(days=7),
-        participants=2,
-        total_amount=150.0,
-        currency="EUR",
+def test_booking(db_session, test_user) -> Booking:
+    """Create a test booking."""
+    booking = Booking(
+        id="booking-123",
+        user_id=test_user.id,
+        tour_id="tour-456",
+        booking_date=datetime.utcnow().date(),
+        total_amount=1000.00,
         status="confirmed",
-        booking_reference="BK123456789",
         created_at=datetime.utcnow()
     )
     db_session.add(booking)
-    await db_session.commit()
-    await db_session.refresh(booking)
+    db_session.commit()
     return booking
 
 @pytest.fixture
-async def sample_payment_transaction(db_session, sample_booking_request):
-    """Create sample payment transaction for testing."""
-    payment = PaymentTransaction(
-        booking_id=sample_booking_request.id,
-        amount=150.0,
-        currency="EUR",
-        payment_method="card",
-        provider="stripe",
-        provider_transaction_id="pi_test_123",
-        status="completed",
-        created_at=datetime.utcnow()
-    )
-    db_session.add(payment)
-    await db_session.commit()
-    await db_session.refresh(payment)
-    return payment
+def mock_payment_service():
+    """Mock payment service for testing."""
+    mock_service = AsyncMock()
+    mock_service.process_payment.return_value = {
+        "success": True,
+        "transaction_id": "txn_123456",
+        "status": "completed",
+        "amount": 1000.00
+    }
+    mock_service.refund_payment.return_value = {
+        "success": True,
+        "refund_id": "ref_123456",
+        "status": "refunded"
+    }
+    return mock_service
 
 @pytest.fixture
-async def sample_ai_query_log(db_session, b2c_user):
-    """Create sample AI query log for testing."""
-    query_log = AIQueryLog(
-        user_id=b2c_user.id,
-        agent_name="CustomerProphet",
-        query_text="What are the best tours in Madrid?",
-        response_text="Here are the top-rated tours in Madrid...",
-        query_metadata={"intent": "tour_recommendation"},
-        response_metadata={"satisfaction": 4.5},
-        response_time_ms=250,
-        status="completed",
-        created_at=datetime.utcnow()
-    )
-    db_session.add(query_log)
-    await db_session.commit()
-    await db_session.refresh(query_log)
-    return query_log
+def mock_notification_service():
+    """Mock notification service for testing."""
+    mock_service = AsyncMock()
+    mock_service.send_email.return_value = {
+        "success": True,
+        "message_id": "msg_123456"
+    }
+    mock_service.send_sms.return_value = {
+        "success": True,
+        "message_id": "sms_123456"
+    }
+    return mock_service
 
 @pytest.fixture
-async def sample_notification_log(db_session, b2c_user):
-    """Create sample notification log for testing."""
-    notification = NotificationLog(
-        user_id=b2c_user.id,
-        notification_type="booking_confirmation",
-        channel="email",
-        recipient="customer@example.com",
-        subject="Booking Confirmation",
-        content="Your booking has been confirmed",
-        delivery_status="delivered",
-        provider="sendgrid",
-        metadata={"opened": True},
-        created_at=datetime.utcnow()
-    )
-    db_session.add(notification)
-    await db_session.commit()
-    await db_session.refresh(notification)
-    return notification
+def mock_ai_service():
+    """Mock AI orchestrator service for testing."""
+    mock_service = AsyncMock()
+    mock_service.query_agent.return_value = {
+        "success": True,
+        "response": "AI generated response",
+        "agent_id": "agent_123",
+        "confidence": 0.95
+    }
+    return mock_service
 
-# WebSocket Testing Fixtures
 @pytest.fixture
-async def websocket_client():
-    """Create WebSocket test client."""
-    from starlette.testclient import TestClient as WebSocketTestClient
-    
-    client = WebSocketTestClient(app)
-    yield client
+def mock_redis_client():
+    """Mock Redis client for testing."""
+    mock_redis = AsyncMock()
+    mock_redis.get.return_value = None
+    mock_redis.set.return_value = True
+    mock_redis.delete.return_value = True
+    mock_redis.exists.return_value = False
+    return mock_redis
 
-# Performance Testing Fixtures
+def create_test_token(user_id: str, expires_in: int = 3600) -> str:
+    """Create a test JWT token."""
+    payload = {
+        "sub": user_id,
+        "exp": datetime.utcnow() + timedelta(seconds=expires_in),
+        "iat": datetime.utcnow(),
+        "type": "access"
+    }
+    return jwt.encode(payload, "test_secret_key", algorithm="HS256")
+
 @pytest.fixture
-def performance_config():
-    """Configuration for performance testing."""
+def sample_tour_data():
+    """Sample tour data for testing."""
     return {
-        "max_response_time": 500,  # milliseconds
-        "concurrent_users": 10,
-        "test_duration": 30,  # seconds
-        "acceptable_error_rate": 0.01  # 1%
+        "id": "tour-789",
+        "name": "Amazing Tour Package",
+        "description": "A wonderful tour experience",
+        "price": 1500.00,
+        "duration_days": 5,
+        "max_participants": 20,
+        "destination": "Paris, France",
+        "includes": ["Hotel", "Transport", "Meals"],
+        "category": "adventure"
     }
 
-# Test Data Factories
-class TestDataFactory:
-    """Factory for creating test data objects."""
-    
-    @staticmethod
-    def create_user_data(role="customer", **kwargs):
-        """Create user data for testing."""
-        base_data = {
-            "email": f"test_{role}@example.com",
-            "first_name": "Test",
-            "last_name": "User",
-            "password": "testpassword123",
-            "role": role,
-            "phone": "+34123456789",
-            "country": "ES",
-            "language": "es"
-        }
-        base_data.update(kwargs)
-        return base_data
-    
-    @staticmethod
-    def create_booking_data(**kwargs):
-        """Create booking data for testing."""
-        base_data = {
-            "product_name": "Test Tour",
-            "destination": "Test City",
-            "travel_date": (datetime.utcnow() + timedelta(days=7)).isoformat(),
-            "participants": 2,
-            "total_amount": 100.0,
-            "currency": "EUR",
-            "special_requirements": "Test requirements"
-        }
-        base_data.update(kwargs)
-        return base_data
-    
-    @staticmethod
-    def create_payment_data(**kwargs):
-        """Create payment data for testing."""
-        base_data = {
-            "amount": 100.0,
-            "currency": "EUR",
-            "payment_method": "card",
-            "provider": "stripe"
-        }
-        base_data.update(kwargs)
-        return base_data
+@pytest.fixture
+def sample_payment_data():
+    """Sample payment data for testing."""
+    return {
+        "booking_id": "booking-123",
+        "amount": 1000.00,
+        "currency": "USD",
+        "payment_method": "stripe",
+        "card_token": "tok_test_123456",
+        "customer_email": "test@example.com"
+    }
 
 @pytest.fixture
-def test_data_factory():
-    """Provide test data factory."""
-    return TestDataFactory
+def sample_notification_data():
+    """Sample notification data for testing."""
+    return {
+        "recipient": "test@example.com",
+        "subject": "Booking Confirmation",
+        "template": "booking_confirmation",
+        "variables": {
+            "booking_id": "booking-123",
+            "customer_name": "Test User",
+            "tour_name": "Amazing Tour",
+            "booking_date": "2024-01-15"
+        }
+    }
 
-# Cleanup Fixtures
+# Environment variable fixtures
 @pytest.fixture(autouse=True)
-def cleanup_temp_files():
-    """Automatically cleanup temporary files after tests."""
-    temp_files = []
-    
-    def add_temp_file(filepath):
-        temp_files.append(filepath)
-    
-    yield add_temp_file
-    
-    # Cleanup
-    for filepath in temp_files:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
-# Configuration Fixtures
-@pytest.fixture
-def test_config():
-    """Test configuration settings."""
-    return {
-        "database_url": TEST_DATABASE_URL,
-        "redis_url": "redis://localhost:6379/15",  # Test Redis DB
-        "testing": True,
-        "jwt_secret": "test_jwt_secret_key",
-        "stripe_secret_key": "sk_test_fake_key",
-        "sendgrid_api_key": "SG.fake_api_key",
-        "twilio_auth_token": "fake_twilio_token"
-    }
-
-# Async Testing Utilities
-@pytest.fixture
-def async_test_runner():
-    """Utility for running async tests."""
-    def run_async(coro):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-    
-    return run_async
-
-# Error Testing Fixtures
-@pytest.fixture
-def error_scenarios():
-    """Common error scenarios for testing."""
-    return {
-        "database_error": Exception("Database connection failed"),
-        "validation_error": ValueError("Invalid input data"),
-        "authentication_error": PermissionError("Invalid credentials"),
-        "payment_error": Exception("Payment processing failed"),
-        "notification_error": Exception("Failed to send notification"),
-        "network_error": ConnectionError("Network unavailable")
-    }
+def setup_test_env(monkeypatch):
+    """Setup test environment variables."""
+    monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL_SYNC)
+    monkeypatch.setenv("JWT_SECRET", "test_secret_key")
+    monkeypatch.setenv("JWT_ALGORITHM", "HS256")
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_123456")
+    monkeypatch.setenv("SENDGRID_API_KEY", "test_sendgrid_key")
+    monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setenv("ENVIRONMENT", "test")
