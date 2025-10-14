@@ -1,17 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
   CardContent,
+  CardHeader,
   Typography,
   Button,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Grid,
   Paper,
+  Alert,
+  AlertTitle,
+  Stepper,
+  Step,
+  StepLabel,
+  Divider,
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  InputAdornment,
+  Switch,
+  FormControlLabel,
+  FormGroup,
+  Checkbox,
   Table,
   TableBody,
   TableCell,
@@ -19,196 +32,245 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  Chip,
+  Tooltip,
+  LinearProgress,
+  Avatar,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert,
-  AlertTitle,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  Tooltip,
-  Badge,
-  Avatar,
-  Collapse,
-  Switch,
-  FormControlLabel,
-  InputAdornment,
-  Tabs,
-  Tab,
-  CircularProgress,
-  LinearProgress,
-  Snackbar,
-  Stack,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Rating,
   Slider,
-  FormGroup,
-  Checkbox,
-  Radio,
-  RadioGroup,
-  Container,
-  CssBaseline,
-  AppBar,
-  Toolbar,
-  Countdown,
-  ToggleButton,
-  ToggleButtonGroup,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineDot,
-  TimelineConnector,
-  TimelineContent
+  Stack,
+  Badge,
+  Snackbar,
+  CircularProgress
 } from '@mui/material';
 
 import {
   Hotel as HotelIcon,
   DirectionsBus as BusIcon,
   Restaurant as RestaurantIcon,
-  AttachMoney as AttachMoneyIcon,
+  AttachMoney as MoneyIcon,
   Send as SendIcon,
-  Save as SaveIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as VisibilityIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  LocationOn as LocationIcon,
-  CalendarToday as CalendarIcon,
-  Person as PersonIcon,
-  People as PeopleIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
+  Timer as TimerIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
-  Error as ErrorIcon,
   Info as InfoIcon,
-  Timer as TimerIcon,
-  Schedule as ScheduleIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  CompareArrows as CompareArrowsIcon,
-  LocalOffer as LocalOfferIcon,
-  Loyalty as LoyaltyIcon,
-  Stars as StarsIcon,
-  Bed as BedIcon,
+  TrendingDown as DiscountIcon,
+  LocalOffer as OfferIcon,
+  Calculate as CalculateIcon,
+  Groups as GroupsIcon,
+  CalendarToday as CalendarIcon,
   SingleBed as SingleBedIcon,
-  KingBed as KingBedIcon,
-  FreeBreakfast as FreeBreakfastIcon,
-  Dinner as DinnerIcon,
-  RoomService as RoomServiceIcon,
+  KingBed as DoubleBedIcon,
+  FamilyRestroom as TripleBedIcon,
+  FreeBreakfast as BreakfastIcon,
+  LunchDining as LunchIcon,
+  DinnerDining as DinnerIcon,
   Wifi as WifiIcon,
   Pool as PoolIcon,
   Spa as SpaIcon,
-  FitnessCenter as FitnessCenterIcon,
-  LocalParking as LocalParkingIcon,
-  AcUnit as AcUnitIcon,
-  Kitchen as KitchenIcon,
-  Balcony as BalconyIcon,
-  BeachAccess as BeachAccessIcon,
+  FitnessCenter as GymIcon,
+  LocalParking as ParkingIcon,
+  AcUnit as AirConditionIcon,
+  RoomService as RoomServiceIcon,
   BusinessCenter as BusinessCenterIcon,
-  MeetingRoom as MeetingRoomIcon,
-  EmojiEvents as EmojiEventsIcon,
-  WorkspacePremium as WorkspacePremiumIcon,
-  Verified as VerifiedIcon,
-  NewReleases as NewReleasesIcon,
-  Whatshot as WhatshotIcon,
-  FlashOn as FlashOnIcon,
-  AutoAwesome as AutoAwesomeIcon,
-  Lock as LockIcon,
-  LockOpen as LockOpenIcon,
-  Notifications as NotificationsIcon,
-  NotificationsActive as NotificationsActiveIcon,
-  MoneyOff as MoneyOffIcon,
-  Calculate as CalculateIcon,
+  Pets as PetsIcon,
+  SmokeFree as SmokeFreeIcon,
+  AccessTime as ClockIcon,
   Speed as SpeedIcon,
-  HighQuality as HighQualityIcon
+  Star as StarIcon,
+  EmojiEvents as WinnerIcon,
+  ThumbUp as ThumbUpIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  History as HistoryIcon,
+  CompareArrows as CompareIcon,
+  Notifications as NotificationIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  LocationOn as LocationIcon,
+  Language as LanguageIcon,
+  Euro as EuroIcon,
+  AttachFile as AttachmentIcon,
+  Description as DocumentIcon,
+  PictureAsPdf as PdfIcon,
+  Image as ImageIcon,
+  CloudUpload as UploadIcon,
+  CheckBox as CheckedIcon,
+  CheckBoxOutlineBlank as UncheckedIcon,
+  RadioButtonChecked as RadioCheckedIcon,
+  RadioButtonUnchecked as RadioUncheckedIcon,
+  Lock as LockIcon,
+  LockOpen as UnlockIcon,
+  Verified as VerifiedIcon,
+  NewReleases as UrgentIcon,
+  FlashOn as FlashIcon,
+  TrendingUp as TrendingUpIcon,
+  BarChart as ChartIcon,
+  Person as PersonIcon,
+  SupervisorAccount as ManagerIcon,
+  SupportAgent as SupportIcon,
+  HelpOutline as HelpIcon,
+  Lightbulb as TipIcon,
+  AutoAwesome as AutoIcon,
+  Psychology as AIIcon
 } from '@mui/icons-material';
 
-// Room types available
-const ROOM_TYPES = {
-  SINGLE: { name: 'Single Room', icon: <SingleBedIcon />, occupancy: 1 },
-  DOUBLE: { name: 'Double Room', icon: <BedIcon />, occupancy: 2 },
-  TWIN: { name: 'Twin Room', icon: <BedIcon />, occupancy: 2 },
-  TRIPLE: { name: 'Triple Room', icon: <KingBedIcon />, occupancy: 3 },
-  QUAD: { name: 'Quad Room', icon: <KingBedIcon />, occupancy: 4 },
-  SUITE: { name: 'Suite', icon: <StarsIcon />, occupancy: 2 },
-  FAMILY: { name: 'Family Room', icon: <PeopleIcon />, occupancy: 4 }
+// Configuración del proveedor (Hotel)
+const PROVIDER_CONFIG = {
+  hotel: {
+    id: 'HTL-001',
+    name: 'Legacy Nazareth Hotel',
+    category: 4,
+    location: 'Nazaret',
+    email: 'reservations@legacynazareth.com',
+    phone: '+972-4-1234567',
+    contactPerson: 'Sarah Cohen',
+    logo: null
+  },
+  roomTypes: {
+    SINGLE: { 
+      name: 'Habitación Sencilla',
+      basePrice: 120,
+      maxOccupancy: 1,
+      available: 25
+    },
+    DOUBLE: {
+      name: 'Habitación Doble',
+      basePrice: 85,
+      maxOccupancy: 2,
+      available: 40
+    },
+    TRIPLE: {
+      name: 'Habitación Triple',
+      basePrice: 110,
+      maxOccupancy: 3,
+      available: 15
+    },
+    SUITE: {
+      name: 'Suite',
+      basePrice: 200,
+      maxOccupancy: 4,
+      available: 5
+    }
+  },
+  mealPlans: {
+    ROOM_ONLY: { name: 'Solo Alojamiento', pricePerPerson: 0 },
+    BREAKFAST: { name: 'Desayuno Incluido', pricePerPerson: 15 },
+    HALF_BOARD: { name: 'Media Pensión', pricePerPerson: 40 },
+    FULL_BOARD: { name: 'Pensión Completa', pricePerPerson: 65 }
+  },
+  amenities: [
+    'wifi', 'parking', 'pool', 'gym', 'spa', 'restaurant', 
+    'bar', 'room-service', 'laundry', 'business-center'
+  ],
+  specialServices: {
+    KOSHER_MEALS: 'Comidas Kosher',
+    SHABBAT_ELEVATOR: 'Elevador de Shabbat',
+    PRAYER_ROOM: 'Sala de Oración',
+    RELIGIOUS_GUIDANCE: 'Guía Religioso'
+  }
 };
 
-// Meal plans
-const MEAL_PLANS = {
-  RO: { name: 'Room Only', icon: <HotelIcon />, included: [] },
-  BB: { name: 'Bed & Breakfast', icon: <FreeBreakfastIcon />, included: ['breakfast'] },
-  HB: { name: 'Half Board', icon: <RestaurantIcon />, included: ['breakfast', 'dinner'] },
-  FB: { name: 'Full Board', icon: <RoomServiceIcon />, included: ['breakfast', 'lunch', 'dinner'] },
-  AI: { name: 'All Inclusive', icon: <StarsIcon />, included: ['all meals', 'drinks', 'snacks'] }
+// Estrategias de precio competitivo
+const PRICING_STRATEGIES = {
+  AGGRESSIVE: {
+    name: 'Agresiva',
+    description: 'Precio más bajo posible para ganar',
+    discount: 0.15,
+    icon: <TrendingDownIcon />,
+    color: 'error'
+  },
+  COMPETITIVE: {
+    name: 'Competitiva',
+    description: 'Precio justo con buen margen',
+    discount: 0.08,
+    icon: <CompareIcon />,
+    color: 'primary'
+  },
+  PREMIUM: {
+    name: 'Premium',
+    description: 'Precio alto con servicios extra',
+    discount: 0,
+    icon: <StarIcon />,
+    color: 'warning'
+  },
+  DYNAMIC: {
+    name: 'Dinámica',
+    description: 'Ajuste según demanda',
+    discount: null,
+    icon: <AutoIcon />,
+    color: 'info'
+  }
 };
 
-// Competition indicators
-const COMPETITION_LEVELS = {
-  LOW: { color: 'success', label: 'Low Competition', icon: <TrendingDownIcon /> },
-  MEDIUM: { color: 'warning', label: 'Medium Competition', icon: <TrendingFlatIcon /> },
-  HIGH: { color: 'error', label: 'High Competition', icon: <TrendingUpIcon /> },
-  VERY_HIGH: { color: 'error', label: 'Very High Competition', icon: <WhatshotIcon /> }
-};
-
-const ProviderResponsePortal = ({ rfqId, providerId }) => {
-  // State management
-  const [rfqDetails, setRfqDetails] = useState(null);
-  const [competitorCount, setCompetitorCount] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(null);
+const ProviderResponsePortal = () => {
+  // Estado principal
+  const [quotationData, setQuotationData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [competitorCount, setCompetitorCount] = useState(0);
   
-  // Provider response form
+  // Estado de la respuesta
   const [response, setResponse] = useState({
-    providerId: providerId || '',
-    providerName: '',
-    providerType: 'HOTEL',
-    contactPerson: '',
-    email: '',
-    phone: '',
-    roomPrices: [],
-    transportPrices: [],
-    mealPrices: [],
-    additionalServices: [],
-    totalPrice: 0,
-    validUntil: '',
-    paymentTerms: '',
-    cancellationPolicy: '',
-    specialOffers: '',
+    pricing: {
+      singleRoom: PROVIDER_CONFIG.roomTypes.SINGLE.basePrice,
+      doubleRoom: PROVIDER_CONFIG.roomTypes.DOUBLE.basePrice,
+      tripleRoom: PROVIDER_CONFIG.roomTypes.TRIPLE.basePrice,
+      suiteRoom: PROVIDER_CONFIG.roomTypes.SUITE.basePrice,
+      childDiscount: 0.30, // 30% descuento niños
+      groupDiscount: 0, // Descuento adicional por grupo
+      earlyBookingDiscount: 0,
+      seasonalAdjustment: 0
+    },
+    mealPlans: {
+      BREAKFAST: 15,
+      HALF_BOARD: 40,
+      FULL_BOARD: 65
+    },
+    availability: {
+      confirmed: false,
+      alternativeDates: [],
+      waitingList: false,
+      cancellationPolicy: 'FLEXIBLE' // FLEXIBLE, MODERATE, STRICT
+    },
+    specialOffers: [],
+    amenitiesIncluded: ['wifi', 'parking', 'breakfast'],
+    extraServices: [],
     notes: '',
-    flexibleDates: false,
-    bestPriceGuarantee: false,
-    includesGuide: false,
-    includesEntrances: false
+    attachments: [],
+    strategy: 'COMPETITIVE',
+    autoAdjustPrice: false,
+    beatCompetitors: false,
+    guaranteedBestPrice: false
   });
   
-  // Competition awareness
-  const [competitionMode, setCompetitionMode] = useState('UNKNOWN');
-  const [priceStrategy, setPriceStrategy] = useState('COMPETITIVE');
-  const [showCompetitorInfo, setShowCompetitorInfo] = useState(false);
-  const [estimatedAveragePrice, setEstimatedAveragePrice] = useState(0);
+  // Estado de cálculos
+  const [calculations, setCalculations] = useState({
+    subtotal: 0,
+    discount: 0,
+    taxes: 0,
+    total: 0,
+    pricePerPerson: 0,
+    profit: 0,
+    profitMargin: 0
+  });
   
-  // UI State
-  const [activeTab, setActiveTab] = useState(0);
-  const [showPricingHelp, setShowPricingHelp] = useState(false);
+  // Estado de UI
+  const [showCompetitorInfo, setShowCompetitorInfo] = useState(false);
+  const [showPriceCalculator, setShowPriceCalculator] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(false);
+  const [successDialog, setSuccessDialog] = useState(false);
   
   // Snackbar
   const [snackbar, setSnackbar] = useState({
@@ -217,252 +279,322 @@ const ProviderResponsePortal = ({ rfqId, providerId }) => {
     severity: 'info'
   });
   
-  // Load RFQ details on mount
+  // Simular carga de datos de cotización
   useEffect(() => {
-    loadRFQDetails();
-    checkCompetition();
+    loadQuotationData();
     startCountdown();
-  }, [rfqId]);
+    
+    // Actualizar cálculos cuando cambian los precios
+    const interval = setInterval(() => {
+      calculateTotalPrice();
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [response.pricing]);
   
-  // Load RFQ details
-  const loadRFQDetails = async () => {
+  // Cargar datos de la cotización
+  const loadQuotationData = async () => {
     setLoading(true);
     try {
-      // Simulated API call
-      const mockRFQ = {
-        id: rfqId || 'RFQ-2024-001',
-        groupName: 'Catholic Pilgrimage November 2025',
-        agencyName: 'Faith Tours USA',
-        contactPerson: 'John Smith',
-        arrivalDate: '2025-11-01',
-        departureDate: '2025-11-10',
-        nights: 9,
-        numberOfPax: 45,
-        freePersons: 2,
-        location: 'Nazareth',
-        requestedNights: 3,
-        mealPlan: 'HB',
-        specialRequests: 'Quiet rooms, vegetarian options needed',
-        deadline: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours from now
-        budgetRange: { min: 800, max: 1500 },
-        competitionMode: 'OPEN',
-        requestedServices: [
-          { type: 'ACCOMMODATION', details: 'Standard double rooms' },
-          { type: 'MEALS', details: 'Half board with dietary requirements' }
-        ]
+      // Simular llamada API para obtener datos de la cotización
+      // En producción, esto vendría de la URL params y API call
+      const mockData = {
+        quotationId: 'GRP-202410-0001',
+        agency: {
+          name: 'Holy Land Tours Agency',
+          contactPerson: 'John Smith',
+          email: 'john@holylandtours.com',
+          phone: '+1234567890',
+          country: 'USA'
+        },
+        group: {
+          name: 'Pilgrimage November 2025',
+          totalPax: 45,
+          freeSpots: 2,
+          singleRooms: 5,
+          doubleRooms: 18,
+          tripleRooms: 2,
+          children: 3
+        },
+        dates: {
+          checkIn: '2025-11-01',
+          checkOut: '2025-11-04',
+          nights: 3
+        },
+        requirements: {
+          mealPlan: 'HALF_BOARD',
+          specialRequests: 'Habitaciones cerca del elevador, menú kosher disponible',
+          maxBudget: 1500,
+          competitiveBidding: true
+        },
+        deadline: new Date(Date.now() + 24 * 3600000), // 24 horas desde ahora
+        competitors: {
+          count: 4,
+          averageCategory: 4,
+          priceRange: { min: 75, max: 95 }
+        }
       };
       
-      setRfqDetails(mockRFQ);
-      setCompetitionMode(mockRFQ.competitionMode);
+      setQuotationData(mockData);
+      setCompetitorCount(mockData.competitors.count);
       
-      // Pre-fill provider info if logged in
-      if (providerId) {
-        setResponse(prev => ({
-          ...prev,
-          providerId: providerId,
-          providerName: 'Golden Crown Hotel Nazareth', // Mock data
-          email: 'sales@goldencrown.com',
-          contactPerson: 'Sarah Johnson'
-        }));
+      // Si hay competencia, mostrar información
+      if (mockData.requirements.competitiveBidding) {
+        setShowCompetitorInfo(true);
       }
+      
     } catch (error) {
-      console.error('Error loading RFQ:', error);
+      console.error('Error loading quotation:', error);
+      showSnackbar('Error al cargar la cotización', 'error');
     } finally {
       setLoading(false);
     }
   };
   
-  // Check competition
-  const checkCompetition = async () => {
-    try {
-      // Simulated check for how many providers are invited
-      const competitorInfo = {
-        totalInvited: 8,
-        alreadyResponded: 3,
-        averageResponseTime: '4.5 hours',
-        estimatedPriceRange: { min: 950, max: 1350 }
-      };
-      
-      setCompetitorCount(competitorInfo.totalInvited - 1); // Exclude self
-      setEstimatedAveragePrice((competitorInfo.estimatedPriceRange.min + competitorInfo.estimatedPriceRange.max) / 2);
-      
-      // Show competition alert if high
-      if (competitorInfo.totalInvited > 5) {
-        showSnackbar(
-          `⚡ High Competition Alert: ${competitorInfo.totalInvited - 1} other providers are also quoting for this RFQ. Be competitive!`,
-          'warning'
-        );
-      }
-    } catch (error) {
-      console.error('Error checking competition:', error);
-    }
-  };
-  
-  // Countdown timer
+  // Iniciar countdown
   const startCountdown = () => {
-    if (!rfqDetails?.deadline) return;
-    
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const deadline = new Date(rfqDetails.deadline).getTime();
-      const distance = deadline - now;
-      
-      if (distance < 0) {
-        clearInterval(interval);
-        setTimeRemaining('EXPIRED');
-      } else {
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const timer = setInterval(() => {
+      if (quotationData?.deadline) {
+        const now = new Date();
+        const deadline = new Date(quotationData.deadline);
+        const diff = deadline - now;
         
-        setTimeRemaining(`${days}d ${hours}h ${minutes}m`);
-        
-        // Urgency alerts
-        if (distance < 2 * 60 * 60 * 1000 && !submitted) { // Less than 2 hours
-          showSnackbar('⏰ Less than 2 hours remaining to submit your quote!', 'error');
+        if (diff > 0) {
+          const hours = Math.floor(diff / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          setTimeRemaining(`${hours}h ${minutes}m`);
+        } else {
+          setTimeRemaining('Expirado');
+          clearInterval(timer);
         }
       }
-    }, 60000); // Update every minute
+    }, 60000); // Actualizar cada minuto
     
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   };
   
-  // Calculate total price
+  // Calcular precio total
   const calculateTotalPrice = () => {
-    let total = 0;
+    if (!quotationData) return;
     
-    // Room prices
-    response.roomPrices.forEach(room => {
-      total += (room.pricePerNight * rfqDetails.requestedNights * room.quantity);
+    const { group, dates } = quotationData;
+    const { pricing, mealPlans } = response;
+    
+    // Calcular alojamiento
+    const singleRoomTotal = pricing.singleRoom * group.singleRooms * dates.nights;
+    const doubleRoomTotal = pricing.doubleRoom * group.doubleRooms * dates.nights * 2;
+    const tripleRoomTotal = pricing.tripleRoom * group.tripleRooms * dates.nights * 3;
+    
+    const roomSubtotal = singleRoomTotal + doubleRoomTotal + tripleRoomTotal;
+    
+    // Calcular comidas
+    const mealPlan = quotationData.requirements.mealPlan;
+    const mealCost = mealPlans[mealPlan] * (group.totalPax - group.freeSpots) * dates.nights;
+    
+    // Aplicar descuentos
+    const groupDiscountAmount = roomSubtotal * (pricing.groupDiscount / 100);
+    const earlyBookingDiscountAmount = roomSubtotal * (pricing.earlyBookingDiscount / 100);
+    const childDiscountAmount = (group.children * pricing.doubleRoom * dates.nights) * (pricing.childDiscount);
+    
+    const totalDiscount = groupDiscountAmount + earlyBookingDiscountAmount + childDiscountAmount;
+    
+    const subtotal = roomSubtotal + mealCost;
+    const total = subtotal - totalDiscount;
+    const pricePerPerson = total / (group.totalPax - group.freeSpots);
+    
+    // Calcular profit (asumiendo 70% de costo)
+    const cost = total * 0.7;
+    const profit = total - cost;
+    const profitMargin = (profit / total) * 100;
+    
+    setCalculations({
+      subtotal,
+      discount: totalDiscount,
+      taxes: 0, // Se calcularía según el país
+      total,
+      pricePerPerson,
+      profit,
+      profitMargin
     });
-    
-    // Meal prices
-    response.mealPrices.forEach(meal => {
-      total += (meal.pricePerPerson * meal.quantity);
-    });
-    
-    // Additional services
-    response.additionalServices.forEach(service => {
-      total += service.price;
-    });
-    
-    setResponse(prev => ({ ...prev, totalPrice: total }));
-    return total;
   };
   
-  // Price recommendation engine
-  const getPriceRecommendation = () => {
-    if (!rfqDetails) return null;
+  // Aplicar estrategia de precios
+  const applyPricingStrategy = (strategy) => {
+    const baseStrategy = PRICING_STRATEGIES[strategy];
     
-    const budget = rfqDetails.budgetRange;
-    const avgCompetitorPrice = estimatedAveragePrice;
-    
-    let recommendation = {
-      suggested: 0,
-      strategy: '',
-      confidence: 0
-    };
-    
-    if (priceStrategy === 'AGGRESSIVE') {
-      recommendation.suggested = avgCompetitorPrice * 0.92; // 8% below average
-      recommendation.strategy = 'Aggressive pricing to win the bid';
-      recommendation.confidence = 75;
-    } else if (priceStrategy === 'COMPETITIVE') {
-      recommendation.suggested = avgCompetitorPrice * 0.97; // 3% below average
-      recommendation.strategy = 'Competitive pricing with good margin';
-      recommendation.confidence = 85;
-    } else if (priceStrategy === 'PREMIUM') {
-      recommendation.suggested = avgCompetitorPrice * 1.05; // 5% above average
-      recommendation.strategy = 'Premium pricing for superior service';
-      recommendation.confidence = 60;
+    if (strategy === 'DYNAMIC') {
+      // Precio dinámico basado en ocupación y demanda
+      const occupancyRate = 0.75; // Simular 75% de ocupación
+      const demandFactor = occupancyRate > 0.8 ? 1.1 : 0.95;
+      
+      setResponse({
+        ...response,
+        pricing: {
+          ...response.pricing,
+          singleRoom: PROVIDER_CONFIG.roomTypes.SINGLE.basePrice * demandFactor,
+          doubleRoom: PROVIDER_CONFIG.roomTypes.DOUBLE.basePrice * demandFactor,
+          tripleRoom: PROVIDER_CONFIG.roomTypes.TRIPLE.basePrice * demandFactor
+        },
+        strategy
+      });
+    } else {
+      // Aplicar descuento de estrategia
+      const discount = baseStrategy.discount;
+      
+      setResponse({
+        ...response,
+        pricing: {
+          ...response.pricing,
+          singleRoom: PROVIDER_CONFIG.roomTypes.SINGLE.basePrice * (1 - discount),
+          doubleRoom: PROVIDER_CONFIG.roomTypes.DOUBLE.basePrice * (1 - discount),
+          tripleRoom: PROVIDER_CONFIG.roomTypes.TRIPLE.basePrice * (1 - discount),
+          groupDiscount: discount * 100
+        },
+        strategy
+      });
     }
     
-    // Ensure within budget
-    recommendation.suggested = Math.min(recommendation.suggested, budget.max * 0.95);
-    recommendation.suggested = Math.max(recommendation.suggested, budget.min * 1.1);
-    
-    return recommendation;
+    showSnackbar(`Estrategia ${baseStrategy.name} aplicada`, 'success');
   };
   
-  // Submit response
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    try {
-      // Validate required fields
-      if (!response.providerName || !response.email || !response.contactPerson) {
-        showSnackbar('Please fill all required fields', 'error');
-        return;
+  // Agregar oferta especial
+  const addSpecialOffer = (type) => {
+    const offers = {
+      EARLY_BOOKING: {
+        type: 'EARLY_BOOKING',
+        description: 'Descuento por reserva anticipada',
+        value: 10,
+        unit: 'percent'
+      },
+      FREE_UPGRADE: {
+        type: 'FREE_UPGRADE',
+        description: 'Upgrade gratuito de categoría de habitación',
+        value: 'Suite',
+        unit: 'text'
+      },
+      FREE_SPA: {
+        type: 'FREE_SPA',
+        description: 'Acceso gratuito al spa y piscina',
+        value: 'Incluido',
+        unit: 'text'
+      },
+      WELCOME_GIFT: {
+        type: 'WELCOME_GIFT',
+        description: 'Regalo de bienvenida en la habitación',
+        value: 'Vino y frutas',
+        unit: 'text'
+      },
+      FREE_TRANSFER: {
+        type: 'FREE_TRANSFER',
+        description: 'Traslado aeropuerto gratuito',
+        value: 'Ida y vuelta',
+        unit: 'text'
       }
-      
-      if (response.roomPrices.length === 0 && response.providerType === 'HOTEL') {
-        showSnackbar('Please add at least one room price', 'error');
-        return;
-      }
-      
-      // Calculate final price
-      const finalPrice = calculateTotalPrice();
-      
-      // Prepare submission
-      const submission = {
+    };
+    
+    const offer = offers[type];
+    if (offer) {
+      setResponse({
         ...response,
-        rfqId: rfqDetails.id,
-        submittedAt: new Date().toISOString(),
-        totalPrice: finalPrice,
-        pricePerPerson: finalPrice / (rfqDetails.numberOfPax - rfqDetails.freePersons),
-        responseTime: new Date() - new Date(rfqDetails.createdAt),
-        competitionAware: competitionMode === 'OPEN',
-        winProbability: calculateWinProbability()
+        specialOffers: [...response.specialOffers, offer]
+      });
+      showSnackbar('Oferta especial agregada', 'success');
+    }
+  };
+  
+  // Usar AI para optimizar precio
+  const useAIPricing = () => {
+    setShowAIAssistant(true);
+    
+    // Simular análisis AI
+    setTimeout(() => {
+      // Precio optimizado por AI basado en:
+      // - Historial de reservas
+      // - Competencia
+      // - Temporada
+      // - Ocupación
+      
+      const aiOptimizedPrices = {
+        singleRoom: 115,
+        doubleRoom: 82,
+        tripleRoom: 105,
+        groupDiscount: 5,
+        earlyBookingDiscount: 3
       };
       
-      // Submit to API
-      console.log('Submitting response:', submission);
+      setResponse({
+        ...response,
+        pricing: {
+          ...response.pricing,
+          ...aiOptimizedPrices
+        }
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      showSnackbar('Precios optimizados por AI aplicados', 'info');
+      setShowAIAssistant(false);
+    }, 2000);
+  };
+  
+  // Validar respuesta antes de enviar
+  const validateResponse = () => {
+    const errors = [];
+    
+    if (response.pricing.doubleRoom <= 0) {
+      errors.push('El precio de habitación doble es requerido');
+    }
+    
+    if (!response.availability.confirmed && response.availability.alternativeDates.length === 0) {
+      errors.push('Debe confirmar disponibilidad o sugerir fechas alternativas');
+    }
+    
+    if (response.beatCompetitors && response.pricing.groupDiscount < 5) {
+      errors.push('Para superar competidores, considere ofrecer al menos 5% de descuento');
+    }
+    
+    return errors;
+  };
+  
+  // Enviar respuesta
+  const submitResponse = async () => {
+    const errors = validateResponse();
+    
+    if (errors.length > 0) {
+      showSnackbar(errors[0], 'error');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Preparar datos para envío
+      const responseData = {
+        quotationId: quotationData.quotationId,
+        hotelId: PROVIDER_CONFIG.hotel.id,
+        hotelName: PROVIDER_CONFIG.hotel.name,
+        response: {
+          ...response,
+          calculations,
+          submittedAt: new Date().toISOString(),
+          validUntil: new Date(Date.now() + 7 * 24 * 3600000).toISOString() // Válido por 7 días
+        }
+      };
       
-      setSubmitted(true);
-      showSnackbar('Your quote has been submitted successfully!', 'success');
+      console.log('Enviando respuesta:', responseData);
       
-      // Send confirmation email
-      sendConfirmationEmail(submission);
+      // Simular envío
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setSuccessDialog(true);
+      showSnackbar('Respuesta enviada exitosamente', 'success');
       
     } catch (error) {
       console.error('Error submitting response:', error);
-      showSnackbar('Error submitting response. Please try again.', 'error');
+      showSnackbar('Error al enviar la respuesta', 'error');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
   
-  // Calculate win probability
-  const calculateWinProbability = () => {
-    let probability = 50; // Base probability
-    
-    // Price competitiveness
-    const priceRatio = response.totalPrice / estimatedAveragePrice;
-    if (priceRatio < 0.95) probability += 20;
-    else if (priceRatio < 1) probability += 10;
-    else if (priceRatio > 1.1) probability -= 20;
-    
-    // Response speed
-    const hoursToDeadline = (new Date(rfqDetails.deadline) - new Date()) / (1000 * 60 * 60);
-    if (hoursToDeadline > 24) probability += 10; // Early response
-    
-    // Additional factors
-    if (response.bestPriceGuarantee) probability += 5;
-    if (response.flexibleDates) probability += 5;
-    if (response.specialOffers) probability += 5;
-    
-    return Math.min(Math.max(probability, 10), 90); // Cap between 10-90%
-  };
-  
-  // Send confirmation email
-  const sendConfirmationEmail = (submission) => {
-    // Simulate email sending
-    console.log('Sending confirmation email for submission:', submission);
-  };
-  
-  // Helper functions
+  // Mostrar snackbar
   const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
   };
@@ -471,615 +603,731 @@ const ProviderResponsePortal = ({ rfqId, providerId }) => {
     setSnackbar({ ...snackbar, open: false });
   };
   
-  const getCompetitionLevel = () => {
-    if (competitorCount <= 2) return COMPETITION_LEVELS.LOW;
-    if (competitorCount <= 4) return COMPETITION_LEVELS.MEDIUM;
-    if (competitorCount <= 6) return COMPETITION_LEVELS.HIGH;
-    return COMPETITION_LEVELS.VERY_HIGH;
-  };
-  
-  // Add room price
-  const addRoomPrice = () => {
-    setResponse(prev => ({
-      ...prev,
-      roomPrices: [...prev.roomPrices, {
-        roomType: 'DOUBLE',
-        occupancy: 2,
-        pricePerNight: 0,
-        quantity: 0,
-        mealPlan: 'BB',
-        singleSupplement: 0,
-        tripleReduction: 0,
-        childReduction: 0
-      }]
-    }));
-  };
-  
-  // Update room price
-  const updateRoomPrice = (index, field, value) => {
-    setResponse(prev => {
-      const updated = [...prev.roomPrices];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, roomPrices: updated };
-    });
-  };
-  
-  // Remove room price
-  const removeRoomPrice = (index) => {
-    setResponse(prev => ({
-      ...prev,
-      roomPrices: prev.roomPrices.filter((_, i) => i !== index)
-    }));
-  };
-  
-  if (loading) {
+  if (loading && !quotationData) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
       </Box>
     );
   }
   
-  if (submitted) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 5 }}>
-        <Paper sx={{ p: 5, textAlign: 'center' }}>
-          <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
-          <Typography variant="h4" gutterBottom>
-            Quote Submitted Successfully!
-          </Typography>
-          <Typography variant="body1" paragraph>
-            Your quote for RFQ {rfqDetails.id} has been submitted.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            You will receive a confirmation email shortly. The agency will review all quotes and contact you if selected.
-          </Typography>
-          <Box sx={{ mt: 3, p: 2, bgcolor: 'info.light', borderRadius: 2 }}>
-            <Typography variant="h6">Your Submission Summary:</Typography>
-            <Typography>Total Price: ${response.totalPrice.toFixed(2)}</Typography>
-            <Typography>Price per Person: ${(response.totalPrice / (rfqDetails.numberOfPax - rfqDetails.freePersons)).toFixed(2)}</Typography>
-            <Typography>Win Probability: {calculateWinProbability()}%</Typography>
-          </Box>
-        </Paper>
-      </Container>
-    );
-  }
-  
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
-      <CssBaseline />
-      
-      {/* Header */}
-      <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <Toolbar>
-          <HotelIcon sx={{ mr: 2 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Provider Response Portal - Spirit Tours
-          </Typography>
-          <Chip
-            label={timeRemaining === 'EXPIRED' ? 'EXPIRED' : `Time Left: ${timeRemaining}`}
-            color={timeRemaining === 'EXPIRED' ? 'error' : 'warning'}
-            icon={<TimerIcon />}
-          />
-        </Toolbar>
-      </AppBar>
-      
-      <Container maxWidth="lg" sx={{ mt: 3, mb: 5 }}>
-        {/* RFQ Header Info */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={8}>
-              <Typography variant="h5" gutterBottom>
-                {rfqDetails.groupName}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                RFQ ID: {rfqDetails.id} | Agency: {rfqDetails.agencyName}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              {competitionMode === 'OPEN' && (
-                <Alert severity={getCompetitionLevel().color} icon={getCompetitionLevel().icon}>
-                  <AlertTitle>{getCompetitionLevel().label}</AlertTitle>
-                  {competitorCount} other providers are competing for this RFQ
-                </Alert>
-              )}
-            </Grid>
-          </Grid>
-          
-          <Divider sx={{ my: 2 }} />
-          
-          <Grid container spacing={2}>
-            <Grid item xs={6} sm={3}>
-              <Typography variant="body2" color="text.secondary">Travel Dates</Typography>
-              <Typography variant="body1">{rfqDetails.arrivalDate} - {rfqDetails.departureDate}</Typography>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Typography variant="body2" color="text.secondary">Passengers</Typography>
-              <Typography variant="body1">{rfqDetails.numberOfPax} pax ({rfqDetails.freePersons} free)</Typography>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Typography variant="body2" color="text.secondary">Location</Typography>
-              <Typography variant="body1">{rfqDetails.location} - {rfqDetails.requestedNights} nights</Typography>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Typography variant="body2" color="text.secondary">Budget Range</Typography>
-              <Typography variant="body1">${rfqDetails.budgetRange.min} - ${rfqDetails.budgetRange.max}</Typography>
-            </Grid>
-          </Grid>
-          
-          {rfqDetails.specialRequests && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-              <Typography variant="body2" color="info.dark">
-                <strong>Special Requests:</strong> {rfqDetails.specialRequests}
-              </Typography>
+    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+      {/* Header con información del hotel */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Grid container spacing={3} alignItems="center">
+          <Grid item xs={12} md={8}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ width: 60, height: 60, mr: 2, bgcolor: 'primary.main' }}>
+                <HotelIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h5" gutterBottom>
+                  {PROVIDER_CONFIG.hotel.name}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Chip label={`${PROVIDER_CONFIG.hotel.category} Estrellas`} icon={<StarIcon />} />
+                  <Chip label={PROVIDER_CONFIG.hotel.location} icon={<LocationIcon />} />
+                  <Chip label={PROVIDER_CONFIG.hotel.contactPerson} icon={<PersonIcon />} />
+                </Box>
+              </Box>
             </Box>
-          )}
-        </Paper>
-        
-        {/* Pricing Strategy Helper */}
-        {competitionMode === 'OPEN' && (
-          <Paper sx={{ p: 3, mb: 3, bgcolor: 'warning.light' }}>
-            <Typography variant="h6" gutterBottom>
-              💡 Pricing Strategy Recommendation
-            </Typography>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6}>
-                <ToggleButtonGroup
-                  value={priceStrategy}
-                  exclusive
-                  onChange={(e, value) => value && setPriceStrategy(value)}
-                  fullWidth
-                >
-                  <ToggleButton value="AGGRESSIVE">
-                    <TrendingDownIcon sx={{ mr: 1 }} />
-                    Aggressive
-                  </ToggleButton>
-                  <ToggleButton value="COMPETITIVE">
-                    <CompareArrowsIcon sx={{ mr: 1 }} />
-                    Competitive
-                  </ToggleButton>
-                  <ToggleButton value="PREMIUM">
-                    <TrendingUpIcon sx={{ mr: 1 }} />
-                    Premium
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                {getPriceRecommendation() && (
+          </Grid>
+          <Grid item xs={12} md={4} sx={{ textAlign: { md: 'right' } }}>
+            {timeRemaining && (
+              <Alert 
+                severity={timeRemaining === 'Expirado' ? 'error' : 'warning'}
+                icon={<TimerIcon />}
+              >
+                <AlertTitle>Tiempo Restante</AlertTitle>
+                {timeRemaining}
+              </Alert>
+            )}
+          </Grid>
+        </Grid>
+      </Paper>
+      
+      {/* Información de la cotización */}
+      {quotationData && (
+        <Grid container spacing={3}>
+          {/* Panel izquierdo - Detalles de la cotización */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ mb: 3 }}>
+              <CardHeader
+                title="Detalles de la Cotización"
+                subheader={`ID: ${quotationData.quotationId}`}
+                avatar={<QuoteIcon />}
+              />
+              <CardContent>
+                <List dense>
+                  <ListItem>
+                    <ListItemIcon><BusinessIcon /></ListItemIcon>
+                    <ListItemText
+                      primary={quotationData.agency.name}
+                      secondary={quotationData.agency.contactPerson}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><GroupsIcon /></ListItemIcon>
+                    <ListItemText
+                      primary={quotationData.group.name}
+                      secondary={`${quotationData.group.totalPax} pasajeros`}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><CalendarIcon /></ListItemIcon>
+                    <ListItemText
+                      primary={`${quotationData.dates.checkIn} - ${quotationData.dates.checkOut}`}
+                      secondary={`${quotationData.dates.nights} noches`}
+                    />
+                  </ListItem>
+                </List>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Typography variant="subtitle2" gutterBottom>
+                  Distribución de Habitaciones
+                </Typography>
+                <Grid container spacing={1}>
+                  <Grid item xs={4}>
+                    <Paper sx={{ p: 1, textAlign: 'center' }}>
+                      <SingleBedIcon />
+                      <Typography variant="h6">{quotationData.group.singleRooms}</Typography>
+                      <Typography variant="caption">Sencillas</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Paper sx={{ p: 1, textAlign: 'center' }}>
+                      <DoubleBedIcon />
+                      <Typography variant="h6">{quotationData.group.doubleRooms}</Typography>
+                      <Typography variant="caption">Dobles</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Paper sx={{ p: 1, textAlign: 'center' }}>
+                      <TripleBedIcon />
+                      <Typography variant="h6">{quotationData.group.tripleRooms}</Typography>
+                      <Typography variant="caption">Triples</Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ mt: 2 }}>
+                  <Alert severity="info">
+                    <AlertTitle>Requisitos Especiales</AlertTitle>
+                    {quotationData.requirements.specialRequests}
+                  </Alert>
+                </Box>
+              </CardContent>
+            </Card>
+            
+            {/* Información de competencia */}
+            {showCompetitorInfo && (
+              <Card>
+                <CardHeader
+                  title="Análisis de Competencia"
+                  subheader="Sistema de ofertas competitivas activo"
+                  avatar={
+                    <Badge badgeContent={competitorCount} color="error">
+                      <CompareIcon />
+                    </Badge>
+                  }
+                />
+                <CardContent>
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    Hay {competitorCount} hoteles más cotizando para este grupo
+                  </Alert>
+                  
+                  <Typography variant="body2" gutterBottom>
+                    Rango de precios esperado:
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Chip 
+                      label={`Mín: $${quotationData.competitors.priceRange.min}`}
+                      color="success"
+                      size="small"
+                    />
+                    <Chip 
+                      label={`Máx: $${quotationData.competitors.priceRange.max}`}
+                      color="error"
+                      size="small"
+                    />
+                  </Box>
+                  
+                  <Typography variant="body2" gutterBottom>
+                    Categoría promedio competidores:
+                  </Typography>
+                  <Rating value={quotationData.competitors.averageCategory} readOnly />
+                  
+                  <Divider sx={{ my: 2 }} />
+                  
+                  <Typography variant="subtitle2" gutterBottom>
+                    Estrategias Recomendadas:
+                  </Typography>
+                  <Stack spacing={1}>
+                    {Object.entries(PRICING_STRATEGIES).map(([key, strategy]) => (
+                      <Button
+                        key={key}
+                        variant={response.strategy === key ? 'contained' : 'outlined'}
+                        color={strategy.color}
+                        size="small"
+                        startIcon={strategy.icon}
+                        onClick={() => applyPricingStrategy(key)}
+                        fullWidth
+                      >
+                        {strategy.name}
+                      </Button>
+                    ))}
+                  </Stack>
+                  
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="info"
+                      startIcon={<AIIcon />}
+                      onClick={useAIPricing}
+                      fullWidth
+                    >
+                      Optimizar con AI
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+          </Grid>
+          
+          {/* Panel central - Formulario de respuesta */}
+          <Grid item xs={12} md={8}>
+            <Card>
+              <CardHeader
+                title="Formulario de Cotización"
+                subheader="Complete los detalles de su oferta"
+                action={
+                  <Stack direction="row" spacing={1}>
+                    <Chip
+                      label={`Paso ${currentStep + 1} de 4`}
+                      color="primary"
+                    />
+                    <IconButton onClick={() => setShowPriceCalculator(true)}>
+                      <CalculateIcon />
+                    </IconButton>
+                  </Stack>
+                }
+              />
+              <CardContent>
+                <Stepper activeStep={currentStep} sx={{ mb: 3 }}>
+                  <Step>
+                    <StepLabel>Precios</StepLabel>
+                  </Step>
+                  <Step>
+                    <StepLabel>Disponibilidad</StepLabel>
+                  </Step>
+                  <Step>
+                    <StepLabel>Ofertas</StepLabel>
+                  </Step>
+                  <Step>
+                    <StepLabel>Revisión</StepLabel>
+                  </Step>
+                </Stepper>
+                
+                {/* Paso 1: Precios */}
+                {currentStep === 0 && (
                   <Box>
-                    <Typography variant="body1">
-                      Suggested Price: <strong>${getPriceRecommendation().suggested.toFixed(2)}</strong> per person
+                    <Typography variant="h6" gutterBottom>
+                      Tarifas por Habitación (por noche)
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {getPriceRecommendation().strategy} (Confidence: {getPriceRecommendation().confidence}%)
+                    
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Habitación Sencilla"
+                          type="number"
+                          value={response.pricing.singleRoom}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            pricing: { ...response.pricing, singleRoom: parseFloat(e.target.value) }
+                          })}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Tooltip title={`Base: $${PROVIDER_CONFIG.roomTypes.SINGLE.basePrice}`}>
+                                  <InfoIcon fontSize="small" />
+                                </Tooltip>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Habitación Doble"
+                          type="number"
+                          value={response.pricing.doubleRoom}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            pricing: { ...response.pricing, doubleRoom: parseFloat(e.target.value) }
+                          })}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Tooltip title={`Base: $${PROVIDER_CONFIG.roomTypes.DOUBLE.basePrice}`}>
+                                  <InfoIcon fontSize="small" />
+                                </Tooltip>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Habitación Triple"
+                          type="number"
+                          value={response.pricing.tripleRoom}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            pricing: { ...response.pricing, tripleRoom: parseFloat(e.target.value) }
+                          })}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Tooltip title={`Base: $${PROVIDER_CONFIG.roomTypes.TRIPLE.basePrice}`}>
+                                  <InfoIcon fontSize="small" />
+                                </Tooltip>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Descuento para Niños"
+                          type="number"
+                          value={response.pricing.childDiscount * 100}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            pricing: { ...response.pricing, childDiscount: parseFloat(e.target.value) / 100 }
+                          })}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                    
+                    <Divider sx={{ my: 3 }} />
+                    
+                    <Typography variant="h6" gutterBottom>
+                      Descuentos Especiales
                     </Typography>
+                    
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={4}>
+                        <TextField
+                          fullWidth
+                          label="Descuento por Grupo"
+                          type="number"
+                          value={response.pricing.groupDiscount}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            pricing: { ...response.pricing, groupDiscount: parseFloat(e.target.value) }
+                          })}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <TextField
+                          fullWidth
+                          label="Descuento Reserva Anticipada"
+                          type="number"
+                          value={response.pricing.earlyBookingDiscount}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            pricing: { ...response.pricing, earlyBookingDiscount: parseFloat(e.target.value) }
+                          })}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={response.guaranteedBestPrice}
+                              onChange={(e) => setResponse({
+                                ...response,
+                                guaranteedBestPrice: e.target.checked
+                              })}
+                            />
+                          }
+                          label="Garantizar Mejor Precio"
+                        />
+                      </Grid>
+                    </Grid>
+                    
+                    <Box sx={{ mt: 3 }}>
+                      <Button
+                        variant="contained"
+                        onClick={() => setCurrentStep(1)}
+                      >
+                        Siguiente
+                      </Button>
+                    </Box>
                   </Box>
                 )}
-              </Grid>
-            </Grid>
-          </Paper>
-        )}
-        
-        {/* Response Form Tabs */}
-        <Paper sx={{ mb: 3 }}>
-          <Tabs
-            value={activeTab}
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            indicatorColor="primary"
-            textColor="primary"
-          >
-            <Tab label="Provider Info" icon={<BusinessIcon />} iconPosition="start" />
-            <Tab label="Room Prices" icon={<BedIcon />} iconPosition="start" />
-            <Tab label="Additional Services" icon={<StarsIcon />} iconPosition="start" />
-            <Tab label="Terms & Conditions" icon={<AssignmentIcon />} iconPosition="start" />
-          </Tabs>
-        </Paper>
-        
-        {/* Tab Content */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          {activeTab === 0 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Provider/Hotel Name"
-                  value={response.providerName}
-                  onChange={(e) => setResponse({ ...response, providerName: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Provider Type</InputLabel>
-                  <Select
-                    value={response.providerType}
-                    onChange={(e) => setResponse({ ...response, providerType: e.target.value })}
-                    label="Provider Type"
-                  >
-                    <MenuItem value="HOTEL">Hotel</MenuItem>
-                    <MenuItem value="TRANSPORT">Transport Company</MenuItem>
-                    <MenuItem value="RESTAURANT">Restaurant</MenuItem>
-                    <MenuItem value="GUIDE">Tour Guide</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Contact Person"
-                  value={response.contactPerson}
-                  onChange={(e) => setResponse({ ...response, contactPerson: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={response.email}
-                  onChange={(e) => setResponse({ ...response, email: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Phone"
-                  value={response.phone}
-                  onChange={(e) => setResponse({ ...response, phone: e.target.value })}
-                />
-              </Grid>
-            </Grid>
-          )}
-          
-          {activeTab === 1 && (
-            <Box>
-              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6">Room Pricing</Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={addRoomPrice}
-                >
-                  Add Room Type
-                </Button>
-              </Box>
-              
-              {response.roomPrices.map((room, index) => (
-                <Paper key={index} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                  <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={2}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Room Type</InputLabel>
-                        <Select
-                          value={room.roomType}
-                          onChange={(e) => updateRoomPrice(index, 'roomType', e.target.value)}
-                          label="Room Type"
-                        >
-                          {Object.entries(ROOM_TYPES).map(([key, type]) => (
-                            <MenuItem key={key} value={key}>
-                              {type.icon} {type.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} md={2}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Meal Plan</InputLabel>
-                        <Select
-                          value={room.mealPlan}
-                          onChange={(e) => updateRoomPrice(index, 'mealPlan', e.target.value)}
-                          label="Meal Plan"
-                        >
-                          {Object.entries(MEAL_PLANS).map(([key, plan]) => (
-                            <MenuItem key={key} value={key}>
-                              {plan.icon} {plan.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} md={2}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Price/Night"
-                        type="number"
-                        value={room.pricePerNight}
-                        onChange={(e) => updateRoomPrice(index, 'pricePerNight', parseFloat(e.target.value))}
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">$</InputAdornment>
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={2}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Quantity"
-                        type="number"
-                        value={room.quantity}
-                        onChange={(e) => updateRoomPrice(index, 'quantity', parseInt(e.target.value))}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={2}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Single Supp."
-                        type="number"
-                        value={room.singleSupplement}
-                        onChange={(e) => updateRoomPrice(index, 'singleSupplement', parseFloat(e.target.value))}
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">+$</InputAdornment>
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={1}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="3rd Person"
-                        type="number"
-                        value={room.tripleReduction}
-                        onChange={(e) => updateRoomPrice(index, 'tripleReduction', parseFloat(e.target.value))}
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">-$</InputAdornment>
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={1}>
-                      <IconButton
-                        color="error"
-                        onClick={() => removeRoomPrice(index)}
+                
+                {/* Paso 2: Disponibilidad */}
+                {currentStep === 1 && (
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Confirmación de Disponibilidad
+                    </Typography>
+                    
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={response.availability.confirmed}
+                          onChange={(e) => setResponse({
+                            ...response,
+                            availability: { ...response.availability, confirmed: e.target.checked }
+                          })}
+                        />
+                      }
+                      label="Confirmo disponibilidad para las fechas solicitadas"
+                    />
+                    
+                    {!response.availability.confirmed && (
+                      <Alert severity="warning" sx={{ mt: 2 }}>
+                        Si no tiene disponibilidad, puede sugerir fechas alternativas
+                      </Alert>
+                    )}
+                    
+                    <Divider sx={{ my: 3 }} />
+                    
+                    <Typography variant="h6" gutterBottom>
+                      Política de Cancelación
+                    </Typography>
+                    
+                    <FormControl fullWidth>
+                      <Select
+                        value={response.availability.cancellationPolicy}
+                        onChange={(e) => setResponse({
+                          ...response,
+                          availability: { ...response.availability, cancellationPolicy: e.target.value }
+                        })}
                       >
-                        <DeleteIcon />
-                      </IconButton>
+                        <MenuItem value="FLEXIBLE">
+                          Flexible - Cancelación gratuita hasta 24 horas antes
+                        </MenuItem>
+                        <MenuItem value="MODERATE">
+                          Moderada - Cancelación gratuita hasta 7 días antes
+                        </MenuItem>
+                        <MenuItem value="STRICT">
+                          Estricta - Cancelación con 50% de penalidad
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                    <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
+                      <Button onClick={() => setCurrentStep(0)}>
+                        Anterior
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={() => setCurrentStep(2)}
+                      >
+                        Siguiente
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+                
+                {/* Paso 3: Ofertas Especiales */}
+                {currentStep === 2 && (
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Ofertas Especiales y Valores Agregados
+                    </Typography>
+                    
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      Agregar ofertas especiales puede aumentar sus posibilidades de ganar la cotización
+                    </Alert>
+                    
+                    <Grid container spacing={2}>
+                      {Object.entries({
+                        EARLY_BOOKING: 'Descuento Reserva Anticipada',
+                        FREE_UPGRADE: 'Upgrade de Habitación Gratis',
+                        FREE_SPA: 'Spa Gratuito',
+                        WELCOME_GIFT: 'Regalo de Bienvenida',
+                        FREE_TRANSFER: 'Traslado Gratuito'
+                      }).map(([key, label]) => (
+                        <Grid item xs={12} md={6} key={key}>
+                          <Button
+                            variant={response.specialOffers.find(o => o.type === key) ? 'contained' : 'outlined'}
+                            onClick={() => addSpecialOffer(key)}
+                            startIcon={<OfferIcon />}
+                            fullWidth
+                          >
+                            {label}
+                          </Button>
+                        </Grid>
+                      ))}
                     </Grid>
-                  </Grid>
-                </Paper>
-              ))}
-              
-              {response.roomPrices.length === 0 && (
-                <Alert severity="info">
-                  Click "Add Room Type" to start adding your room prices
-                </Alert>
-              )}
-            </Box>
-          )}
-          
-          {activeTab === 2 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>Additional Services & Offers</Typography>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={response.includesGuide}
-                      onChange={(e) => setResponse({ ...response, includesGuide: e.target.checked })}
+                    
+                    <Divider sx={{ my: 3 }} />
+                    
+                    <Typography variant="h6" gutterBottom>
+                      Notas Adicionales
+                    </Typography>
+                    
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      label="Comentarios o información adicional"
+                      value={response.notes}
+                      onChange={(e) => setResponse({ ...response, notes: e.target.value })}
+                      placeholder="Ej: Experiencia con grupos religiosos, ubicación cerca de sitios santos, etc."
                     />
-                  }
-                  label="Includes Tour Guide"
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={response.includesEntrances}
-                      onChange={(e) => setResponse({ ...response, includesEntrances: e.target.checked })}
-                    />
-                  }
-                  label="Includes Entrance Fees"
-                />
-              </Grid>
-              
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Special Offers or Incentives"
-                  value={response.specialOffers}
-                  onChange={(e) => setResponse({ ...response, specialOffers: e.target.value })}
-                  placeholder="e.g., Free room upgrade, Welcome drink, Early check-in..."
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={response.bestPriceGuarantee}
-                      onChange={(e) => setResponse({ ...response, bestPriceGuarantee: e.target.checked })}
-                    />
-                  }
-                  label="Best Price Guarantee"
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={response.flexibleDates}
-                      onChange={(e) => setResponse({ ...response, flexibleDates: e.target.checked })}
-                    />
-                  }
-                  label="Flexible with Dates (+/- 3 days)"
-                />
-              </Grid>
-            </Grid>
-          )}
-          
-          {activeTab === 3 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Payment Terms"
-                  multiline
-                  rows={3}
-                  value={response.paymentTerms}
-                  onChange={(e) => setResponse({ ...response, paymentTerms: e.target.value })}
-                  placeholder="e.g., 30% deposit, balance 30 days before arrival"
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Cancellation Policy"
-                  multiline
-                  rows={3}
-                  value={response.cancellationPolicy}
-                  onChange={(e) => setResponse({ ...response, cancellationPolicy: e.target.value })}
-                  placeholder="e.g., Free cancellation up to 14 days before arrival"
-                />
-              </Grid>
-              
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Valid Until"
-                  type="date"
-                  value={response.validUntil}
-                  onChange={(e) => setResponse({ ...response, validUntil: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  helperText="How long is this quote valid?"
-                />
-              </Grid>
-              
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Additional Notes"
-                  value={response.notes}
-                  onChange={(e) => setResponse({ ...response, notes: e.target.value })}
-                  placeholder="Any additional information or conditions..."
-                />
-              </Grid>
-            </Grid>
-          )}
-        </Paper>
-        
-        {/* Price Summary */}
-        <Paper sx={{ p: 3, mb: 3, bgcolor: 'success.light' }}>
-          <Typography variant="h6" gutterBottom>Price Summary</Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2">Total Price</Typography>
-              <Typography variant="h5">${calculateTotalPrice().toFixed(2)}</Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2">Price per Person</Typography>
-              <Typography variant="h5">
-                ${(calculateTotalPrice() / (rfqDetails.numberOfPax - rfqDetails.freePersons)).toFixed(2)}
-              </Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2">Win Probability</Typography>
-              <Typography variant="h5">{calculateWinProbability()}%</Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2">Your Position</Typography>
-              <Rating value={calculateWinProbability() / 20} readOnly />
-            </Grid>
+                    
+                    <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
+                      <Button onClick={() => setCurrentStep(1)}>
+                        Anterior
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={() => setCurrentStep(3)}
+                      >
+                        Siguiente
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+                
+                {/* Paso 4: Revisión y Envío */}
+                {currentStep === 3 && (
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Resumen de su Cotización
+                    </Typography>
+                    
+                    <Paper sx={{ p: 3, mb: 3, bgcolor: 'primary.light', color: 'white' }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="subtitle2">Precio Total Estimado</Typography>
+                          <Typography variant="h4">
+                            ${calculations.total.toLocaleString()}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="subtitle2">Precio por Persona</Typography>
+                          <Typography variant="h4">
+                            ${calculations.pricePerPerson.toFixed(2)}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                    
+                    <TableContainer component={Paper}>
+                      <Table size="small">
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>Habitación Sencilla</TableCell>
+                            <TableCell align="right">${response.pricing.singleRoom}/noche</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Habitación Doble</TableCell>
+                            <TableCell align="right">${response.pricing.doubleRoom}/noche</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Habitación Triple</TableCell>
+                            <TableCell align="right">${response.pricing.tripleRoom}/noche</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Descuento Grupo</TableCell>
+                            <TableCell align="right">{response.pricing.groupDiscount}%</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Disponibilidad</TableCell>
+                            <TableCell align="right">
+                              {response.availability.confirmed ? (
+                                <Chip label="Confirmada" color="success" size="small" />
+                              ) : (
+                                <Chip label="Por Confirmar" color="warning" size="small" />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Ofertas Especiales</TableCell>
+                            <TableCell align="right">
+                              {response.specialOffers.length} incluidas
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    
+                    {response.guaranteedBestPrice && (
+                      <Alert severity="success" sx={{ mt: 2 }}>
+                        <AlertTitle>Mejor Precio Garantizado</AlertTitle>
+                        Está garantizando el mejor precio disponible
+                      </Alert>
+                    )}
+                    
+                    <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
+                      <Button onClick={() => setCurrentStep(2)}>
+                        Anterior
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setConfirmDialog(true)}
+                        startIcon={<SendIcon />}
+                      >
+                        Enviar Cotización
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
           </Grid>
-        </Paper>
-        
-        {/* Action Buttons */}
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
-            size="large"
-            startIcon={<SaveIcon />}
-            onClick={() => showSnackbar('Quote saved as draft', 'info')}
-          >
-            Save Draft
-          </Button>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<SendIcon />}
-            onClick={() => setConfirmDialog(true)}
-            disabled={submitting || timeRemaining === 'EXPIRED'}
-            sx={{
-              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-              color: 'white'
-            }}
-          >
-            Submit Quote
-          </Button>
-        </Box>
-        
-        {/* Confirm Dialog */}
-        <Dialog open={confirmDialog} onClose={() => setConfirmDialog(false)}>
-          <DialogTitle>Confirm Quote Submission</DialogTitle>
-          <DialogContent>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Please review your quote before submitting. Once submitted, you cannot modify it.
-            </Alert>
-            <List>
-              <ListItem>
-                <ListItemText
-                  primary="Total Price"
-                  secondary={`$${calculateTotalPrice().toFixed(2)}`}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemText
-                  primary="Price per Person"
-                  secondary={`$${(calculateTotalPrice() / (rfqDetails.numberOfPax - rfqDetails.freePersons)).toFixed(2)}`}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemText
-                  primary="Win Probability"
-                  secondary={`${calculateWinProbability()}%`}
-                />
-              </ListItem>
-            </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirmDialog(false)}>Cancel</Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                setConfirmDialog(false);
-                handleSubmit();
-              }}
-              disabled={submitting}
-            >
-              {submitting ? <CircularProgress size={24} /> : 'Confirm & Submit'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-        
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert 
-            onClose={handleCloseSnackbar} 
-            severity={snackbar.severity}
-            variant="filled"
-          >
-            {snackbar.message}
+        </Grid>
+      )}
+      
+      {/* Diálogo de confirmación */}
+      <Dialog open={confirmDialog} onClose={() => setConfirmDialog(false)}>
+        <DialogTitle>Confirmar Envío de Cotización</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Una vez enviada, la cotización será vinculante por 7 días
           </Alert>
-        </Snackbar>
-      </Container>
+          
+          <Typography variant="body1">
+            ¿Está seguro de enviar esta cotización?
+          </Typography>
+          
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Precio Total: ${calculations.total.toLocaleString()}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Precio por Persona: ${calculations.pricePerPerson.toFixed(2)}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog(false)}>Cancelar</Button>
+          <Button 
+            onClick={() => {
+              setConfirmDialog(false);
+              submitResponse();
+            }}
+            variant="contained"
+            color="primary"
+          >
+            Confirmar y Enviar
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Diálogo de éxito */}
+      <Dialog open={successDialog} onClose={() => setSuccessDialog(false)}>
+        <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+          <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+          <Typography variant="h5" gutterBottom>
+            ¡Cotización Enviada Exitosamente!
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Su cotización ha sido enviada a Spirit Tours.
+            Le notificaremos cuando el cliente tome una decisión.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              ID de Cotización: {quotationData?.quotationId}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Válida hasta: {new Date(Date.now() + 7 * 24 * 3600000).toLocaleDateString()}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSuccessDialog(false)} variant="contained">
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Calculadora de precios */}
+      <Dialog 
+        open={showPriceCalculator} 
+        onClose={() => setShowPriceCalculator(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Calculadora de Precios</DialogTitle>
+        <DialogContent>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Desglose de Costos
+            </Typography>
+            
+            <TableContainer>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Subtotal Alojamiento</TableCell>
+                    <TableCell align="right">${calculations.subtotal.toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Descuentos Aplicados</TableCell>
+                    <TableCell align="right">-${calculations.discount.toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><strong>Total</strong></TableCell>
+                    <TableCell align="right"><strong>${calculations.total.toFixed(2)}</strong></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Margen de Ganancia</TableCell>
+                    <TableCell align="right">{calculations.profitMargin.toFixed(1)}%</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                Precio sugerido para ser competitivo: ${(calculations.total * 0.95).toFixed(2)}
+              </Typography>
+            </Alert>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowPriceCalculator(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled">
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
