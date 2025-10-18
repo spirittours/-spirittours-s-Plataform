@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - Deportes de Invierno</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; color: #01579b; background: #e1f5fe; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #0277bd 0%, #01579b 100%); color: white; padding: 40px 30px; text-align: center; }
+        .header h1 { font-size: 36px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        .hero-image { width: 100%; height: 350px; object-fit: cover; display: block; }
+        .content { padding: 40px 30px; }
+        .winter-badge { display: inline-block; background: #0277bd; color: white; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; }
+        .main-title { font-size: 30px; color: #01579b; margin-bottom: 20px; font-weight: 700; }
+        .description { font-size: 16px; color: #0277bd; line-height: 1.8; margin-bottom: 30px; }
+        .winter-activities { background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); padding: 30px; margin: 30px 0; border-radius: 12px; }
+        .activity-grid { display: table; width: 100%; }
+        .activity-item { display: table-cell; width: 50%; padding: 15px; text-align: center; }
+        .activity-icon { font-size: 40px; margin-bottom: 10px; }
+        .activity-name { font-size: 14px; font-weight: 700; color: #01579b; }
+        .price-box { background: linear-gradient(135deg, #0277bd 0%, #01579b 100%); color: white; padding: 35px; border-radius: 12px; text-align: center; margin: 30px 0; }
+        .price-amount { font-size: 50px; font-weight: 900; margin-bottom: 10px; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #0277bd 0%, #01579b 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 15px rgba(2, 119, 189, 0.3); }
+        .footer { background-color: #01579b; color: #81d4fa; padding: 30px; text-align: center; font-size: 13px; }
+        .social-links a { color: #4fc3f7; text-decoration: none; margin: 0 10px; }
+        @media only screen and (max-width: 600px) { .hero-image { height: 250px; } .activity-item { display: block; width: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header"><h1>⛷️ INVIERNO</h1></div>
+        <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+        <div class="content">
+            <span class="winter-badge">❄️ Nieve</span>
+            <h2 class="main-title">{{ destination_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="winter-activities">
+                <div class="activity-grid">
+                    <div class="activity-item"><div class="activity-icon">⛷️</div><div class="activity-name">Esquí Alpino</div></div>
+                    <div class="activity-item"><div class="activity-icon">🏂</div><div class="activity-name">Snowboard</div></div>
+                </div>
+                <div class="activity-grid">
+                    <div class="activity-item"><div class="activity-icon">🛷</div><div class="activity-name">Trineo</div></div>
+                    <div class="activity-item"><div class="activity-icon">🎿</div><div class="activity-name">Esquí de Fondo</div></div>
+                </div>
+            </div>
+            <div class="price-box">
+                <div class="price-amount">{{ price }}</div>
+                <div>{{ duration }} | Forfait Incluido</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Reservar Ahora</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong> | {{ company_phone }}</p>
+            <div class="social-links" style="margin: 20px 0;"><a href="{{ facebook_link }}">Facebook</a> | <a href="{{ instagram_link }}">Instagram</a></div>
+            <p style="font-size: 12px;"><a href="{{ unsubscribe_link }}" style="color: #81d4fa;">Darse de baja</a></p>
+        </div>
+    </div>
+</body>
+</html>

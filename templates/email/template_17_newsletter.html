@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter - {{ month_year }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; color: #212121; background: #fafafa; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #424242 0%, #212121 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+        .header .date { font-size: 13px; margin-top: 10px; opacity: 0.9; }
+        .content { padding: 40px 30px; }
+        .newsletter-section { margin-bottom: 35px; }
+        .section-title { font-size: 22px; color: #212121; font-weight: 900; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 3px solid #ffeb3b; }
+        .article { background: #f5f5f5; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        .article-title { font-size: 18px; font-weight: 700; color: #424242; margin-bottom: 10px; }
+        .article-text { font-size: 14px; color: #616161; line-height: 1.7; margin-bottom: 10px; }
+        .article-link { color: #1976d2; text-decoration: none; font-weight: 700; font-size: 14px; }
+        .destination-grid { display: table; width: 100%; margin: 20px 0; }
+        .destination-item { display: table-cell; width: 50%; padding: 10px; text-align: center; vertical-align: top; }
+        .destination-img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
+        .destination-name { font-size: 15px; font-weight: 700; color: #424242; }
+        .destination-price { font-size: 18px; color: #1976d2; font-weight: 900; margin-top: 5px; }
+        .cta-box { background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%); padding: 25px; text-align: center; border-radius: 12px; margin: 30px 0; }
+        .cta-box h3 { font-size: 20px; color: #212121; margin-bottom: 15px; }
+        .cta-button { display: inline-block; background: #212121; color: white; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-size: 15px; font-weight: 700; text-transform: uppercase; }
+        .social-section { background: #f5f5f5; padding: 25px; text-align: center; border-radius: 8px; margin: 30px 0; }
+        .social-title { font-size: 16px; font-weight: 700; color: #424242; margin-bottom: 15px; }
+        .social-links a { display: inline-block; margin: 0 10px; color: #1976d2; font-size: 14px; text-decoration: none; font-weight: 600; }
+        .footer { background-color: #212121; color: #9e9e9e; padding: 30px; text-align: center; font-size: 13px; }
+        .footer strong { color: white; }
+        @media only screen and (max-width: 600px) { .destination-item { display: block; width: 100%; margin-bottom: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>📰 NEWSLETTER</h1>
+            <div class="date">{{ month_year }}</div>
+        </div>
+        <div class="content">
+            <div class="newsletter-section">
+                <h2 class="section-title">✈️ Destinos Destacados</h2>
+                <div class="destination-grid">
+                    <div class="destination-item">
+                        <img src="{{ dest1_image }}" class="destination-img" alt="{{ dest1_name }}">
+                        <div class="destination-name">{{ dest1_name }}</div>
+                        <div class="destination-price">Desde {{ dest1_price }}</div>
+                    </div>
+                    <div class="destination-item">
+                        <img src="{{ dest2_image }}" class="destination-img" alt="{{ dest2_name }}">
+                        <div class="destination-name">{{ dest2_name }}</div>
+                        <div class="destination-price">Desde {{ dest2_price }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="newsletter-section">
+                <h2 class="section-title">📌 Artículos del Mes</h2>
+                <div class="article">
+                    <div class="article-title">{{ article1_title }}</div>
+                    <div class="article-text">{{ article1_summary }}</div>
+                    <a href="{{ article1_link }}" class="article-link">Leer más →</a>
+                </div>
+                <div class="article">
+                    <div class="article-title">{{ article2_title }}</div>
+                    <div class="article-text">{{ article2_summary }}</div>
+                    <a href="{{ article2_link }}" class="article-link">Leer más →</a>
+                </div>
+            </div>
+            <div class="cta-box">
+                <h3>🎁 Oferta Especial del Mes</h3>
+                <p style="margin-bottom: 20px; color: #424242;">{{ special_offer_text }}</p>
+                <a href="{{ special_offer_link }}" class="cta-button">Ver Oferta</a>
+            </div>
+            <div class="social-section">
+                <div class="social-title">📱 Síguenos en redes sociales</div>
+                <div class="social-links">
+                    <a href="{{ facebook_link }}">Facebook</a> |
+                    <a href="{{ instagram_link }}">Instagram</a> |
+                    <a href="{{ twitter_link }}">Twitter</a> |
+                    <a href="{{ youtube_link }}">YouTube</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_address }}</p>
+            <p>Tel: {{ company_phone }} | Email: {{ company_email }}</p>
+            <p style="margin-top: 20px; font-size: 12px;">
+                <a href="{{ unsubscribe_link }}" style="color: #9e9e9e; text-decoration: underline;">Darse de baja del newsletter</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

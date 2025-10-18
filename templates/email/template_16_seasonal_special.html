@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - Oferta de Temporada</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; color: #1a237e; background: #e8eaf6; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #3949ab 0%, #1a237e 100%); color: white; padding: 40px 30px; text-align: center; }
+        .header h1 { font-size: 36px; font-weight: 900; }
+        .seasonal-banner { background: #ffc107; color: #1a237e; padding: 15px; text-align: center; font-size: 16px; font-weight: 900; text-transform: uppercase; }
+        .hero-image { width: 100%; height: 350px; object-fit: cover; }
+        .content { padding: 40px 30px; }
+        .seasonal-badge { display: inline-block; background: #3949ab; color: white; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; }
+        .main-title { font-size: 30px; color: #1a237e; margin-bottom: 20px; font-weight: 700; }
+        .description { font-size: 16px; color: #3949ab; line-height: 1.8; margin-bottom: 30px; }
+        .seasonal-highlights { background: linear-gradient(135deg, #c5cae9 0%, #9fa8da 100%); padding: 30px; margin: 30px 0; border-radius: 12px; }
+        .highlight { padding: 12px 0; border-bottom: 1px dashed #7986cb; font-size: 15px; color: #1a237e; }
+        .highlight:last-child { border-bottom: none; }
+        .highlight:before { content: "⭐"; margin-right: 10px; }
+        .price-box { background: linear-gradient(135deg, #3949ab 0%, #1a237e 100%); color: white; padding: 35px; border-radius: 12px; text-align: center; margin: 30px 0; }
+        .price-amount { font-size: 50px; font-weight: 900; }
+        .seasonal-offer { background: #ffc107; color: #1a237e; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 16px; font-weight: 900; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #3949ab 0%, #1a237e 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 15px rgba(57, 73, 171, 0.3); }
+        .footer { background-color: #1a237e; color: #9fa8da; padding: 30px; text-align: center; font-size: 13px; }
+        @media only screen and (max-width: 600px) { .hero-image { height: 250px; } }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="seasonal-banner">🎉 {{ season }} - OFERTA ESPECIAL 🎉</div>
+        <div class="header"><h1>TEMPORADA</h1></div>
+        <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+        <div class="content">
+            <span class="seasonal-badge">🎯 Temporada</span>
+            <h2 class="main-title">{{ destination_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="seasonal-highlights">
+                <div class="highlight">Mejor época del año para visitar</div>
+                <div class="highlight">Clima perfecto garantizado</div>
+                <div class="highlight">Eventos y festivales locales</div>
+                <div class="highlight">Precios especiales de temporada</div>
+                <div class="highlight">Disponibilidad limitada</div>
+            </div>
+            <div class="price-box">
+                <div class="price-amount">{{ price }}</div>
+                <div>{{ duration }} | {{ season }}</div>
+                <div class="seasonal-offer">💫 OFERTA VÁLIDA SOLO EN {{ season }}</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Aprovechar Oferta</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong> | {{ company_phone }}</p>
+            <p style="margin-top: 15px; font-size: 12px;"><a href="{{ unsubscribe_link }}" style="color: #9fa8da;">Darse de baja</a></p>
+        </div>
+    </div>
+</body>
+</html>

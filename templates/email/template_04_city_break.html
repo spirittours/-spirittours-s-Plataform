@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - City Break</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #212121;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        .header .tagline {
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        /* Hero Image */
+        .hero-section {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+        }
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .hero-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+            padding: 30px;
+            color: white;
+        }
+        .hero-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        .hero-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        /* Content Area */
+        .content {
+            padding: 40px 30px;
+        }
+        .city-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 6px 15px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+        .description {
+            font-size: 16px;
+            color: #424242;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        /* Highlights Grid */
+        .highlights-grid {
+            display: table;
+            width: 100%;
+            margin: 30px 0;
+        }
+        .highlight-row {
+            display: table-row;
+        }
+        .highlight-item {
+            display: table-cell;
+            width: 50%;
+            padding: 20px 15px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .highlight-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .highlight-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        .highlight-desc {
+            font-size: 12px;
+            color: #616161;
+        }
+        /* Itinerary Section */
+        .itinerary-section {
+            background-color: #f8fafc;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        .itinerary-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .itinerary-day {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+        .itinerary-day-number {
+            font-size: 12px;
+            color: #3b82f6;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .itinerary-day-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #212121;
+            margin-bottom: 8px;
+        }
+        .itinerary-day-desc {
+            font-size: 14px;
+            color: #616161;
+            line-height: 1.6;
+        }
+        /* Price Box */
+        .price-box {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 35px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .price-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        .price-amount {
+            font-size: 52px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        .price-details {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .price-note {
+            font-size: 12px;
+            margin-top: 15px;
+            opacity: 0.8;
+            font-style: italic;
+        }
+        /* CTA Button */
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 18px 50px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+        }
+        /* Included Features */
+        .included-section {
+            background-color: #fafafa;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        .included-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #212121;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .included-list {
+            list-style: none;
+            display: table;
+            width: 100%;
+        }
+        .included-list li {
+            display: table-row;
+        }
+        .included-list li span {
+            display: table-cell;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+            color: #424242;
+        }
+        .included-list li span:first-child {
+            width: 30px;
+            color: #3b82f6;
+            font-weight: 900;
+            font-size: 16px;
+        }
+        /* Footer */
+        .footer {
+            background-color: #1e3a8a;
+            color: #93c5fd;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .footer strong {
+            color: white;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-links a {
+            color: #60a5fa;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: 600;
+        }
+        .unsubscribe {
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        .unsubscribe a {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            .hero-section {
+                height: 300px;
+            }
+            .hero-title {
+                font-size: 28px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .highlight-item {
+                display: block;
+                width: 100%;
+                margin-bottom: 15px;
+            }
+            .price-amount {
+                font-size: 40px;
+            }
+            .cta-button {
+                padding: 15px 40px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>CITY BREAK</h1>
+            <div class="tagline">Escapadas Urbanas</div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+            <div class="hero-overlay">
+                <div class="hero-title">{{ destination_name }}</div>
+                <div class="hero-subtitle">Tu próxima aventura urbana te espera</div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <span class="city-badge">🏙️ Ciudad</span>
+            
+            <p class="description">
+                {{ description }}
+            </p>
+
+            <!-- Highlights Grid -->
+            <div class="highlights-grid">
+                <div class="highlight-row">
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🏛️</div>
+                        <div class="highlight-title">Monumentos</div>
+                        <div class="highlight-desc">Patrimonio histórico</div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🍽️</div>
+                        <div class="highlight-title">Gastronomía</div>
+                        <div class="highlight-desc">Experiencias culinarias</div>
+                    </div>
+                </div>
+                <div class="highlight-row">
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🛍️</div>
+                        <div class="highlight-title">Shopping</div>
+                        <div class="highlight-desc">Zonas comerciales</div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🎭</div>
+                        <div class="highlight-title">Cultura</div>
+                        <div class="highlight-desc">Museos y teatros</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Itinerary Section -->
+            <div class="itinerary-section">
+                <h3 class="itinerary-title">📅 Tu Itinerario</h3>
+                
+                <div class="itinerary-day">
+                    <div class="itinerary-day-number">Día 1</div>
+                    <div class="itinerary-day-title">Llegada y Centro Histórico</div>
+                    <div class="itinerary-day-desc">
+                        Check-in, tour guiado por el casco antiguo, cena de bienvenida
+                    </div>
+                </div>
+
+                <div class="itinerary-day">
+                    <div class="itinerary-day-number">Día 2</div>
+                    <div class="itinerary-day-title">Museos y Cultura</div>
+                    <div class="itinerary-day-desc">
+                        Visita a principales museos, almuerzo típico, tarde libre para shopping
+                    </div>
+                </div>
+
+                <div class="itinerary-day">
+                    <div class="itinerary-day-number">Día 3</div>
+                    <div class="itinerary-day-title">Experiencia Local</div>
+                    <div class="itinerary-day-desc">
+                        Mercado local, clase de cocina, tour nocturno, check-out
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Box -->
+            <div class="price-box">
+                <div class="price-label">Precio por persona</div>
+                <div class="price-amount">{{ price }}</div>
+                <div class="price-details">{{ duration }} | Hotel 4★ incluido</div>
+                <div class="price-note">
+                    * Precio en base doble. Suplemento individual disponible.
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ booking_link }}" class="cta-button">Reservar Ahora</a>
+            </div>
+
+            <!-- Included Section -->
+            <div class="included-section">
+                <h3 class="included-title">✓ Tu escapada incluye</h3>
+                <ul class="included-list">
+                    <li><span>✓</span><span>2 noches en hotel 4★ céntrico</span></li>
+                    <li><span>✓</span><span>Desayuno buffet diario</span></li>
+                    <li><span>✓</span><span>Tour guiado del centro histórico</span></li>
+                    <li><span>✓</span><span>Entradas a 2 museos principales</span></li>
+                    <li><span>✓</span><span>Guía de la ciudad en español</span></li>
+                    <li><span>✓</span><span>Mapa y tarjeta de transporte</span></li>
+                    <li><span>✓</span><span>Asistencia 24/7</span></li>
+                    <li><span>✓</span><span>Seguro de viaje básico</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_address }}</p>
+            <p>Tel: {{ company_phone }} | Email: {{ company_email }}</p>
+            
+            <div class="social-links">
+                <a href="{{ facebook_link }}">Facebook</a> |
+                <a href="{{ instagram_link }}">Instagram</a> |
+                <a href="{{ twitter_link }}">Twitter</a>
+            </div>
+            
+            <div class="unsubscribe">
+                <p>¿No quieres recibir más emails? <a href="{{ unsubscribe_link }}">Darse de baja</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
