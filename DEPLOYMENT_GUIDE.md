@@ -1,438 +1,537 @@
-# 🚀 **SPIRIT TOURS - GUÍA COMPLETA DE DEPLOYMENT**
+# B2B2B Platform - Deployment Guide
 
-## **📋 TABLA DE CONTENIDOS**
-1. [Requisitos Previos](#requisitos-previos)
-2. [Instalación Rápida (5 minutos)](#instalación-rápida)
-3. [Configuración Detallada](#configuración-detallada)
-4. [Deployment en Producción](#deployment-en-producción)
-5. [Monitoreo y Mantenimiento](#monitoreo-y-mantenimiento)
-6. [Troubleshooting](#troubleshooting)
-7. [Seguridad](#seguridad)
-8. [Backup y Recuperación](#backup-y-recuperación)
+## Table of Contents
 
----
+1. [Prerequisites](#prerequisites)
+2. [Local Development](#local-development)
+3. [Docker Deployment](#docker-deployment)
+4. [Kubernetes Deployment](#kubernetes-deployment)
+5. [CI/CD Pipeline](#cicd-pipeline)
+6. [Environment Variables](#environment-variables)
+7. [Database Migration](#database-migration)
+8. [Monitoring Setup](#monitoring-setup)
+9. [Backup & Recovery](#backup--recovery)
+10. [Troubleshooting](#troubleshooting)
 
-## **📌 REQUISITOS PREVIOS**
+## Prerequisites
 
-### **Hardware Mínimo**
-- **CPU:** 4 cores
-- **RAM:** 8 GB (16 GB recomendado)
-- **Disco:** 50 GB SSD
-- **Red:** 100 Mbps
+### Required Software
 
-### **Software Requerido**
-- **OS:** Ubuntu 20.04 LTS o superior
-- **Docker:** 20.10+
-- **Docker Compose:** 2.0+
-- **Git:** 2.25+
-- **Node.js:** 18+ (para desarrollo frontend)
-- **Python:** 3.11+ (para desarrollo backend)
+- **Docker:** >= 20.10
+- **Docker Compose:** >= 2.0
+- **Kubernetes (Optional):** >= 1.24
+- **kubectl (Optional):** >= 1.24
+- **Python:** >= 3.11 (for local development)
+- **Node.js:** >= 18 (for frontend development)
+- **PostgreSQL:** >= 15 (if running locally)
+- **Redis:** >= 7 (if running locally)
 
-### **Dominios y DNS**
-- Dominio registrado (ej: spirittours.com)
-- DNS configurado apuntando a tu servidor
-- Certificado SSL (Let's Encrypt gratuito)
+### System Requirements
 
----
+**Minimum:**
+- 4 CPU cores
+- 8 GB RAM
+- 20 GB disk space
 
-## **⚡ INSTALACIÓN RÁPIDA**
+**Recommended (Production):**
+- 8+ CPU cores
+- 16+ GB RAM
+- 100+ GB SSD
 
-### **Opción 1: Instalación Automática (5 minutos)**
+## Local Development
+
+### 1. Clone Repository
 
 ```bash
-# 1. Clonar repositorio
-git clone https://github.com/your-repo/spirit-tours.git
-cd spirit-tours
-
-# 2. Ejecutar script de instalación
-chmod +x scripts/start_dev.sh
-./scripts/start_dev.sh
-
-# 3. Sistema listo en:
-# - Frontend: http://localhost:3000
-# - API: http://localhost:8000/api/docs
+git clone https://github.com/your-org/b2b2b-platform.git
+cd b2b2b-platform
 ```
 
-### **Opción 2: Docker Compose (10 minutos)**
+### 2. Setup Environment
 
 ```bash
-# 1. Copiar y configurar .env
+# Copy environment template
 cp .env.example .env
-nano .env  # Editar con tus valores
 
-# 2. Construir e iniciar servicios
+# Edit with your configuration
+nano .env
+```
+
+### 3. Install Dependencies
+
+**Backend:**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+```
+
+**Mobile:**
+```bash
+cd mobile
+npm install
+```
+
+### 4. Database Setup
+
+```bash
+# Start PostgreSQL (via Docker)
+docker run -d \
+  --name postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=b2b2b_db \
+  -p 5432:5432 \
+  postgres:15
+
+# Run migrations
+cd backend
+alembic upgrade head
+```
+
+### 5. Start Development Servers
+
+**Backend:**
+```bash
+cd backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm start
+```
+
+**Mobile:**
+```bash
+cd mobile
+npm start
+```
+
+## Docker Deployment
+
+### Using Docker Compose
+
+#### 1. Build Images
+
+```bash
+docker-compose build
+```
+
+#### 2. Start Services
+
+```bash
 docker-compose up -d
+```
 
-# 3. Inicializar base de datos
-docker-compose exec backend python database/init_quotation_db.py
+#### 3. Check Status
 
-# 4. Verificar estado
+```bash
 docker-compose ps
-```
-
----
-
-## **⚙️ CONFIGURACIÓN DETALLADA**
-
-### **1. Variables de Entorno Críticas**
-
-```bash
-# .env - Configuración mínima requerida
-
-# Base de datos
-DATABASE_URL=postgresql://postgres:TU_PASSWORD@localhost:5432/spirit_tours
-
-# Seguridad
-SECRET_KEY=$(openssl rand -hex 32)
-JWT_SECRET_KEY=${SECRET_KEY}
-
-# Email (requerido para notificaciones)
-SENDGRID_API_KEY=SG.xxxxx  # O configurar SMTP
-
-# Pagos (al menos uno requerido)
-STRIPE_SECRET_KEY=sk_test_xxxxx
-# O
-PAYPAL_CLIENT_ID=xxxxx
-```
-
-### **2. Configuración de Base de Datos**
-
-```sql
--- Crear base de datos manualmente si es necesario
-CREATE DATABASE spirit_tours;
-CREATE USER spirit_user WITH PASSWORD 'secure_password';
-GRANT ALL PRIVILEGES ON DATABASE spirit_tours TO spirit_user;
-```
-
-### **3. Configuración de Redis**
-
-```bash
-# redis.conf personalizado
-maxmemory 256mb
-maxmemory-policy allkeys-lru
-save 900 1
-save 300 10
-save 60 10000
-```
-
----
-
-## **🌍 DEPLOYMENT EN PRODUCCIÓN**
-
-### **Paso 1: Preparar Servidor**
-
-```bash
-# Actualizar sistema
-sudo apt update && sudo apt upgrade -y
-
-# Instalar dependencias
-sudo apt install -y curl git nginx certbot python3-certbot-nginx
-
-# Instalar Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-```
-
-### **Paso 2: Configurar SSL**
-
-```bash
-# Obtener certificado SSL con Let's Encrypt
-sudo certbot --nginx -d spirittours.com -d www.spirittours.com
-
-# Auto-renovación
-sudo systemctl enable certbot.timer
-```
-
-### **Paso 3: Deploy con Script Automatizado**
-
-```bash
-# Ejecutar deployment completo
-sudo ./scripts/deploy.sh production
-
-# El script automáticamente:
-# ✅ Hace backup del estado actual
-# ✅ Instala dependencias
-# ✅ Configura SSL
-# ✅ Despliega containers
-# ✅ Inicializa base de datos
-# ✅ Configura monitoreo
-# ✅ Configura backups automáticos
-```
-
-### **Paso 4: Configurar Nginx**
-
-```bash
-# Copiar configuración
-sudo cp nginx.conf /etc/nginx/nginx.conf
-
-# Verificar configuración
-sudo nginx -t
-
-# Recargar Nginx
-sudo systemctl reload nginx
-```
-
----
-
-## **📊 MONITOREO Y MANTENIMIENTO**
-
-### **Dashboard de Monitoreo**
-
-```bash
-# Ver estado de servicios
-docker-compose ps
-
-# Ver logs en tiempo real
 docker-compose logs -f
-
-# Ver logs de servicio específico
-docker-compose logs -f backend
-
-# Estadísticas de recursos
-docker stats
 ```
 
-### **Health Checks**
+#### 4. Stop Services
 
 ```bash
-# Check manual
-curl http://localhost:8000/health | jq
-
-# Configurar monitoreo automático
-crontab -e
-*/5 * * * * /home/user/webapp/scripts/health_monitor.sh
-```
-
-### **Alertas**
-
-Configurar en `.env`:
-```bash
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
-ALERT_EMAIL=admin@spirittours.com
-```
-
----
-
-## **🔧 TROUBLESHOOTING**
-
-### **Problema: Base de datos no conecta**
-
-```bash
-# Verificar estado
-docker-compose exec postgres pg_isready
-
-# Ver logs
-docker-compose logs postgres
-
-# Reiniciar servicio
-docker-compose restart postgres
-```
-
-### **Problema: Frontend no carga**
-
-```bash
-# Reconstruir frontend
-docker-compose build --no-cache frontend
-
-# Limpiar cache
-docker-compose exec frontend npm cache clean --force
-```
-
-### **Problema: WebSocket no funciona**
-
-```bash
-# Verificar Nginx config
-grep -A 10 "location /ws/" /etc/nginx/nginx.conf
-
-# Verificar Redis
-docker-compose exec redis redis-cli ping
-```
-
-### **Problema: Emails no se envían**
-
-```bash
-# Verificar configuración
-docker-compose exec backend python -c "
-from integrations.email_service import email_service
-print(email_service.provider)
-"
-
-# Test manual
-docker-compose exec backend python -c "
-import asyncio
-from integrations.email_service import email_service
-asyncio.run(email_service.send_test_email('test@example.com'))
-"
-```
-
----
-
-## **🔒 SEGURIDAD**
-
-### **Checklist de Seguridad**
-
-- [ ] Cambiar todas las contraseñas por defecto
-- [ ] Configurar firewall (ufw/iptables)
-- [ ] Habilitar fail2ban
-- [ ] Configurar SSL/TLS
-- [ ] Rotar SECRET_KEY regularmente
-- [ ] Limitar acceso SSH
-- [ ] Configurar rate limiting
-- [ ] Habilitar logs de auditoría
-- [ ] Backup automático configurado
-- [ ] Monitoreo de seguridad activo
-
-### **Firewall Configuration**
-
-```bash
-# Configurar UFW
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow ssh
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw enable
-```
-
-### **Hardening SSH**
-
-```bash
-# /etc/ssh/sshd_config
-PermitRootLogin no
-PasswordAuthentication no
-PubkeyAuthentication yes
-MaxAuthTries 3
-```
-
----
-
-## **💾 BACKUP Y RECUPERACIÓN**
-
-### **Backup Automático**
-
-```bash
-# Configurar backup diario a las 2 AM
-crontab -e
-0 2 * * * /home/user/webapp/scripts/backup.sh
-
-# Backup manual
-./scripts/backup.sh
-```
-
-### **Restauración**
-
-```bash
-# 1. Detener servicios
 docker-compose down
+```
 
-# 2. Restaurar base de datos
-gunzip < /backups/backup-20241015/database.sql.gz | \
-  docker exec -i spirit_tours_db psql -U postgres spirit_tours
+### Using Deploy Script
 
-# 3. Restaurar archivos
-tar -xzf /backups/backup-20241015/application.tar.gz -C /
+```bash
+./scripts/deploy.sh staging
+```
 
-# 4. Reiniciar servicios
+### Services Started
+
+- **Backend API:** http://localhost:8000
+- **Frontend:** http://localhost:3000
+- **PostgreSQL:** localhost:5432
+- **Redis:** localhost:6379
+- **Nginx:** http://localhost:80
+
+## Kubernetes Deployment
+
+### 1. Prerequisites
+
+```bash
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Verify
+kubectl version --client
+```
+
+### 2. Create Namespace
+
+```bash
+kubectl create namespace b2b2b
+```
+
+### 3. Create Secrets
+
+```bash
+kubectl create secret generic b2b2b-secrets \
+  --from-literal=database-url="postgresql://user:pass@postgres:5432/db" \
+  --from-literal=redis-url="redis://:password@redis:6379/0" \
+  --from-literal=secret-key="your-secret-key" \
+  --from-literal=postgres-user="postgres" \
+  --from-literal=postgres-password="postgres" \
+  --from-literal=redis-password="redis_password" \
+  -n b2b2b
+```
+
+### 4. Deploy Database
+
+```bash
+kubectl apply -f kubernetes/postgres-statefulset.yaml -n b2b2b
+```
+
+### 5. Deploy Backend
+
+```bash
+kubectl apply -f kubernetes/backend-deployment.yaml -n b2b2b
+```
+
+### 6. Deploy Ingress
+
+```bash
+# Install Nginx Ingress Controller
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+
+# Apply our ingress
+kubectl apply -f kubernetes/ingress.yaml -n b2b2b
+```
+
+### 7. Verify Deployment
+
+```bash
+# Check pods
+kubectl get pods -n b2b2b
+
+# Check services
+kubectl get services -n b2b2b
+
+# Check logs
+kubectl logs -f deployment/b2b2b-backend -n b2b2b
+```
+
+### 8. Scale Deployment
+
+```bash
+# Manual scaling
+kubectl scale deployment b2b2b-backend --replicas=5 -n b2b2b
+
+# Auto-scaling is configured via HPA in deployment YAML
+```
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+Three workflows are configured:
+
+1. **CI (Continuous Integration)** - `.github/workflows/ci.yml`
+   - Runs on pull requests and pushes
+   - Executes tests, linting, security scans
+   - Builds Docker images
+
+2. **CD (Continuous Deployment)** - `.github/workflows/cd.yml`
+   - Runs on main branch pushes
+   - Builds and pushes Docker images
+   - Deploys to staging automatically
+   - Deploys to production on tag creation
+
+3. **Performance Testing** - `.github/workflows/performance.yml`
+   - Runs on schedule and manually
+   - Load testing with Locust
+   - Frontend performance with Lighthouse
+
+### Manual Deployment
+
+```bash
+# Create a new release
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# This triggers production deployment
+```
+
+### Rollback
+
+```bash
+# Kubernetes rollback
+kubectl rollout undo deployment/b2b2b-backend -n b2b2b
+
+# Docker rollback
+docker-compose down
+git checkout previous-commit
 docker-compose up -d
 ```
 
----
+## Environment Variables
 
-## **📈 OPTIMIZACIÓN DE RENDIMIENTO**
-
-### **Frontend**
-- Habilitar CDN (Cloudflare)
-- Comprimir assets
-- Lazy loading de componentes
-- Cache de browser optimizado
-
-### **Backend**
-- Índices de base de datos optimizados
-- Connection pooling configurado
-- Redis cache activado
-- Query optimization
-
-### **Infraestructura**
-- Auto-scaling configurado
-- Load balancer (si necesario)
-- CDN para static files
-- Compresión gzip habilitada
-
----
-
-## **📞 SOPORTE Y CONTACTO**
-
-### **Logs Importantes**
-- **API Logs:** `/var/log/spirit_tours/app.log`
-- **Nginx Logs:** `/var/log/nginx/access.log`
-- **Database Logs:** `docker-compose logs postgres`
-- **Health Checks:** `/var/log/spirit_tours/health.log`
-
-### **Comandos Útiles**
+### Required Variables
 
 ```bash
-# Estado general del sistema
-./scripts/status.sh
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/database
+DB_NAME=b2b2b_db
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
+DB_HOST=localhost
+DB_PORT=5432
 
-# Reiniciar todo
+# Redis
+REDIS_URL=redis://:password@host:6379/0
+REDIS_PASSWORD=your_redis_password
+REDIS_PORT=6379
+
+# Application
+SECRET_KEY=your-very-long-secret-key-min-32-chars
+ENVIRONMENT=production
+DEBUG=false
+ALLOWED_ORIGINS=https://yourdomain.com
+
+# JWT
+JWT_SECRET_KEY=another-long-secret-key
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+# External APIs (Optional)
+QUICKBOOKS_CLIENT_ID=your_client_id
+QUICKBOOKS_CLIENT_SECRET=your_client_secret
+XERO_CLIENT_ID=your_client_id
+XERO_CLIENT_SECRET=your_client_secret
+
+# Email (Optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+
+# AWS (Optional)
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=eu-west-1
+```
+
+### Environment Files
+
+- `.env.local` - Local development
+- `.env.staging` - Staging environment
+- `.env.production` - Production environment
+
+## Database Migration
+
+### Create Migration
+
+```bash
+cd backend
+alembic revision --autogenerate -m "Add new table"
+```
+
+### Apply Migration
+
+```bash
+# Upgrade to latest
+alembic upgrade head
+
+# Upgrade one version
+alembic upgrade +1
+
+# Downgrade one version
+alembic downgrade -1
+```
+
+### Migration in Docker
+
+```bash
+docker-compose exec backend alembic upgrade head
+```
+
+### Migration in Kubernetes
+
+```bash
+kubectl exec -it deployment/b2b2b-backend -n b2b2b -- alembic upgrade head
+```
+
+## Monitoring Setup
+
+### Prometheus
+
+```bash
+# Start Prometheus
+docker run -d \
+  --name prometheus \
+  -p 9090:9090 \
+  -v $(pwd)/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus
+```
+
+### Grafana
+
+```bash
+# Start Grafana
+docker run -d \
+  --name grafana \
+  -p 3001:3000 \
+  -e GF_SECURITY_ADMIN_PASSWORD=admin \
+  grafana/grafana
+
+# Import dashboard
+# Navigate to http://localhost:3001
+# Import monitoring/grafana-dashboard.json
+```
+
+### Application Metrics
+
+Metrics are exposed at: `http://localhost:8000/metrics`
+
+## Backup & Recovery
+
+### Database Backup
+
+```bash
+# Manual backup
+docker-compose exec postgres pg_dump -U postgres b2b2b_db > backup_$(date +%Y%m%d).sql
+
+# Scheduled backup (cron)
+0 2 * * * docker-compose exec postgres pg_dump -U postgres b2b2b_db > /backups/backup_$(date +\%Y\%m\%d).sql
+```
+
+### Database Restore
+
+```bash
+# From backup file
+docker-compose exec -T postgres psql -U postgres b2b2b_db < backup_20241115.sql
+```
+
+### Redis Backup
+
+```bash
+# Trigger save
+docker-compose exec redis redis-cli BGSAVE
+
+# Copy RDB file
+docker cp redis:/data/dump.rdb ./redis_backup_$(date +%Y%m%d).rdb
+```
+
+## Troubleshooting
+
+### Backend Not Starting
+
+```bash
+# Check logs
+docker-compose logs backend
+
+# Common issues:
+# 1. Database not ready - wait a few seconds
+# 2. Missing environment variables - check .env
+# 3. Port already in use - change port in docker-compose.yml
+```
+
+### Database Connection Issues
+
+```bash
+# Test connection
+docker-compose exec backend python -c "from sqlalchemy import create_engine; engine = create_engine('$DATABASE_URL'); print(engine.connect())"
+
+# Check database is running
+docker-compose exec postgres pg_isready
+```
+
+### High Memory Usage
+
+```bash
+# Check container stats
+docker stats
+
+# Restart services
 docker-compose restart
 
-# Actualizar código
-git pull && docker-compose build && docker-compose up -d
-
-# Limpiar sistema
-docker system prune -a
+# Scale down if needed
+kubectl scale deployment b2b2b-backend --replicas=2 -n b2b2b
 ```
 
----
+### Slow Performance
 
-## **✅ VERIFICACIÓN FINAL**
+1. Check database indexes
+2. Review slow queries in logs
+3. Check Redis hit rate
+4. Monitor with Grafana dashboard
+5. Review application logs
 
-### **Lista de Verificación Post-Deployment**
-
-- [ ] Todos los servicios están running
-- [ ] Health check retorna "healthy"
-- [ ] Frontend carga correctamente
-- [ ] API Docs accesible
-- [ ] WebSocket conecta
-- [ ] Emails se envían
-- [ ] Pagos procesan (test mode)
-- [ ] SSL certificado válido
-- [ ] Backups automáticos funcionando
-- [ ] Monitoreo activo
-- [ ] Logs rotando correctamente
-
-### **Test de Funcionalidad Completa**
+### Certificate Issues (Kubernetes)
 
 ```bash
-# Test automático completo
-docker-compose exec backend pytest tests/
+# Check certificate
+kubectl describe certificate b2b2b-tls -n b2b2b
 
-# Test manual de flujo completo
-curl -X POST http://localhost:8000/api/v1/quotations/test
+# Check cert-manager logs
+kubectl logs -n cert-manager deployment/cert-manager
 ```
 
----
+## Health Checks
 
-## **🎉 CONCLUSIÓN**
+### Liveness Probe
 
-¡Felicidades! Spirit Tours está desplegado y funcionando.
+```bash
+curl http://localhost:8000/health
+```
 
-**URLs de Acceso:**
-- **Producción:** https://spirittours.com
-- **API:** https://spirittours.com/api
-- **Docs:** https://spirittours.com/api/docs
-- **Admin:** https://spirittours.com/admin
+### Readiness Probe
 
-**Próximos Pasos:**
-1. Configurar analytics (Google Analytics)
-2. Integrar CRM externo si necesario
-3. Configurar CDN para mejor rendimiento
-4. Implementar A/B testing
-5. Configurar staging environment
+```bash
+curl http://localhost:8000/api/v1/health
+```
 
----
+### Detailed Health
 
-*Última actualización: 15 de Octubre de 2024*  
-*Versión: 2.0.0*  
-*Status: PRODUCTION READY* ✅
+```bash
+curl http://localhost:8000/api/v1/health/detailed
+```
+
+## Security Checklist
+
+- [ ] Change all default passwords
+- [ ] Use strong SECRET_KEY (min 32 characters)
+- [ ] Enable HTTPS in production
+- [ ] Configure firewall rules
+- [ ] Set up rate limiting
+- [ ] Enable security headers
+- [ ] Regular security updates
+- [ ] Backup encryption keys
+- [ ] Monitor security logs
+- [ ] Configure CORS properly
+
+## Production Checklist
+
+- [ ] All tests passing
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] SSL certificates installed
+- [ ] Monitoring configured
+- [ ] Backups scheduled
+- [ ] Log aggregation setup
+- [ ] Rate limiting enabled
+- [ ] CDN configured
+- [ ] Auto-scaling enabled
+- [ ] Disaster recovery plan
+- [ ] Documentation updated
+
+## Support
+
+For deployment issues:
+- **Email:** devops@b2b2b-platform.com
+- **Slack:** #deployment-support
+- **Documentation:** https://docs.b2b2b-platform.com
