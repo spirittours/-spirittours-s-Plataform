@@ -376,6 +376,182 @@ async def validate_domain(
     return result
 
 
+# ============================================================================
+# ADVANCED COMMISSIONS (PHASE 4)
+# ============================================================================
+
+@router.post("/commissions/tiered")
+async def calculate_tiered_commission(
+    agent_code: str = Query(..., description="Agent code"),
+    booking_amount: Decimal = Query(..., description="Booking amount in EUR"),
+    period_start: date = Query(..., description="Period start date"),
+    period_end: date = Query(..., description="Period end date")
+):
+    """
+    Calculate tiered commission based on agent's total period volume.
+    
+    Tiers:
+    - Bronze (0-10k): 3%
+    - Silver (10k-25k): 4% + 0.5% bonus
+    - Gold (25k-50k): 5% + 1% bonus
+    - Platinum (50k+): 6% + 2% bonus
+    """
+    from .advanced_commission_service import get_advanced_commission_service
+    from .agent_service import get_agent_service
+    
+    agent_service = get_agent_service()
+    commission_service = get_advanced_commission_service()
+    
+    agent = await agent_service.get_agent(agent_code)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_code} not found")
+    
+    result = await commission_service.calculate_tiered_commission(
+        agent, booking_amount, period_start, period_end
+    )
+    return result
+
+
+@router.post("/commissions/product")
+async def calculate_product_commission(
+    booking_amount: Decimal = Query(..., description="Booking amount in EUR"),
+    product_category: str = Query(
+        ..., 
+        description="Product category: flights, hotels, tours, packages, insurance, transport, activities"
+    ),
+    season_type: str = Query(
+        "shoulder",
+        description="Season type: high_season, shoulder, low_season"
+    )
+):
+    """
+    Calculate commission by product category with seasonal multiplier.
+    
+    Product Commission Rates:
+    - Flights: 2%
+    - Hotels: 5%
+    - Tours: 8%
+    - Packages: 10%
+    - Insurance: 15%
+    - Transport: 4%
+    - Activities: 7%
+    
+    Seasonal Multipliers:
+    - High season: 1.2x
+    - Shoulder: 1.0x
+    - Low season: 1.3x (incentive)
+    """
+    from .advanced_commission_service import get_advanced_commission_service, ProductCategory
+    
+    service = get_advanced_commission_service()
+    
+    try:
+        result = await service.calculate_product_commission(
+            booking_amount,
+            ProductCategory(product_category),
+            season_type
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/commissions/bonus")
+async def calculate_commission_bonus(
+    agent_code: str = Query(..., description="Agent code"),
+    period_start: date = Query(..., description="Period start date"),
+    period_end: date = Query(..., description="Period end date")
+):
+    """
+    Calculate bonus for agent based on performance.
+    
+    Bonus Types:
+    - Volume Milestone: 500 EUR every 10k volume
+    - Booking Count: 200 EUR every 20 bookings
+    - Referral: 300 EUR per agent referral
+    """
+    from .advanced_commission_service import get_advanced_commission_service
+    from .agent_service import get_agent_service
+    
+    agent_service = get_agent_service()
+    commission_service = get_advanced_commission_service()
+    
+    agent = await agent_service.get_agent(agent_code)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_code} not found")
+    
+    bonus = await commission_service.calculate_bonus(
+        agent, period_start, period_end
+    )
+    return bonus
+
+
+@router.get("/leaderboard")
+async def get_agent_leaderboard(
+    period_start: date = Query(..., description="Period start date"),
+    period_end: date = Query(..., description="Period end date"),
+    metric: str = Query(
+        "volume",
+        description="Ranking metric: volume, count, commission"
+    ),
+    limit: int = Query(10, ge=1, le=50, description="Top N agents")
+):
+    """
+    Get agent leaderboard for gamification.
+    
+    Badges:
+    - 🥇 Champion (Rank 1)
+    - 🥈 Excellence (Rank 2)
+    - 🥉 Outstanding (Rank 3)
+    - ⭐ Top Performer (Rank 4-5)
+    - ✨ Rising Star (Rank 6+)
+    """
+    from .advanced_commission_service import get_advanced_commission_service
+    
+    service = get_advanced_commission_service()
+    leaderboard = await service.get_leaderboard(
+        period_start, period_end, metric, limit
+    )
+    return {
+        "period": {
+            "start": period_start.isoformat(),
+            "end": period_end.isoformat()
+        },
+        "metric": metric,
+        "leaderboard": leaderboard
+    }
+
+
+@router.get("/forecast/{agent_code}")
+async def get_commission_forecast(
+    agent_code: str,
+    months_ahead: int = Query(3, ge=1, le=12, description="Months to forecast")
+):
+    """
+    Get commission forecast for agent.
+    
+    Uses historical data to predict future commissions with confidence scoring.
+    """
+    from .advanced_commission_service import get_advanced_commission_service
+    from .agent_service import get_agent_service
+    
+    agent_service = get_agent_service()
+    commission_service = get_advanced_commission_service()
+    
+    agent = await agent_service.get_agent(agent_code)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_code} not found")
+    
+    forecast = await commission_service.get_commission_forecast(
+        agent, months_ahead
+    )
+    return forecast
+
+
+# ============================================================================
+# HEALTH CHECK
+# ============================================================================
+
 @router.get("/health")
 async def health_check():
     """Health check endpoint."""
