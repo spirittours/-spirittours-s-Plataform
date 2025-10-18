@@ -1,0 +1,113 @@
+# Flight Booking Engine Configuration Example
+# Copy this file to config.yaml and fill in your actual credentials
+
+# GDS Providers
+amadeus:
+  api_key: "YOUR_AMADEUS_API_KEY"
+  api_secret: "YOUR_AMADEUS_API_SECRET"
+  environment: "production"  # or "test"
+
+sabre:
+  client_id: "YOUR_SABRE_CLIENT_ID"
+  client_secret: "YOUR_SABRE_CLIENT_SECRET"
+  pcc: "YOUR_PCC_CODE"  # Pseudo City Code
+  environment: "production"  # or "test"
+
+galileo:
+  username: "YOUR_GALILEO_USERNAME"
+  password: "YOUR_GALILEO_PASSWORD"
+  branch: "YOUR_BRANCH_CODE"
+  target_branch: "YOUR_TARGET_BRANCH"  # Optional
+  environment: "production"  # or "test"
+
+# Low Cost Carriers (LCC)
+# Note: Most LCCs require official partnership for API access
+
+ryanair:
+  api_key: "YOUR_RYANAIR_API_KEY"  # Requires partnership
+  partner_id: "YOUR_PARTNER_ID"
+  enabled: false  # Set to true when API is available
+
+easyjet:
+  api_key: "YOUR_EASYJET_API_KEY"  # Requires partnership
+  enabled: false
+
+vueling:
+  api_key: "YOUR_VUELING_API_KEY"  # Requires IAG partnership
+  enabled: false
+
+wizzair:
+  api_key: "YOUR_WIZZAIR_API_KEY"  # Requires partnership
+  enabled: false
+
+# Alternative: Use aggregator APIs for LCC access
+# Recommended options:
+#
+# Option 1: Duffel (recommended)
+# duffel:
+#   api_key: "YOUR_DUFFEL_API_KEY"
+#   enabled: true
+#
+# Option 2: Kiwi.com Tequila API
+# kiwi:
+#   api_key: "YOUR_KIWI_API_KEY"
+#   enabled: true
+#
+# Option 3: Travelfusion
+# travelfusion:
+#   api_key: "YOUR_TRAVELFUSION_API_KEY"
+#   enabled: true
+
+# Engine Configuration
+engine:
+  # Search settings
+  default_timeout: 15  # Timeout in seconds per supplier
+  max_concurrent_searches: 5  # Maximum concurrent supplier searches
+  
+  # Caching settings
+  cache_search_results: true
+  search_cache_ttl: 300  # Cache TTL in seconds (5 minutes)
+  
+  # Booking settings
+  booking_timeout: 30  # Timeout in seconds for booking operations
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay: 2  # Delay in seconds between retries
+
+# Redis Configuration (for caching)
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: ""  # Optional
+  
+# Database Configuration (for storing bookings)
+database:
+  host: "localhost"
+  port: 5432
+  name: "spirit_tours"
+  user: "postgres"
+  password: "YOUR_DB_PASSWORD"
+  
+# Email Configuration (for booking confirmations)
+email:
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_user: "YOUR_EMAIL"
+  smtp_password: "YOUR_EMAIL_PASSWORD"
+  from_email: "bookings@spirit-tours.com"
+  from_name: "Spirit Tours"
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "json"  # json or text
+  file: "logs/flights.log"
+  
+# Feature Flags
+features:
+  multi_supplier_search: true
+  flexible_dates: false  # Coming soon
+  price_alerts: false  # Coming soon
+  auto_rebooking: false  # Coming soon

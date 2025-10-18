@@ -1,0 +1,60 @@
+apiVersion: v2
+name: spirit-tours
+description: Complete Spirit Tours Platform - Production-Ready Helm Chart
+type: application
+version: 1.0.0
+appVersion: "2.0.0"
+
+keywords:
+  - travel
+  - tourism
+  - booking
+  - microservices
+  - kubernetes
+
+home: https://spirittours.com
+sources:
+  - https://github.com/spirittours/platform
+
+maintainers:
+  - name: Spirit Tours DevOps Team
+    email: devops@spirittours.com
+
+dependencies:
+  - name: postgresql
+    version: 12.1.9
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  
+  - name: redis
+    version: 17.3.14
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  
+  - name: rabbitmq
+    version: 11.1.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: rabbitmq.enabled
+  
+  - name: elasticsearch
+    version: 7.17.3
+    repository: https://helm.elastic.co
+    condition: elasticsearch.enabled
+  
+  - name: prometheus
+    version: 15.18.0
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: monitoring.prometheus.enabled
+  
+  - name: grafana
+    version: 6.43.5
+    repository: https://grafana.github.io/helm-charts
+    condition: monitoring.grafana.enabled
+
+annotations:
+  artifacthub.io/category: travel
+  artifacthub.io/license: MIT
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/signKey: |
+    fingerprint: ABCD1234567890
+    url: https://spirittours.com/pgp-key.asc
