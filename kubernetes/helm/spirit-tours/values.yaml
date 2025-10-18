@@ -1,0 +1,1027 @@
+# Default values for Spirit Tours Platform
+# This is a production-ready configuration file
+
+# Global configuration
+global:
+  environment: production
+  domain: spirittours.com
+  timezone: UTC
+  
+  # Container registry
+  imageRegistry: ""
+  imagePullSecrets: []
+  
+  # Storage
+  storageClass: "fast-ssd"
+  
+  # Security
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+# Namespace configuration
+namespace: spirit-tours-prod
+
+# ==================== MICROSERVICES ====================
+
+# API Gateway
+apiGateway:
+  enabled: true
+  name: api-gateway
+  replicaCount: 3
+  image:
+    repository: spirittours/api-gateway
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: api.spirittours.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-tls
+        hosts:
+          - api.spirittours.com
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  env:
+    - name: LOG_LEVEL
+      value: "info"
+    - name: CORS_ORIGINS
+      value: "https://spirittours.com,https://app.spirittours.com"
+
+# Booking Service
+bookingService:
+  enabled: true
+  name: booking-service
+  replicaCount: 3
+  image:
+    repository: spirittours/booking-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8001
+    targetPort: 8001
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+  
+  persistence:
+    enabled: true
+    size: 50Gi
+    accessMode: ReadWriteOnce
+    storageClass: fast-ssd
+
+# Payment Service
+paymentService:
+  enabled: true
+  name: payment-service
+  replicaCount: 3
+  image:
+    repository: spirittours/payment-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8002
+    targetPort: 8002
+  
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 1.5Gi
+    requests:
+      cpu: 750m
+      memory: 768Mi
+  
+  # Payment provider credentials (use secrets in production)
+  secrets:
+    stripe:
+      enabled: true
+      secretName: stripe-credentials
+    mercadopago:
+      enabled: true
+      secretName: mercadopago-credentials
+    paypal:
+      enabled: true
+      secretName: paypal-credentials
+    payu:
+      enabled: true
+      secretName: payu-credentials
+
+# Hotel Service
+hotelService:
+  enabled: true
+  name: hotel-service
+  replicaCount: 2
+  image:
+    repository: spirittours/hotel-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# Email Service
+emailService:
+  enabled: true
+  name: email-service
+  replicaCount: 2
+  image:
+    repository: spirittours/email-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8004
+    targetPort: 8004
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  smtp:
+    host: smtp.sendgrid.net
+    port: 587
+    username: apikey
+    existingSecret: smtp-credentials
+    secretKey: password
+
+# Notification Service
+notificationService:
+  enabled: true
+  name: notification-service
+  replicaCount: 2
+  image:
+    repository: spirittours/notification-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8005
+    targetPort: 8005
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Analytics Service
+analyticsService:
+  enabled: true
+  name: analytics-service
+  replicaCount: 2
+  image:
+    repository: spirittours/analytics-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8006
+    targetPort: 8006
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+
+# Chatbot Service
+chatbotService:
+  enabled: true
+  name: chatbot-service
+  replicaCount: 3
+  image:
+    repository: spirittours/chatbot-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8007
+    targetPort: 8007
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 3Gi
+    requests:
+      cpu: 1000m
+      memory: 1.5Gi
+  
+  nlp:
+    enabled: true
+    modelPath: /models
+    languages: ["es", "en", "pt", "fr"]
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+    mountPath: /models
+
+# ML Service (Machine Learning)
+mlService:
+  enabled: true
+  name: ml-service
+  replicaCount: 2
+  image:
+    repository: spirittours/ml-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8008
+    targetPort: 8008
+  
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+  
+  gpu:
+    enabled: false
+    type: "nvidia.com/gpu"
+    count: 1
+  
+  models:
+    demandForecasting: true
+    priceOptimization: true
+    recommendations: true
+    churnPrediction: true
+
+# WebSocket Service
+websocketService:
+  enabled: true
+  name: websocket-service
+  replicaCount: 3
+  image:
+    repository: spirittours/websocket-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8009
+    targetPort: 8009
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  stickySessions: true
+  sessionAffinity: ClientIP
+
+# ==================== FRONTEND ====================
+
+frontend:
+  enabled: true
+  name: frontend
+  replicaCount: 3
+  image:
+    repository: spirittours/frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: spirittours.com
+        paths:
+          - path: /
+            pathType: Prefix
+      - host: www.spirittours.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: frontend-tls
+        hosts:
+          - spirittours.com
+          - www.spirittours.com
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Admin Dashboard
+adminDashboard:
+  enabled: true
+  name: admin-dashboard
+  replicaCount: 2
+  image:
+    repository: spirittours/admin-dashboard
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3001
+  
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: admin-basic-auth
+    hosts:
+      - host: admin.spirittours.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: admin-tls
+        hosts:
+          - admin.spirittours.com
+
+# ==================== DATABASES ====================
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "changeme"
+    database: spirittours
+    username: spirittours
+    password: "changeme"
+  
+  architecture: replication
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: fast-ssd
+    
+    resources:
+      limits:
+        cpu: 4000m
+        memory: 8Gi
+      requests:
+        cpu: 2000m
+        memory: 4Gi
+    
+    nodeSelector:
+      workload: database
+    
+    tolerations:
+      - key: "database"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+  
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 100Gi
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Redis
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "changeme"
+  
+  architecture: replication
+  
+  master:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: fast-ssd
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+  
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 50Gi
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+  
+  sentinel:
+    enabled: true
+    quorum: 2
+
+# MongoDB (for logs and analytics)
+mongodb:
+  enabled: true
+  auth:
+    enabled: true
+    rootPassword: "changeme"
+    database: spirittours_analytics
+    username: analytics
+    password: "changeme"
+  
+  replicaSet:
+    enabled: true
+    name: rs0
+    replicas: 3
+  
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: fast-ssd
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+# Elasticsearch
+elasticsearch:
+  enabled: true
+  replicas: 3
+  minimumMasterNodes: 2
+  
+  esJavaOpts: "-Xmx2g -Xms2g"
+  
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 4Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    storageClassName: fast-ssd
+    resources:
+      requests:
+        storage: 100Gi
+
+# ==================== MESSAGE QUEUE ====================
+
+# RabbitMQ
+rabbitmq:
+  enabled: true
+  auth:
+    username: admin
+    password: "changeme"
+    erlangCookie: "secretcookie"
+  
+  replicaCount: 3
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: fast-ssd
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  clustering:
+    enabled: true
+    forceBoot: false
+
+# Kafka (optional, for event streaming)
+kafka:
+  enabled: false
+  replicaCount: 3
+  
+  persistence:
+    enabled: true
+    size: 50Gi
+  
+  zookeeper:
+    enabled: true
+    replicaCount: 3
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# ==================== MONITORING & LOGGING ====================
+
+monitoring:
+  enabled: true
+  
+  prometheus:
+    enabled: true
+    retention: 30d
+    
+    serverFiles:
+      prometheus.yml:
+        scrape_configs:
+          - job_name: 'spirit-tours-services'
+            kubernetes_sd_configs:
+              - role: pod
+                namespaces:
+                  names:
+                    - spirit-tours-prod
+            relabel_configs:
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                action: keep
+                regex: true
+    
+    persistentVolume:
+      enabled: true
+      size: 100Gi
+      storageClass: fast-ssd
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+  
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: "changeme"
+    
+    ingress:
+      enabled: true
+      hosts:
+        - monitoring.spirittours.com
+      tls:
+        - secretName: monitoring-tls
+          hosts:
+            - monitoring.spirittours.com
+    
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            url: http://prometheus-server
+            isDefault: true
+    
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: 'default'
+            orgId: 1
+            folder: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/default
+  
+  # Jaeger for distributed tracing
+  jaeger:
+    enabled: true
+    agent:
+      enabled: true
+    collector:
+      enabled: true
+    query:
+      enabled: true
+      ingress:
+        enabled: true
+        hosts:
+          - tracing.spirittours.com
+    
+    storage:
+      type: elasticsearch
+      elasticsearch:
+        host: elasticsearch-master
+        port: 9200
+
+# Logging with EFK stack
+logging:
+  enabled: true
+  
+  fluentd:
+    enabled: true
+    configMaps:
+      useDefaults: true
+      systemConf: |
+        <system>
+          root_dir /tmp/fluentd-buffers/
+        </system>
+    
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+  
+  kibana:
+    enabled: true
+    elasticsearchHosts: "http://elasticsearch-master:9200"
+    
+    ingress:
+      enabled: true
+      hosts:
+        - logs.spirittours.com
+      tls:
+        - secretName: logs-tls
+          hosts:
+            - logs.spirittours.com
+
+# ==================== SECURITY ====================
+
+security:
+  # Network Policies
+  networkPolicies:
+    enabled: true
+    policyTypes:
+      - Ingress
+      - Egress
+  
+  # Pod Security Policies
+  podSecurityPolicy:
+    enabled: true
+    spec:
+      privileged: false
+      allowPrivilegeEscalation: false
+      requiredDropCapabilities:
+        - ALL
+      volumes:
+        - 'configMap'
+        - 'emptyDir'
+        - 'projected'
+        - 'secret'
+        - 'downwardAPI'
+        - 'persistentVolumeClaim'
+      hostNetwork: false
+      hostIPC: false
+      hostPID: false
+      runAsUser:
+        rule: 'MustRunAsNonRoot'
+      seLinux:
+        rule: 'RunAsAny'
+      supplementalGroups:
+        rule: 'RunAsAny'
+      fsGroup:
+        rule: 'RunAsAny'
+  
+  # Secrets management
+  sealedSecrets:
+    enabled: true
+    controllerName: sealed-secrets-controller
+    controllerNamespace: kube-system
+  
+  # OAuth2 Proxy for authentication
+  oauth2Proxy:
+    enabled: false
+    provider: google
+    clientID: ""
+    clientSecret: ""
+    cookieSecret: ""
+    emailDomains:
+      - spirittours.com
+
+# ==================== BACKUP & DISASTER RECOVERY ====================
+
+backup:
+  enabled: true
+  
+  # Velero for cluster backup
+  velero:
+    enabled: true
+    configuration:
+      provider: aws
+      backupStorageLocation:
+        bucket: spirit-tours-backups
+        config:
+          region: us-east-1
+      volumeSnapshotLocation:
+        config:
+          region: us-east-1
+    
+    schedules:
+      daily-backup:
+        schedule: "0 2 * * *"
+        template:
+          ttl: "720h0m0s"
+          includedNamespaces:
+            - spirit-tours-prod
+          storageLocation: default
+  
+  # Database backup
+  databaseBackup:
+    enabled: true
+    schedule: "0 1 * * *"
+    retention: 30
+    destination:
+      type: s3
+      bucket: spirit-tours-db-backups
+      region: us-east-1
+
+# ==================== AUTOSCALING ====================
+
+autoscaling:
+  # Cluster Autoscaler
+  clusterAutoscaler:
+    enabled: true
+    cloudProvider: aws
+    awsRegion: us-east-1
+    autoDiscovery:
+      clusterName: spirit-tours-prod
+      enabled: true
+    
+    extraArgs:
+      skip-nodes-with-local-storage: false
+      skip-nodes-with-system-pods: false
+      scale-down-delay-after-add: 10m
+      scale-down-unneeded-time: 10m
+  
+  # Vertical Pod Autoscaler
+  vpa:
+    enabled: true
+    recommender:
+      enabled: true
+    updater:
+      enabled: true
+    admissionController:
+      enabled: true
+
+# ==================== COST OPTIMIZATION ====================
+
+costOptimization:
+  # Spot instances for non-critical workloads
+  spotInstances:
+    enabled: true
+    percentage: 30
+    
+    nodeSelector:
+      lifecycle: spot
+    
+    tolerations:
+      - key: "spot"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+  
+  # Resource quotas
+  resourceQuotas:
+    enabled: true
+    limits:
+      cpu: "100"
+      memory: "200Gi"
+      persistentvolumeclaims: "20"
+  
+  # Limit ranges
+  limitRanges:
+    enabled: true
+    limits:
+      - type: Container
+        defaultRequest:
+          cpu: 100m
+          memory: 128Mi
+        default:
+          cpu: 500m
+          memory: 512Mi
+
+# ==================== DEVELOPMENT & STAGING ====================
+
+# Feature flags
+featureFlags:
+  enabled: true
+  service: launchdarkly
+  sdkKey: ""
+  
+  flags:
+    newBookingFlow: true
+    mlRecommendations: true
+    chatbotEnabled: true
+    advancedAnalytics: true
+
+# A/B Testing
+abTesting:
+  enabled: true
+  service: optimizely
+  sdkKey: ""
+  
+  experiments:
+    - name: checkout-flow
+      variations: ["original", "simplified"]
+      traffic: [50, 50]
+
+# ==================== CI/CD INTEGRATION ====================
+
+cicd:
+  # ArgoCD for GitOps
+  argocd:
+    enabled: true
+    namespace: argocd
+    server:
+      ingress:
+        enabled: true
+        hosts:
+          - argocd.spirittours.com
+    
+    applications:
+      - name: spirit-tours-prod
+        source:
+          repoURL: https://github.com/spirittours/platform
+          path: kubernetes/helm/spirit-tours
+          targetRevision: main
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: spirit-tours-prod
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+  
+  # Image scanning
+  imageScanning:
+    enabled: true
+    scanner: trivy
+    failOnCritical: true
+    failOnHigh: false
+
+# ==================== COMPLIANCE & GOVERNANCE ====================
+
+compliance:
+  # Open Policy Agent for policy enforcement
+  opa:
+    enabled: true
+    policies:
+      - requiredLabels
+      - resourceLimits
+      - imagePullPolicy
+      - securityContext
+  
+  # Audit logging
+  auditLogging:
+    enabled: true
+    destination: elasticsearch
+    retention: 90
+
+# ==================== GLOBAL CONFIGURATIONS ====================
+
+# Service Mesh (Istio)
+serviceMesh:
+  enabled: false
+  istio:
+    pilot:
+      enabled: true
+    gateway:
+      enabled: true
+    telemetry:
+      enabled: true
+
+# Certificate Manager
+certManager:
+  enabled: true
+  installCRDs: true
+  email: admin@spirittours.com
+  
+  clusterIssuers:
+    - name: letsencrypt-prod
+      server: https://acme-v02.api.letsencrypt.org/directory
+      email: admin@spirittours.com
+      privateKeySecretRef:
+        name: letsencrypt-prod
+    - name: letsencrypt-staging
+      server: https://acme-staging-v02.api.letsencrypt.org/directory
+      email: admin@spirittours.com
+      privateKeySecretRef:
+        name: letsencrypt-staging
+
+# External DNS for automatic DNS management
+externalDns:
+  enabled: true
+  provider: aws
+  domainFilters:
+    - spirittours.com
+  policy: sync
+  sources:
+    - ingress
+    - service
+
+# Metrics Server
+metricsServer:
+  enabled: true
+  args:
+    - --cert-dir=/tmp
+    - --secure-port=4443
+    - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+    - --kubelet-use-node-status-port
