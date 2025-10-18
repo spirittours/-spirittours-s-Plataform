@@ -56,6 +56,16 @@ from .training_models import (
     AchievementResponse, LeaderboardEntry
 )
 
+from .email_system_models import (
+    EmailProvider, EmailQueue, EmailLog, EmailMetric, EmailTemplate,
+    EmailBounce, EmailWebhook, EmailCampaign, EmailQueueStatus, EmailPriority,
+    EmailProviderType, EmailProviderStatus, EmailEventType, BounceType,
+    EmailTemplateCategory, EmailProviderCreate, EmailProviderUpdate,
+    EmailProviderResponse, EmailQueueCreate, EmailQueueResponse,
+    EmailMetricResponse, EmailTemplateCreate, EmailTemplateResponse,
+    SendEmailRequest, SendEmailResponse, EmailStatistics, ProviderHealthCheck
+)
+
 __all__ = [
     # Base
     'Base',
@@ -110,5 +120,19 @@ __all__ = [
     'LessonResponse', 'ProgressResponse', 'QuizQuestionCreate', 'QuizCreate',
     'QuizAnswerSubmit', 'QuizAttemptSubmit', 'QuizAttemptResponse',
     'CertificationResponse', 'TrainingStatsResponse', 'ConfigurationUpdate',
-    'AchievementResponse', 'LeaderboardEntry'
+    'AchievementResponse', 'LeaderboardEntry',
+    
+    # Email System Models - Database Tables
+    'EmailProvider', 'EmailQueue', 'EmailLog', 'EmailMetric', 'EmailTemplate',
+    'EmailBounce', 'EmailWebhook', 'EmailCampaign',
+    
+    # Email System Models - Enums
+    'EmailQueueStatus', 'EmailPriority', 'EmailProviderType', 'EmailProviderStatus',
+    'EmailEventType', 'BounceType', 'EmailTemplateCategory',
+    
+    # Email System Models - Pydantic Schemas
+    'EmailProviderCreate', 'EmailProviderUpdate', 'EmailProviderResponse',
+    'EmailQueueCreate', 'EmailQueueResponse', 'EmailMetricResponse',
+    'EmailTemplateCreate', 'EmailTemplateResponse', 'SendEmailRequest',
+    'SendEmailResponse', 'EmailStatistics', 'ProviderHealthCheck'
 ]

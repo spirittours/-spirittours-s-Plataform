@@ -26,7 +26,8 @@ celery_app = Celery(
     include=[
         'backend.tasks.social_media_tasks',
         'backend.tasks.analytics_tasks',
-        'backend.tasks.email_tasks'
+        'backend.tasks.email_tasks',
+        'backend.services.email_queue_manager'
     ]
 )
 
@@ -54,6 +55,11 @@ celery_app.conf.update(
         'backend.tasks.email_tasks.send_auto_responses': {'queue': 'email'},
         'backend.tasks.email_tasks.check_sla_breaches': {'queue': 'email'},
         'backend.tasks.email_tasks.aggregate_daily_analytics': {'queue': 'email'},
+        # Email Queue System (Priority-based queues)
+        'send_email_task': {'queue': 'email_normal'},  # Will be overridden by priority
+        'process_scheduled_emails': {'queue': 'email'},
+        'process_retry_emails': {'queue': 'email'},
+        'cleanup_old_emails': {'queue': 'email'},
     },
     
     # Worker settings
@@ -110,6 +116,19 @@ celery_app.conf.update(
         'aggregate-email-analytics-daily': {
             'task': 'backend.tasks.email_tasks.aggregate_daily_analytics',
             'schedule': crontab(hour=1, minute=0),  # Daily at 1 AM
+        },
+        # Email Queue System - Scheduled tasks
+        'process-scheduled-emails-every-minute': {
+            'task': 'process_scheduled_emails',
+            'schedule': timedelta(minutes=1),
+        },
+        'process-retry-emails-every-5min': {
+            'task': 'process_retry_emails',
+            'schedule': timedelta(minutes=5),
+        },
+        'cleanup-old-emails-daily': {
+            'task': 'cleanup_old_emails',
+            'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
         },
     },
 )
