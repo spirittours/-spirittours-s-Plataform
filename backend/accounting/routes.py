@@ -516,3 +516,310 @@ async def health_check():
         "service": "accounting",
         "version": "1.0.0"
     }
+
+
+# ============================================================================
+# DASHBOARD AVANZADO
+# ============================================================================
+
+@router.get("/dashboard/kpis")
+async def get_dashboard_kpis(
+    period: str = Query("month", description="Período: today, week, month, quarter, year")
+):
+    """
+    Obtener KPIs financieros del dashboard.
+    
+    Incluye: total facturado, total recibido, saldo pendiente, tasa de pago, etc.
+    """
+    from .dashboard_service import get_dashboard_service, TimePeriod
+    
+    service = get_dashboard_service()
+    period_enum = TimePeriod(period)
+    kpis = await service.get_kpis(period_enum)
+    
+    return kpis
+
+
+@router.get("/dashboard/revenue-chart")
+async def get_revenue_chart(
+    period: str = Query("year", description="Período del gráfico"),
+    chart_type: str = Query("line", description="Tipo: line, bar, area")
+):
+    """
+    Obtener datos para gráfico de ingresos mensuales.
+    
+    Retorna datos formateados para Chart.js o similar.
+    """
+    from .dashboard_service import get_dashboard_service, TimePeriod, ChartType
+    
+    service = get_dashboard_service()
+    chart_data = await service.get_revenue_chart(
+        TimePeriod(period),
+        ChartType(chart_type)
+    )
+    
+    return chart_data
+
+
+@router.get("/dashboard/payment-methods-chart")
+async def get_payment_methods_chart(
+    period: str = Query("month", description="Período del análisis")
+):
+    """
+    Obtener distribución de métodos de pago.
+    
+    Retorna gráfico tipo donut/pie con desglose por método.
+    """
+    from .dashboard_service import get_dashboard_service, TimePeriod
+    
+    service = get_dashboard_service()
+    chart_data = await service.get_payment_methods_chart(TimePeriod(period))
+    
+    return chart_data
+
+
+@router.get("/dashboard/cash-flow-projection")
+async def get_cash_flow_projection(
+    months_ahead: int = Query(3, ge=1, le=12, description="Meses a proyectar")
+):
+    """
+    Obtener proyección de flujo de caja.
+    
+    Proyecta las entradas esperadas basadas en facturas pendientes.
+    """
+    from .dashboard_service import get_dashboard_service
+    
+    service = get_dashboard_service()
+    projection = await service.get_cash_flow_projection(months_ahead)
+    
+    return projection
+
+
+@router.get("/dashboard/aging-report")
+async def get_aging_report():
+    """
+    Obtener reporte de antigüedad de cuentas por cobrar.
+    
+    Clasifica facturas pendientes por días vencidos:
+    - Corriente (0-30 días)
+    - 31-60 días
+    - 61-90 días
+    - Más de 90 días
+    """
+    from .dashboard_service import get_dashboard_service
+    
+    service = get_dashboard_service()
+    report = await service.get_aging_report()
+    
+    return report
+
+
+@router.get("/dashboard/alerts")
+async def get_dashboard_alerts():
+    """
+    Obtener alertas financieras automáticas.
+    
+    Incluye:
+    - Facturas vencidas
+    - Facturas próximas a vencer
+    - Baja tasa de pago
+    """
+    from .dashboard_service import get_dashboard_service
+    
+    service = get_dashboard_service()
+    alerts = await service.get_alerts()
+    
+    return {"alerts": alerts}
+
+
+# ============================================================================
+# RECONCILIACIÓN FINANCIERA
+# ============================================================================
+
+@router.post("/reconciliation/auto")
+async def auto_reconcile(
+    from_date: Optional[date] = Query(None, description="Fecha desde"),
+    to_date: Optional[date] = Query(None, description="Fecha hasta"),
+    strategies: Optional[List[str]] = Query(
+        None,
+        description="Estrategias: invoice_number, exact_amount, customer_date"
+    )
+):
+    """
+    Ejecutar reconciliación automática de recibos con facturas.
+    
+    Utiliza múltiples estrategias de matching para emparejar
+    recibos con sus facturas correspondientes.
+    """
+    from .reconciliation_service import get_reconciliation_service, MatchingStrategy
+    
+    service = get_reconciliation_service()
+    
+    strategy_enums = None
+    if strategies:
+        strategy_enums = [MatchingStrategy(s) for s in strategies]
+    
+    result = await service.auto_reconcile(from_date, to_date, strategy_enums)
+    
+    return result
+
+
+@router.post("/reconciliation/invoice/{invoice_number}")
+async def reconcile_invoice(
+    invoice_number: str = Path(..., description="Número de factura")
+):
+    """
+    Reconciliar factura específica con sus recibos.
+    
+    Retorna el estado de reconciliación y balance pendiente.
+    """
+    from .reconciliation_service import get_reconciliation_service
+    
+    try:
+        service = get_reconciliation_service()
+        result = await service.reconcile_invoice(invoice_number)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/reconciliation/accounts-receivable")
+async def get_accounts_receivable_report():
+    """
+    Obtener reporte completo de cuentas por cobrar.
+    
+    Agrupa por cliente con detalles de facturas pendientes.
+    """
+    from .reconciliation_service import get_reconciliation_service
+    
+    service = get_reconciliation_service()
+    report = await service.get_accounts_receivable_report()
+    
+    return report
+
+
+@router.get("/reconciliation/discrepancies")
+async def get_discrepancies_report():
+    """
+    Identificar discrepancias en pagos.
+    
+    Lista facturas con sobrepagos o pagos insuficientes.
+    """
+    from .reconciliation_service import get_reconciliation_service
+    
+    service = get_reconciliation_service()
+    discrepancies = await service.get_discrepancies_report()
+    
+    return {"discrepancies": discrepancies}
+
+
+@router.get("/reconciliation/suggest/{receipt_number}")
+async def suggest_invoice_matches(
+    receipt_number: str = Path(..., description="Número de recibo")
+):
+    """
+    Sugerir facturas para emparejar con un recibo.
+    
+    Retorna lista de sugerencias ordenadas por score de confianza.
+    """
+    from .reconciliation_service import get_reconciliation_service
+    
+    try:
+        service = get_reconciliation_service()
+        suggestions = await service.suggest_matches(receipt_number)
+        return {"suggestions": suggestions}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+# ============================================================================
+# REPORTES FINANCIEROS
+# ============================================================================
+
+@router.get("/reports/balance-sheet")
+async def get_balance_sheet(
+    as_of_date: Optional[date] = Query(None, description="Fecha del balance")
+):
+    """
+    Generar Balance General (Balance Sheet).
+    
+    Muestra activos, pasivos y patrimonio a una fecha específica.
+    """
+    from .financial_reports_service import get_financial_reports_service
+    
+    service = get_financial_reports_service()
+    report = await service.generate_balance_sheet(as_of_date)
+    
+    return report
+
+
+@router.get("/reports/profit-and-loss")
+async def get_profit_and_loss(
+    from_date: date = Query(..., description="Fecha inicio"),
+    to_date: date = Query(..., description="Fecha fin")
+):
+    """
+    Generar Estado de Resultados (Profit & Loss).
+    
+    Muestra ingresos, gastos y resultado neto del período.
+    """
+    from .financial_reports_service import get_financial_reports_service
+    
+    service = get_financial_reports_service()
+    report = await service.generate_profit_and_loss(from_date, to_date)
+    
+    return report
+
+
+@router.get("/reports/cash-flow")
+async def get_cash_flow_statement(
+    from_date: date = Query(..., description="Fecha inicio"),
+    to_date: date = Query(..., description="Fecha fin")
+):
+    """
+    Generar Estado de Flujo de Caja (Cash Flow Statement).
+    
+    Muestra entradas y salidas de efectivo por actividad.
+    """
+    from .financial_reports_service import get_financial_reports_service
+    
+    service = get_financial_reports_service()
+    report = await service.generate_cash_flow_statement(from_date, to_date)
+    
+    return report
+
+
+@router.get("/reports/vat-book")
+async def get_vat_book(
+    from_date: date = Query(..., description="Fecha inicio"),
+    to_date: date = Query(..., description="Fecha fin")
+):
+    """
+    Generar Libro de IVA (VAT Book).
+    
+    Reporte fiscal con desglose completo de IVA por tasa.
+    """
+    from .financial_reports_service import get_financial_reports_service
+    
+    service = get_financial_reports_service()
+    report = await service.generate_vat_book(from_date, to_date)
+    
+    return report
+
+
+@router.get("/reports/modelo-303")
+async def get_modelo_303(
+    quarter: int = Query(..., ge=1, le=4, description="Trimestre (1-4)"),
+    year: int = Query(..., ge=2000, le=2100, description="Año")
+):
+    """
+    Generar datos para Modelo 303 (IVA trimestral España).
+    
+    Calcula IVA repercutido, IVA soportado y resultado.
+    """
+    from .financial_reports_service import get_financial_reports_service
+    
+    service = get_financial_reports_service()
+    report = await service.generate_modelo_303(quarter, year)
+    
+    return report

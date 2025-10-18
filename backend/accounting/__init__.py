@@ -39,6 +39,18 @@ from .digital_signature_service import (
     initialize_signature_service
 )
 from .pdf_generator import PDFGenerator, get_pdf_generator
+from .dashboard_service import (
+    AccountingDashboardService,
+    get_dashboard_service
+)
+from .reconciliation_service import (
+    ReconciliationService,
+    get_reconciliation_service
+)
+from .financial_reports_service import (
+    FinancialReportsService,
+    get_financial_reports_service
+)
 
 __all__ = [
     # Models
@@ -59,12 +71,18 @@ __all__ = [
     "ReceiptService",
     "DigitalSignatureService",
     "PDFGenerator",
+    "AccountingDashboardService",
+    "ReconciliationService",
+    "FinancialReportsService",
     
     # Service getters
     "get_invoice_service",
     "get_receipt_service",
     "get_signature_service",
     "get_pdf_generator",
+    "get_dashboard_service",
+    "get_reconciliation_service",
+    "get_financial_reports_service",
     
     # Service initializers
     "initialize_invoice_service",
