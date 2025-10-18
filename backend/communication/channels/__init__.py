@@ -15,8 +15,14 @@ Conectores para diferentes canales de comunicación:
 
 from .base_connector import BaseChannelConnector
 from .whatsapp_connector import WhatsAppConnector
+from .telegram_connector import TelegramConnector
+from .facebook_connector import FacebookMessengerConnector
+from .instagram_connector import InstagramConnector
 
 __all__ = [
     "BaseChannelConnector",
     "WhatsAppConnector",
+    "TelegramConnector",
+    "FacebookMessengerConnector",
+    "InstagramConnector",
 ]
