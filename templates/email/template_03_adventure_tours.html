@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - Aventura Extrema</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+        /* Header con imagen de fondo */
+        .header {
+            background: linear-gradient(135deg, #c62828 0%, #d84315 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><path fill="%23ffffff" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,165.3C384,171,480,149,576,133.3C672,117,768,107,864,122.7C960,139,1056,181,1152,186.7L1200,192L1200,400L1152,400C1056,400,960,400,864,400C768,400,672,400,576,400C480,400,384,400,288,400C192,400,96,400,48,400L0,400Z"></path></svg>');
+            background-size: cover;
+            background-position: bottom;
+        }
+        .header h1 {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header .tagline {
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        /* Hero Image */
+        .hero-image {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            display: block;
+        }
+        /* Content Area */
+        .content {
+            padding: 40px 30px;
+        }
+        .adventure-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #c62828 0%, #d84315 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+        .main-title {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .description {
+            font-size: 16px;
+            color: #546e7a;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        /* Activities Grid */
+        .activities-grid {
+            display: table;
+            width: 100%;
+            margin: 30px 0;
+        }
+        .activity-item {
+            display: table-cell;
+            width: 50%;
+            padding: 15px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .activity-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #c62828 0%, #d84315 100%);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+        .activity-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .activity-level {
+            font-size: 12px;
+            color: #d84315;
+            font-weight: 600;
+        }
+        /* Price Box */
+        .price-box {
+            background: linear-gradient(135deg, #263238 0%, #37474f 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .price-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        .price-amount {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        .price-details {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        /* CTA Button */
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #c62828 0%, #d84315 100%);
+            color: white;
+            padding: 18px 50px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(198, 40, 40, 0.3);
+            transition: all 0.3s ease;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(198, 40, 40, 0.4);
+        }
+        /* Included Features */
+        .included-section {
+            background-color: #fafafa;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        .included-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .included-list {
+            list-style: none;
+        }
+        .included-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+            color: #546e7a;
+        }
+        .included-list li:last-child {
+            border-bottom: none;
+        }
+        .included-list li:before {
+            content: "✓";
+            color: #d84315;
+            font-weight: 900;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        /* Safety Notice */
+        .safety-notice {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .safety-notice h3 {
+            color: #e65100;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .safety-notice p {
+            font-size: 14px;
+            color: #5d4037;
+            line-height: 1.6;
+        }
+        /* Footer */
+        .footer {
+            background-color: #263238;
+            color: #b0bec5;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-links a {
+            color: #d84315;
+            text-decoration: none;
+            margin: 0 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .unsubscribe {
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        .unsubscribe a {
+            color: #78909c;
+            text-decoration: underline;
+        }
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .header h1 {
+                font-size: 28px;
+            }
+            .hero-image {
+                height: 250px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .activity-item {
+                display: block;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            .price-amount {
+                font-size: 36px;
+            }
+            .cta-button {
+                padding: 15px 40px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>AVENTURA EXTREMA</h1>
+            <div class="tagline">Desafía tus límites</div>
+        </div>
+
+        <!-- Hero Image -->
+        <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+
+        <!-- Content -->
+        <div class="content">
+            <span class="adventure-badge">🏔️ Aventura</span>
+            
+            <h2 class="main-title">{{ destination_name }}</h2>
+            
+            <p class="description">
+                {{ description }}
+            </p>
+
+            <!-- Activities Grid -->
+            <div class="activities-grid">
+                <div class="activity-item">
+                    <div class="activity-icon">🧗</div>
+                    <div class="activity-name">Escalada</div>
+                    <div class="activity-level">Nivel: Intermedio</div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">🚵</div>
+                    <div class="activity-name">Mountain Bike</div>
+                    <div class="activity-level">Nivel: Avanzado</div>
+                </div>
+            </div>
+            <div class="activities-grid">
+                <div class="activity-item">
+                    <div class="activity-icon">🏞️</div>
+                    <div class="activity-name">Trekking</div>
+                    <div class="activity-level">Nivel: Moderado</div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">🪂</div>
+                    <div class="activity-name">Parapente</div>
+                    <div class="activity-level">Nivel: Todos</div>
+                </div>
+            </div>
+
+            <!-- Price Box -->
+            <div class="price-box">
+                <div class="price-label">Desde</div>
+                <div class="price-amount">{{ price }}</div>
+                <div class="price-details">{{ duration }} | Todo Incluido</div>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Reservar Ahora</a>
+            </div>
+
+            <!-- Included Section -->
+            <div class="included-section">
+                <h3 class="included-title">✓ Incluido en tu aventura</h3>
+                <ul class="included-list">
+                    <li>Guía profesional certificado</li>
+                    <li>Todo el equipo de seguridad</li>
+                    <li>Seguro de aventura completo</li>
+                    <li>Transporte ida y vuelta</li>
+                    <li>Alimentación durante actividades</li>
+                    <li>Alojamiento tipo camping/refugio</li>
+                    <li>Briefing de seguridad previo</li>
+                    <li>Fotos y videos de la experiencia</li>
+                </ul>
+            </div>
+
+            <!-- Safety Notice -->
+            <div class="safety-notice">
+                <h3>⚠️ Requisitos de Seguridad</h3>
+                <p>
+                    Esta experiencia requiere un nivel básico de condición física. 
+                    Certificado médico necesario para actividades extremas. 
+                    Edad mínima: 16 años. Equipo de seguridad certificado incluido.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_address }}</p>
+            <p>Tel: {{ company_phone }} | Email: {{ company_email }}</p>
+            
+            <div class="social-links">
+                <a href="{{ facebook_link }}">Facebook</a> |
+                <a href="{{ instagram_link }}">Instagram</a> |
+                <a href="{{ twitter_link }}">Twitter</a>
+            </div>
+            
+            <div class="unsubscribe">
+                <p>¿No quieres recibir más emails? <a href="{{ unsubscribe_link }}">Darse de baja</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

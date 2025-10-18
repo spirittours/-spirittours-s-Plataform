@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tour_name }} - Multi-Destino</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; color: #5d4037; background: #efebe9; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #6d4c41 0%, #4e342e 100%); color: white; padding: 40px 30px; text-align: center; }
+        .header h1 { font-size: 36px; font-weight: 900; text-transform: uppercase; }
+        .hero-image { width: 100%; height: 300px; object-fit: cover; }
+        .content { padding: 40px 30px; }
+        .multi-badge { display: inline-block; background: #6d4c41; color: white; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; }
+        .main-title { font-size: 28px; color: #5d4037; margin-bottom: 20px; font-weight: 700; }
+        .description { font-size: 16px; color: #8d6e63; line-height: 1.8; margin-bottom: 30px; }
+        .destinations { background: linear-gradient(135deg, #d7ccc8 0%, #bcaaa4 100%); padding: 30px; margin: 30px 0; border-radius: 12px; }
+        .destination-item { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; border-left: 5px solid #6d4c41; }
+        .dest-number { display: inline-block; background: #6d4c41; color: white; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; font-weight: 900; margin-right: 10px; }
+        .dest-name { font-size: 18px; font-weight: 700; color: #5d4037; margin-bottom: 5px; }
+        .dest-nights { font-size: 13px; color: #8d6e63; margin-bottom: 8px; }
+        .dest-highlights { font-size: 13px; color: #a1887f; }
+        .price-box { background: linear-gradient(135deg, #6d4c41 0%, #4e342e 100%); color: white; padding: 35px; border-radius: 12px; text-align: center; margin: 30px 0; }
+        .price-amount { font-size: 50px; font-weight: 900; }
+        .all-included { background: #ffb74d; color: #5d4037; padding: 12px; border-radius: 8px; margin-top: 15px; font-weight: 900; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #6d4c41 0%, #4e342e 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 15px rgba(109, 76, 65, 0.3); }
+        .footer { background-color: #4e342e; color: #bcaaa4; padding: 30px; text-align: center; font-size: 13px; }
+        @media only screen and (max-width: 600px) { .hero-image { height: 250px; } }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header"><h1>🌎 MULTI-DESTINO</h1></div>
+        <img src="{{ hero_image }}" alt="{{ tour_name }}" class="hero-image">
+        <div class="content">
+            <span class="multi-badge">✈️ Circuito</span>
+            <h2 class="main-title">{{ tour_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="destinations">
+                <div class="destination-item">
+                    <span class="dest-number">1</span>
+                    <div class="dest-name">{{ destination_1 }}</div>
+                    <div class="dest-nights">🌙 {{ nights_1 }} noches</div>
+                    <div class="dest-highlights">{{ highlights_1 }}</div>
+                </div>
+                <div class="destination-item">
+                    <span class="dest-number">2</span>
+                    <div class="dest-name">{{ destination_2 }}</div>
+                    <div class="dest-nights">🌙 {{ nights_2 }} noches</div>
+                    <div class="dest-highlights">{{ highlights_2 }}</div>
+                </div>
+                <div class="destination-item">
+                    <span class="dest-number">3</span>
+                    <div class="dest-name">{{ destination_3 }}</div>
+                    <div class="dest-nights">🌙 {{ nights_3 }} noches</div>
+                    <div class="dest-highlights">{{ highlights_3 }}</div>
+                </div>
+            </div>
+            <div class="price-box">
+                <div class="price-amount">{{ price }}</div>
+                <div>{{ total_nights }} noches | {{ total_cities }} ciudades</div>
+                <div class="all-included">✈️ Todos los vuelos incluidos</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Reservar Circuito</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong> | {{ company_phone }}</p>
+            <p style="margin-top: 15px; font-size: 12px;"><a href="{{ unsubscribe_link }}" style="color: #bcaaa4;">Darse de baja</a></p>
+        </div>
+    </div>
+</body>
+</html>

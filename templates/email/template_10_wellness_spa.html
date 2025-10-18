@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - Wellness & Spa</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #2e7d32; background-color: #f1f8e9; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%); color: white; padding: 40px 30px; text-align: center; }
+        .header h1 { font-size: 36px; font-weight: 700; margin-bottom: 10px; letter-spacing: 2px; }
+        .hero-image { width: 100%; height: 350px; object-fit: cover; display: block; }
+        .content { padding: 40px 30px; }
+        .wellness-badge { display: inline-block; background: #66bb6a; color: white; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; }
+        .main-title { font-size: 30px; color: #2e7d32; margin-bottom: 20px; font-weight: 700; }
+        .description { font-size: 16px; color: #388e3c; line-height: 1.8; margin-bottom: 30px; }
+        .spa-treatments { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 30px; margin: 30px 0; border-radius: 12px; }
+        .treatment-item { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #66bb6a; }
+        .treatment-name { font-size: 16px; font-weight: 700; color: #2e7d32; margin-bottom: 5px; }
+        .treatment-desc { font-size: 13px; color: #388e3c; }
+        .price-box { background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%); color: white; padding: 35px; border-radius: 12px; text-align: center; margin: 30px 0; }
+        .price-amount { font-size: 50px; font-weight: 900; margin-bottom: 10px; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 15px rgba(102, 187, 106, 0.3); }
+        .included-list { list-style: none; }
+        .included-list li { padding: 10px 0; border-bottom: 1px solid #c8e6c9; font-size: 14px; color: #388e3c; }
+        .included-list li:before { content: "✓"; color: #66bb6a; font-weight: 900; margin-right: 10px; }
+        .footer { background-color: #2e7d32; color: #a5d6a7; padding: 30px; text-align: center; font-size: 13px; }
+        .social-links a { color: #81c784; text-decoration: none; margin: 0 10px; font-weight: 600; }
+        @media only screen and (max-width: 600px) {
+            .header h1 { font-size: 28px; }
+            .hero-image { height: 250px; }
+            .content { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🧘 WELLNESS & SPA</h1>
+        </div>
+        <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+        <div class="content">
+            <span class="wellness-badge">🌿 Bienestar</span>
+            <h2 class="main-title">{{ destination_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="spa-treatments">
+                <div class="treatment-item">
+                    <div class="treatment-name">💆 Masajes Terapéuticos</div>
+                    <div class="treatment-desc">Relaja cuerpo y mente</div>
+                </div>
+                <div class="treatment-item">
+                    <div class="treatment-name">🧖 Circuito Termal</div>
+                    <div class="treatment-desc">Aguas termales naturales</div>
+                </div>
+                <div class="treatment-item">
+                    <div class="treatment-name">🧘 Yoga & Meditación</div>
+                    <div class="treatment-desc">Clases diarias</div>
+                </div>
+                <div class="treatment-item">
+                    <div class="treatment-name">🥗 Cocina Saludable</div>
+                    <div class="treatment-desc">Menú detox y nutritivo</div>
+                </div>
+            </div>
+            <div class="price-box">
+                <div class="price-amount">{{ price }}</div>
+                <div>{{ duration }} | Programa Wellness Completo</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Reservar Ahora</a>
+            </div>
+            <div style="background-color: #fafafa; padding: 30px; margin: 30px 0; border-radius: 8px;">
+                <ul class="included-list">
+                    <li>Habitación con vista relajante</li>
+                    <li>3 tratamientos spa por día</li>
+                    <li>Circuito termal ilimitado</li>
+                    <li>Clases de yoga y meditación</li>
+                    <li>Alimentación saludable</li>
+                    <li>Consulta nutricional</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_phone }} | {{ company_email }}</p>
+            <div class="social-links">
+                <a href="{{ facebook_link }}">Facebook</a> | <a href="{{ instagram_link }}">Instagram</a>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px;"><a href="{{ unsubscribe_link }}" style="color: #a5d6a7;">Darse de baja</a></p>
+        </div>
+    </div>
+</body>
+</html>

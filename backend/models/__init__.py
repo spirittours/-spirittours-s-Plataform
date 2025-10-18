@@ -32,6 +32,30 @@ from .email_models import (
     SendResponseRequest, CreateEmailTemplateRequest
 )
 
+from .ticketing_models import (
+    Department, Ticket, TicketAssignment, TicketComment, TicketWatcher,
+    TicketHistory, TicketChecklist, TicketReminder, TicketAttachment,
+    TicketEscalation, TicketPriority, TicketStatus, TicketType,
+    EscalationReason, CommentType, TicketCreate, TicketUpdate,
+    TicketResponse, TicketAssignRequest, TicketEscalateRequest,
+    TicketCommentCreate, TicketWatcherAdd, ChecklistItemCreate,
+    TicketStatsResponse, TicketDetailedResponse, ChecklistItemResponse,
+    TicketCommentResponse, DepartmentCreate, DepartmentResponse
+)
+
+from .training_models import (
+    TrainingModule, TrainingLesson, TrainingProgress, TrainingLessonProgress,
+    TrainingQuiz, TrainingQuizQuestion, TrainingQuizAttempt, TrainingCertification,
+    TrainingConfiguration, TrainingReminderSent, TrainingAchievement,
+    TrainingUserAchievement, TrainingUserPoints, ModuleCategory, ContentType,
+    ProgressStatus, QuestionType, CertificationLevel, ReminderType,
+    ModuleCreate, ModuleUpdate, ModuleResponse, LessonCreate, LessonUpdate,
+    LessonResponse, ProgressResponse, QuizQuestionCreate, QuizCreate,
+    QuizAnswerSubmit, QuizAttemptSubmit, QuizAttemptResponse,
+    CertificationResponse, TrainingStatsResponse, ConfigurationUpdate,
+    AchievementResponse, LeaderboardEntry
+)
+
 __all__ = [
     # Base
     'Base',
@@ -59,5 +83,32 @@ __all__ = [
     'EmailPriority', 'EmailStatus', 'ResponseType', 'EmailLanguage',
     'EmailAccountResponse', 'EmailMessageResponse', 'EmailClassificationResponse',
     'EmailAnalyticsResponse', 'EmailDashboardResponse', 'ClassifyEmailRequest',
-    'SendResponseRequest', 'CreateEmailTemplateRequest'
+    'SendResponseRequest', 'CreateEmailTemplateRequest',
+    
+    # Ticketing Models
+    'Department', 'Ticket', 'TicketAssignment', 'TicketComment', 'TicketWatcher',
+    'TicketHistory', 'TicketChecklist', 'TicketReminder', 'TicketAttachment',
+    'TicketEscalation', 'TicketPriority', 'TicketStatus', 'TicketType',
+    'EscalationReason', 'CommentType', 'TicketCreate', 'TicketUpdate',
+    'TicketResponse', 'TicketAssignRequest', 'TicketEscalateRequest',
+    'TicketCommentCreate', 'TicketWatcherAdd', 'ChecklistItemCreate',
+    'TicketStatsResponse', 'TicketDetailedResponse', 'ChecklistItemResponse',
+    'TicketCommentResponse', 'DepartmentCreate', 'DepartmentResponse',
+    
+    # Training Models - Database Tables
+    'TrainingModule', 'TrainingLesson', 'TrainingProgress', 'TrainingLessonProgress',
+    'TrainingQuiz', 'TrainingQuizQuestion', 'TrainingQuizAttempt', 'TrainingCertification',
+    'TrainingConfiguration', 'TrainingReminderSent', 'TrainingAchievement',
+    'TrainingUserAchievement', 'TrainingUserPoints',
+    
+    # Training Models - Enums
+    'ModuleCategory', 'ContentType', 'ProgressStatus', 'QuestionType',
+    'CertificationLevel', 'ReminderType',
+    
+    # Training Models - Pydantic Schemas
+    'ModuleCreate', 'ModuleUpdate', 'ModuleResponse', 'LessonCreate', 'LessonUpdate',
+    'LessonResponse', 'ProgressResponse', 'QuizQuestionCreate', 'QuizCreate',
+    'QuizAnswerSubmit', 'QuizAttemptSubmit', 'QuizAttemptResponse',
+    'CertificationResponse', 'TrainingStatsResponse', 'ConfigurationUpdate',
+    'AchievementResponse', 'LeaderboardEntry'
 ]

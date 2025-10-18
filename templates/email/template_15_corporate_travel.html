@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ event_name }} - Viajes Corporativos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; color: #263238; background: #eceff1; }
+        .email-container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #37474f 0%, #263238 100%); color: white; padding: 35px 30px; text-align: center; }
+        .header h1 { font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+        .hero-image { width: 100%; height: 300px; object-fit: cover; }
+        .content { padding: 40px 30px; }
+        .corporate-badge { display: inline-block; background: #37474f; color: white; padding: 8px 18px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; }
+        .main-title { font-size: 26px; color: #263238; margin-bottom: 20px; font-weight: 700; }
+        .description { font-size: 15px; color: #546e7a; line-height: 1.8; margin-bottom: 30px; }
+        .corp-features { background: linear-gradient(135deg, #cfd8dc 0%, #b0bec5 100%); padding: 30px; margin: 30px 0; border-radius: 8px; }
+        .feature-item { background: white; padding: 15px; margin-bottom: 10px; border-radius: 4px; display: flex; align-items: center; }
+        .feature-icon { font-size: 24px; margin-right: 15px; }
+        .feature-text { font-size: 14px; color: #37474f; font-weight: 600; }
+        .price-box { background: linear-gradient(135deg, #37474f 0%, #263238 100%); color: white; padding: 35px; border-radius: 8px; text-align: center; margin: 30px 0; }
+        .price-amount { font-size: 48px; font-weight: 900; }
+        .price-note { font-size: 13px; margin-top: 10px; opacity: 0.9; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #37474f 0%, #263238 100%); color: white; padding: 16px 45px; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .footer { background-color: #263238; color: #90a4ae; padding: 30px; text-align: center; font-size: 13px; }
+        @media only screen and (max-width: 600px) { .hero-image { height: 250px; } }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header"><h1>💼 CORPORATIVO</h1></div>
+        <img src="{{ hero_image }}" alt="{{ event_name }}" class="hero-image">
+        <div class="content">
+            <span class="corporate-badge">🏢 Empresas</span>
+            <h2 class="main-title">{{ event_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="corp-features">
+                <div class="feature-item"><span class="feature-icon">🏨</span><span class="feature-text">Hoteles business con salas de reuniones</span></div>
+                <div class="feature-item"><span class="feature-icon">🚗</span><span class="feature-text">Traslados ejecutivos privados</span></div>
+                <div class="feature-item"><span class="feature-icon">🍽️</span><span class="feature-text">Catering para eventos corporativos</span></div>
+                <div class="feature-item"><span class="feature-icon">📊</span><span class="feature-text">Coordinación completa del evento</span></div>
+                <div class="feature-item"><span class="feature-icon">💻</span><span class="feature-text">Soporte técnico audiovisual</span></div>
+                <div class="feature-item"><span class="feature-icon">📄</span><span class="feature-text">Facturación corporativa</span></div>
+            </div>
+            <div class="price-box">
+                <div class="price-amount">{{ price }}</div>
+                <div>{{ duration }} | Paquete Corporativo</div>
+                <div class="price-note">Cotización personalizada según necesidades</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Solicitar Propuesta</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong> | Dept. Corporativo</p>
+            <p>{{ company_phone }} | {{ company_email }}</p>
+            <p style="margin-top: 15px; font-size: 12px;"><a href="{{ unsubscribe_link }}" style="color: #90a4ae;">Darse de baja</a></p>
+        </div>
+    </div>
+</body>
+</html>

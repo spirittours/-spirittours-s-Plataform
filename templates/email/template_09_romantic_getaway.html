@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - Escapada Romántica</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Georgia', serif; line-height: 1.6; color: #4a0e4e; background-color: #fff0f5; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #c2185b 0%, #f06292 50%, #ec407a 100%); color: white; padding: 40px 30px; text-align: center; }
+        .header h1 { font-size: 38px; font-weight: 700; margin-bottom: 10px; font-style: italic; letter-spacing: 2px; }
+        .header .tagline { font-size: 16px; font-weight: 300; letter-spacing: 3px; }
+        .hero-image { width: 100%; height: 380px; object-fit: cover; display: block; filter: brightness(1.05) saturate(1.1); }
+        .content { padding: 40px 30px; }
+        .romantic-badge { display: inline-block; background: linear-gradient(135deg, #c2185b 0%, #f06292 100%); color: white; padding: 8px 20px; border-radius: 25px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+        .main-title { font-size: 32px; color: #4a0e4e; margin-bottom: 20px; font-weight: 700; font-style: italic; }
+        .description { font-size: 16px; color: #6a1b9a; line-height: 1.9; margin-bottom: 30px; text-align: justify; }
+        .romantic-features { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%); padding: 30px; margin: 30px 0; border-radius: 15px; }
+        .feature-item { padding: 15px 0; border-bottom: 1px dashed #f06292; }
+        .feature-item:last-child { border-bottom: none; }
+        .feature-icon { font-size: 24px; margin-right: 10px; }
+        .feature-text { font-size: 15px; color: #6a1b9a; font-weight: 600; }
+        .price-box { background: linear-gradient(135deg, #c2185b 0%, #f06292 100%); color: white; padding: 40px; border-radius: 20px; text-align: center; margin: 30px 0; box-shadow: 0 8px 25px rgba(194, 24, 91, 0.3); }
+        .price-label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; opacity: 0.95; }
+        .price-amount { font-size: 52px; font-weight: 900; margin-bottom: 10px; }
+        .price-details { font-size: 15px; opacity: 0.95; font-style: italic; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #c2185b 0%, #f06292 100%); color: white; padding: 20px 55px; text-decoration: none; border-radius: 50px; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 20px rgba(194, 24, 91, 0.4); }
+        .included-section { background-color: #fafafa; padding: 30px; margin: 30px 0; border-radius: 15px; }
+        .included-title { font-size: 18px; font-weight: 700; color: #4a0e4e; margin-bottom: 20px; text-align: center; }
+        .included-list { list-style: none; }
+        .included-list li { padding: 10px 0; border-bottom: 1px solid #f8bbd0; font-size: 14px; color: #6a1b9a; }
+        .included-list li:last-child { border-bottom: none; }
+        .included-list li:before { content: "💕"; margin-right: 10px; font-size: 14px; }
+        .footer { background: linear-gradient(135deg, #4a0e4e 0%, #6a1b9a 100%); color: #f8bbd0; padding: 30px; text-align: center; font-size: 13px; }
+        .footer strong { color: white; }
+        .social-links { margin: 20px 0; }
+        .social-links a { color: #f06292; text-decoration: none; margin: 0 10px; font-weight: 600; }
+        .unsubscribe { margin-top: 20px; font-size: 12px; }
+        .unsubscribe a { color: #f8bbd0; text-decoration: underline; }
+        @media only screen and (max-width: 600px) {
+            .header h1 { font-size: 30px; }
+            .hero-image { height: 280px; }
+            .content { padding: 30px 20px; }
+            .price-amount { font-size: 40px; }
+            .cta-button { padding: 16px 45px; font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>💑 Romance</h1>
+            <div class="tagline">Para dos</div>
+        </div>
+        <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+        <div class="content">
+            <span class="romantic-badge">💖 Romántico</span>
+            <h2 class="main-title">{{ destination_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="romantic-features">
+                <div class="feature-item">
+                    <span class="feature-icon">🥂</span>
+                    <span class="feature-text">Cena romántica a la luz de las velas</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💐</span>
+                    <span class="feature-text">Decoración especial con pétalos de rosa</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🛁</span>
+                    <span class="feature-text">Jacuzzi privado con vista panorámica</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💆</span>
+                    <span class="feature-text">Masaje de pareja en el spa</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🌅</span>
+                    <span class="feature-text">Desayuno en la habitación</span>
+                </div>
+            </div>
+            <div class="price-box">
+                <div class="price-label">Desde</div>
+                <div class="price-amount">{{ price }}</div>
+                <div class="price-details">{{ duration }} | Solo para parejas</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">Reservar Ahora</a>
+            </div>
+            <div class="included-section">
+                <h3 class="included-title">💕 Tu escapada romántica incluye</h3>
+                <ul class="included-list">
+                    <li>Suite con vista espectacular</li>
+                    <li>Cena romántica con champagne</li>
+                    <li>Masaje de pareja en spa</li>
+                    <li>Desayuno en la habitación</li>
+                    <li>Decoración especial</li>
+                    <li>Botella de vino de bienvenida</li>
+                    <li>Late check-out cortesía</li>
+                    <li>Fotografía profesional</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_address }}</p>
+            <p>Tel: {{ company_phone }} | Email: {{ company_email }}</p>
+            <div class="social-links">
+                <a href="{{ facebook_link }}">Facebook</a> |
+                <a href="{{ instagram_link }}">Instagram</a> |
+                <a href="{{ twitter_link }}">Twitter</a>
+            </div>
+            <div class="unsubscribe">
+                <p>¿No quieres recibir más emails? <a href="{{ unsubscribe_link }}">Darse de baja</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ destination_name }} - ÚLTIMA HORA</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial Black', sans-serif; line-height: 1.6; color: #212121; background-color: #ffeb3b; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; overflow: hidden; border: 5px solid #ff5722; }
+        .header { background: linear-gradient(135deg, #ff5722 0%, #ff9800 100%); color: white; padding: 20px 30px; text-align: center; position: relative; }
+        .urgent-banner { background: #d32f2f; color: white; padding: 10px; text-align: center; font-size: 14px; font-weight: 900; letter-spacing: 2px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .header h1 { font-size: 42px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 3px; text-shadow: 3px 3px 6px rgba(0,0,0,0.3); }
+        .header .tagline { font-size: 18px; font-weight: 700; letter-spacing: 2px; }
+        .countdown { background: #212121; color: #ffeb3b; padding: 20px; text-align: center; font-size: 24px; font-weight: 900; }
+        .hero-image { width: 100%; height: 300px; object-fit: cover; display: block; }
+        .content { padding: 40px 30px; }
+        .discount-badge { display: inline-block; background: linear-gradient(135deg, #d32f2f 0%, #ff5722 100%); color: white; padding: 15px 30px; border-radius: 50px; font-size: 28px; font-weight: 900; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.5); transform: rotate(-5deg); }
+        .main-title { font-size: 32px; color: #d32f2f; margin-bottom: 20px; font-weight: 900; text-transform: uppercase; }
+        .description { font-size: 16px; color: #424242; line-height: 1.8; margin-bottom: 30px; }
+        .price-comparison { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 30px; margin: 30px 0; border-radius: 12px; text-align: center; }
+        .old-price { font-size: 24px; color: #757575; text-decoration: line-through; margin-bottom: 10px; }
+        .new-price { font-size: 56px; font-weight: 900; color: #d32f2f; margin-bottom: 10px; }
+        .savings { font-size: 18px; color: #ff5722; font-weight: 700; }
+        .urgency-box { background: #ffebee; border: 3px dashed #d32f2f; padding: 25px; margin: 30px 0; border-radius: 12px; text-align: center; }
+        .urgency-title { font-size: 20px; font-weight: 900; color: #d32f2f; margin-bottom: 10px; text-transform: uppercase; }
+        .urgency-text { font-size: 16px; color: #424242; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #d32f2f 0%, #ff5722 100%); color: white; padding: 22px 60px; text-decoration: none; border-radius: 50px; font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4); animation: shake 0.5s infinite; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .included-section { background-color: #fafafa; padding: 30px; margin: 30px 0; border-radius: 8px; }
+        .included-title { font-size: 18px; font-weight: 700; color: #212121; margin-bottom: 20px; text-align: center; }
+        .included-list { list-style: none; }
+        .included-list li { padding: 10px 0; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #424242; }
+        .included-list li:last-child { border-bottom: none; }
+        .included-list li:before { content: "✓"; color: #ff5722; font-weight: 900; margin-right: 10px; font-size: 16px; }
+        .footer { background-color: #212121; color: #9e9e9e; padding: 30px; text-align: center; font-size: 13px; }
+        .footer strong { color: white; }
+        .social-links { margin: 20px 0; }
+        .social-links a { color: #ff5722; text-decoration: none; margin: 0 10px; font-weight: 600; }
+        .unsubscribe { margin-top: 20px; font-size: 12px; }
+        .unsubscribe a { color: #9e9e9e; text-decoration: underline; }
+        @media only screen and (max-width: 600px) {
+            .header h1 { font-size: 32px; }
+            .hero-image { height: 220px; }
+            .content { padding: 30px 20px; }
+            .discount-badge { font-size: 22px; padding: 12px 25px; }
+            .new-price { font-size: 42px; }
+            .cta-button { padding: 18px 45px; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="urgent-banner">🚨 OFERTA URGENTE - PLAZAS LIMITADAS 🚨</div>
+        <div class="header">
+            <h1>ÚLTIMA HORA</h1>
+            <div class="tagline">¡Aprovecha AHORA!</div>
+        </div>
+        <div class="countdown">⏰ QUEDAN: 48 HORAS</div>
+        <img src="{{ hero_image }}" alt="{{ destination_name }}" class="hero-image">
+        <div class="content">
+            <div style="text-align: center;">
+                <span class="discount-badge">-{{ discount }}%</span>
+            </div>
+            <h2 class="main-title">{{ destination_name }}</h2>
+            <p class="description">{{ description }}</p>
+            <div class="price-comparison">
+                <div class="old-price">Antes: {{ old_price }}</div>
+                <div class="new-price">{{ price }}</div>
+                <div class="savings">🎉 AHORRAS {{ savings }}</div>
+            </div>
+            <div class="urgency-box">
+                <div class="urgency-title">⚠️ Solo quedan {{ remaining_spots }} plazas</div>
+                <div class="urgency-text">Salida: {{ departure_date }} | Esta oferta expira en 48 horas</div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_link }}" class="cta-button">¡RESERVAR YA!</a>
+            </div>
+            <div class="included-section">
+                <h3 class="included-title">✓ Todo incluido en esta oferta</h3>
+                <ul class="included-list">
+                    <li>Vuelos ida y vuelta</li>
+                    <li>Hotel 4★ - {{ duration }}</li>
+                    <li>Todas las comidas</li>
+                    <li>Traslados aeropuerto</li>
+                    <li>Excursiones incluidas</li>
+                    <li>Seguro de viaje</li>
+                    <li>Asistencia 24/7</li>
+                    <li>Sin cargos ocultos</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_address }}</p>
+            <p>Tel: {{ company_phone }} | Email: {{ company_email }}</p>
+            <div class="social-links">
+                <a href="{{ facebook_link }}">Facebook</a> |
+                <a href="{{ instagram_link }}">Instagram</a> |
+                <a href="{{ twitter_link }}">Twitter</a>
+            </div>
+            <div class="unsubscribe">
+                <p>¿No quieres recibir más emails? <a href="{{ unsubscribe_link }}">Darse de baja</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
