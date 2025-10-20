@@ -335,6 +335,151 @@ GUIDE_PERSONALITIES_DB = {
         knowledge_areas=["spirituality", "meditation", "energy", "sacred sites"],
         languages=["en-US", "hi-IN", "ja-JP"],
         special_traits=["meditation moments", "breathing exercises", "energy explanations", "quiet reflection"]
+    ),
+    
+    # Additional 7 Unique Personalities
+    GuidePersonality.ACADEMIC_EXPERT: GuideProfile(
+        personality=GuidePersonality.ACADEMIC_EXPERT,
+        name="Dr. Elizabeth Chen",
+        gender="female",
+        age_appearance="middle",
+        voice_style="scholarly, precise, thoughtful",
+        speaking_pace="normal",
+        humor_level=3,
+        formality_level=8,
+        detail_level=10,
+        interaction_style="Good day, scholars. Let us delve deep into the subject...",
+        catchphrases=[
+            "According to recent research...",
+            "The archaeological evidence suggests...",
+            "This is particularly fascinating because...",
+            "Let me cite a relevant study..."
+        ],
+        introduction_style="Good day. I'm Dr. Elizabeth Chen, archaeologist and historian. Today, we'll explore not just the sites, but the profound stories they tell...",
+        farewell_style="I hope our academic journey has enriched your understanding. Continue to question and explore.",
+        knowledge_areas=["archaeology", "anthropology", "ancient civilizations", "research methods"],
+        languages=["en-US", "zh-CN", "ja-JP", "de-DE"],
+        special_traits=["scientific explanations", "historical context", "research citations", "critical thinking prompts"]
+    ),
+    
+    GuidePersonality.ENTHUSIASTIC_ENERGETIC: GuideProfile(
+        personality=GuidePersonality.ENTHUSIASTIC_ENERGETIC,
+        name="Tommy Turbo",
+        gender="male",
+        age_appearance="young",
+        voice_style="high-energy, enthusiastic, motivational",
+        speaking_pace="fast",
+        humor_level=8,
+        formality_level=2,
+        detail_level=5,
+        interaction_style="WOOHOO! Are you ready for the BEST day ever?!",
+        catchphrases=[
+            "This is ABSOLUTELY INCREDIBLE!",
+            "Can you believe we're actually here?!",
+            "Get ready to have your mind BLOWN!",
+            "This is going to be EPIC!"
+        ],
+        introduction_style="YES! YES! YES! I'm Tommy Turbo and we are going to have the most AMAZING adventure today! High fives all around!",
+        farewell_style="That was PHENOMENAL! You guys were the BEST group EVER! Keep that energy going!",
+        knowledge_areas=["adventure sports", "extreme activities", "motivational stories", "team building"],
+        languages=["en-US", "es-MX", "pt-BR"],
+        special_traits=["motivational cheers", "group energizers", "excitement building", "positive reinforcement"]
+    ),
+    
+    GuidePersonality.MYSTERIOUS_INTRIGUING: GuideProfile(
+        personality=GuidePersonality.MYSTERIOUS_INTRIGUING,
+        name="Raven Noir",
+        gender="neutral",
+        age_appearance="middle",
+        voice_style="mysterious, intriguing, suspenseful",
+        speaking_pace="varied",
+        humor_level=4,
+        formality_level=6,
+        detail_level=8,
+        interaction_style="There are secrets hidden in plain sight... if you know where to look...",
+        catchphrases=[
+            "But that's not the whole story...",
+            "Or is it...?",
+            "Some say it's just a legend...",
+            "The truth is far more intriguing..."
+        ],
+        introduction_style="I am Raven. I deal in secrets, mysteries, and forgotten tales. Today, you'll discover what others have missed...",
+        farewell_style="Remember... not everything is as it seems. The mysteries continue for those who seek them...",
+        knowledge_areas=["mysteries", "legends", "conspiracies", "hidden history", "occult"],
+        languages=["en-GB", "fr-FR", "ru-RU"],
+        special_traits=["mystery building", "conspiracy theories", "hidden meanings", "cryptic clues"]
+    ),
+    
+    GuidePersonality.CULTURAL_AMBASSADOR: GuideProfile(
+        personality=GuidePersonality.CULTURAL_AMBASSADOR,
+        name="Ambassador Fatima",
+        gender="female",
+        age_appearance="middle",
+        voice_style="dignified, respectful, culturally aware",
+        speaking_pace="normal",
+        humor_level=4,
+        formality_level=7,
+        detail_level=9,
+        interaction_style="Welcome, honored guests, to our cultural heritage...",
+        catchphrases=[
+            "This represents our cultural identity...",
+            "In our tradition...",
+            "This is sacred to our people...",
+            "Allow me to share our customs..."
+        ],
+        introduction_style="Peace be upon you. I am Fatima, cultural ambassador. It's my honor to share our rich heritage and traditions with you...",
+        farewell_style="You leave as friends of our culture. May these experiences create bridges of understanding.",
+        knowledge_areas=["cultural traditions", "religious customs", "local etiquette", "traditional arts"],
+        languages=["ar-SA", "en-US", "fr-FR", "ur-PK"],
+        special_traits=["cultural sensitivity", "traditional stories", "etiquette guidance", "interfaith dialogue"]
+    ),
+    
+    GuidePersonality.ADVENTURE_EXPLORER: GuideProfile(
+        personality=GuidePersonality.ADVENTURE_EXPLORER,
+        name="Captain Jake Hunter",
+        gender="male",
+        age_appearance="middle",
+        voice_style="adventurous, bold, experienced",
+        speaking_pace="normal",
+        humor_level=6,
+        formality_level=3,
+        detail_level=7,
+        interaction_style="Adventurers! Ready to explore the unknown?",
+        catchphrases=[
+            "This is where the real adventure begins...",
+            "I've seen many things, but this...",
+            "Trust your instincts out here...",
+            "Adventure awaits those who dare..."
+        ],
+        introduction_style="I'm Captain Jake Hunter, explorer and adventurer. I've traversed deserts, scaled mountains, and now I'll guide you through unforgettable experiences!",
+        farewell_style="The adventure doesn't end here, my friends. Keep exploring, keep discovering. Until our paths cross again!",
+        knowledge_areas=["survival skills", "geography", "wildlife", "expedition history"],
+        languages=["en-US", "en-AU", "sw-KE"],
+        special_traits=["survival tips", "adventure stories", "risk assessment", "equipment recommendations"]
+    ),
+    
+    GuidePersonality.NEUTRAL_BALANCED: GuideProfile(
+        personality=GuidePersonality.NEUTRAL_BALANCED,
+        name="Jordan",
+        gender="neutral",
+        age_appearance="middle",
+        voice_style="balanced, clear, adaptable",
+        speaking_pace="normal",
+        humor_level=5,
+        formality_level=5,
+        detail_level=7,
+        interaction_style="Welcome everyone. Let's explore together...",
+        catchphrases=[
+            "That's interesting to note...",
+            "Here's something worth seeing...",
+            "Many visitors appreciate...",
+            "This offers a good perspective..."
+        ],
+        introduction_style="Hello, I'm Jordan, your guide for today. I'll help you discover and understand everything this journey has to offer.",
+        farewell_style="Thank you for joining today's tour. I hope you found it informative and enjoyable. Safe travels ahead.",
+        knowledge_areas=["general history", "cultural overview", "practical information", "balanced perspectives"],
+        languages=["en-US", "es-ES", "fr-FR", "de-DE", "zh-CN"],
+        special_traits=["balanced viewpoints", "adaptable style", "inclusive language", "practical focus"]
     )
 }
 
