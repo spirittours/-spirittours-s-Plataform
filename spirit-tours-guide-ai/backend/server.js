@@ -26,6 +26,8 @@ const AdvancedAnalyticsSystem = require('./advanced-analytics-system');
 const initAnalyticsRouter = require('./analytics-router');
 const BookingPaymentSystem = require('./booking-payment-system');
 const initBookingRouter = require('./booking-router');
+const OfflineSyncSystem = require('./offline-sync-system');
+const initOfflineRouter = require('./offline-router');
 
 // Configuración
 require('dotenv').config();
@@ -73,6 +75,7 @@ const whatsappService = new WhatsAppBusinessService(null); // Can integrate with
 const gamificationSystem = new GamificationSystem();
 const analyticsSystem = new AdvancedAnalyticsSystem();
 const bookingSystem = new BookingPaymentSystem();
+const offlineSystem = new OfflineSyncSystem(null, null); // Will be initialized with db and redis
 
 // Middleware
 app.use(helmet());
@@ -399,6 +402,9 @@ app.use('/api/analytics', initAnalyticsRouter(analyticsSystem));
 // Mount Booking router
 app.use('/api/bookings', initBookingRouter(bookingSystem));
 
+// Mount Offline Sync router
+app.use('/api/offline', initOfflineRouter(offlineSystem));
+
 // ============================================
 // WEBSOCKET EVENTS
 // ============================================
@@ -609,6 +615,27 @@ bookingSystem.on('refund:processed', (data) => {
   logger.info(`Refund processed: ${data.refundId} - $${data.amount}`);
 });
 
+// Event listeners del OfflineSyncSystem
+offlineSystem.on('manifest:generated', (data) => {
+  logger.info(`📦 Offline manifest generated for user ${data.userId}: ${data.totalEntities} entities`);
+});
+
+offlineSystem.on('sync:completed', (data) => {
+  // Notify user about sync completion
+  io.to(`user-${data.userId}`).emit('sync-completed', data);
+  logger.info(`🔄 Sync completed for user ${data.userId}: ${data.processed} processed, ${data.conflicts} conflicts`);
+});
+
+offlineSystem.on('sync:conflict', (data) => {
+  // Notify user about conflict detected
+  io.to(`user-${data.userId}`).emit('sync-conflict', data);
+  logger.warn(`⚠️ Sync conflict detected: ${data.entityType} ${data.entityId}`);
+});
+
+offlineSystem.on('conflict:resolved', (data) => {
+  logger.info(`✅ Conflict resolved: ${data.entityType} ${data.entityId} using ${data.strategy}`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -641,6 +668,7 @@ server.listen(PORT, () => {
   logger.info(`🎮 Gamification System: ACTIVO`);
   logger.info(`📊 Advanced Analytics System: ACTIVO`);
   logger.info(`💳 Booking & Payment System: ACTIVO`);
+  logger.info(`📴 Offline Sync System: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
