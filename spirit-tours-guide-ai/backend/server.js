@@ -24,6 +24,8 @@ const GamificationSystem = require('./gamification-system');
 const initGamificationRouter = require('./gamification-router');
 const AdvancedAnalyticsSystem = require('./advanced-analytics-system');
 const initAnalyticsRouter = require('./analytics-router');
+const BookingPaymentSystem = require('./booking-payment-system');
+const initBookingRouter = require('./booking-router');
 
 // Configuración
 require('dotenv').config();
@@ -70,6 +72,7 @@ const ratingSystem = new RatingFeedbackSystem(aiOrchestrator, null); // null for
 const whatsappService = new WhatsAppBusinessService(null); // Can integrate with notification system later
 const gamificationSystem = new GamificationSystem();
 const analyticsSystem = new AdvancedAnalyticsSystem();
+const bookingSystem = new BookingPaymentSystem();
 
 // Middleware
 app.use(helmet());
@@ -310,6 +313,7 @@ app.get('/api/stats', (req, res) => {
       whatsapp: whatsappService.getStatistics(),
       gamification: gamificationSystem.getStatistics(),
       analytics: analyticsSystem.getStatistics(),
+      bookings: bookingSystem.getStatistics(),
       server: {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
@@ -387,6 +391,13 @@ app.use('/api/gamification', initGamificationRouter(gamificationSystem));
 
 // Mount Analytics router
 app.use('/api/analytics', initAnalyticsRouter(analyticsSystem));
+
+// ============================================
+// BOOKING & PAYMENT API ROUTES
+// ============================================
+
+// Mount Booking router
+app.use('/api/bookings', initBookingRouter(bookingSystem));
 
 // ============================================
 // WEBSOCKET EVENTS
@@ -567,6 +578,37 @@ analyticsSystem.on('alert:created', (data) => {
   logger.warn(`Analytics Alert [${data.severity}]: ${data.title}`);
 });
 
+// Event listeners del BookingPaymentSystem
+bookingSystem.on('booking:created', (data) => {
+  // Notify user about booking creation
+  io.to(`user-${data.userId}`).emit('booking-created', data);
+  logger.info(`Booking created: ${data.bookingId} for tour ${data.tourId}`);
+});
+
+bookingSystem.on('booking:confirmed', (data) => {
+  // Celebrate booking confirmation
+  io.to(`user-${data.userId}`).emit('booking-confirmed', data);
+  logger.info(`🎉 Booking confirmed: ${data.bookingId}`);
+});
+
+bookingSystem.on('payment:completed', (data) => {
+  // Notify about successful payment
+  io.to(`booking-${data.bookingId}`).emit('payment-completed', data);
+  logger.info(`💳 Payment completed: ${data.transactionId} - $${data.amount} ${data.currency}`);
+});
+
+bookingSystem.on('booking:cancelled', (data) => {
+  // Notify about cancellation
+  io.to(`user-${data.userId}`).emit('booking-cancelled', data);
+  logger.info(`Booking cancelled: ${data.bookingId}, refund: $${data.refundAmount}`);
+});
+
+bookingSystem.on('refund:processed', (data) => {
+  // Notify about refund
+  io.to(`booking-${data.bookingId}`).emit('refund-processed', data);
+  logger.info(`Refund processed: ${data.refundId} - $${data.amount}`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -598,6 +640,7 @@ server.listen(PORT, () => {
   logger.info(`💬 WhatsApp Business Service: ACTIVO`);
   logger.info(`🎮 Gamification System: ACTIVO`);
   logger.info(`📊 Advanced Analytics System: ACTIVO`);
+  logger.info(`💳 Booking & Payment System: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
