@@ -20,6 +20,8 @@ const { RoutesManager } = require('./routes-manager');
 const RatingFeedbackSystem = require('./rating-feedback-system');
 const WhatsAppBusinessService = require('./whatsapp-business-service');
 const initWhatsAppRouter = require('./whatsapp-router');
+const GamificationSystem = require('./gamification-system');
+const initGamificationRouter = require('./gamification-router');
 
 // Configuración
 require('dotenv').config();
@@ -64,6 +66,7 @@ const perspectivesManager = new PerspectivesManager(aiOrchestrator);
 const routesManager = new RoutesManager();
 const ratingSystem = new RatingFeedbackSystem(aiOrchestrator, null); // null for now, can add notification system later
 const whatsappService = new WhatsAppBusinessService(null); // Can integrate with notification system later
+const gamificationSystem = new GamificationSystem();
 
 // Middleware
 app.use(helmet());
@@ -302,6 +305,7 @@ app.get('/api/stats', (req, res) => {
       routes: routesManager.getStats(),
       ratings: ratingSystem.getStatistics(),
       whatsapp: whatsappService.getStatistics(),
+      gamification: gamificationSystem.getStatistics(),
       server: {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
@@ -367,6 +371,13 @@ app.post('/api/ratings/guide/:guideId/insights', async (req, res) => {
 app.use('/api/whatsapp', initWhatsAppRouter(whatsappService));
 
 // ============================================
+// GAMIFICATION API ROUTES
+// ============================================
+
+// Mount Gamification router
+app.use('/api/gamification', initGamificationRouter(gamificationSystem));
+
+// ============================================
 // WEBSOCKET EVENTS
 // ============================================
 
@@ -395,6 +406,18 @@ io.on('connection', (socket) => {
   socket.on('leave-guide', (guideId) => {
     socket.leave(`guide-${guideId}`);
     logger.info(`Guide ${guideId} left their alert room`);
+  });
+  
+  // Join gamification room for player
+  socket.on('join-gamification', (userId) => {
+    socket.join(`gamification-${userId}`);
+    logger.info(`User ${userId} joined gamification room`);
+  });
+  
+  // Leave gamification room
+  socket.on('leave-gamification', (userId) => {
+    socket.leave(`gamification-${userId}`);
+    logger.info(`User ${userId} left gamification room`);
   });
 
   // Actualización de posición en tiempo real
@@ -473,6 +496,41 @@ whatsappService.on('message:failed', (data) => {
   logger.error(`WhatsApp message failed for ${data.to}: ${data.error}`);
 });
 
+// Event listeners del GamificationSystem
+gamificationSystem.on('points:awarded', (data) => {
+  // Notify user about points earned
+  io.to(`gamification-${data.userId}`).emit('points-awarded', data);
+  logger.info(`Points awarded to ${data.userId}: +${data.points} for ${data.actionType}`);
+});
+
+gamificationSystem.on('level:up', (data) => {
+  // Celebrate level up with special notification
+  io.to(`gamification-${data.userId}`).emit('level-up', data);
+  io.emit('public-level-up', {
+    userId: data.userId,
+    level: data.newLevel,
+    levelName: data.levelName,
+  });
+  logger.info(`🎉 ${data.userId} leveled up to ${data.newLevel}: ${data.levelName}!`);
+});
+
+gamificationSystem.on('badge:unlocked', (data) => {
+  // Notify user about new badge
+  io.to(`gamification-${data.userId}`).emit('badge-unlocked', data);
+  logger.info(`🏆 ${data.userId} unlocked badge: ${data.badge.name} (${data.badge.tier})`);
+});
+
+gamificationSystem.on('leaderboard:updated', (data) => {
+  // Broadcast leaderboard updates
+  io.emit('leaderboard-updated', data);
+});
+
+gamificationSystem.on('streak:milestone', (data) => {
+  // Celebrate streak milestones
+  io.to(`gamification-${data.userId}`).emit('streak-milestone', data);
+  logger.info(`🔥 ${data.userId} reached streak milestone: ${data.streak} days!`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -502,6 +560,7 @@ server.listen(PORT, () => {
   logger.info(`🕌 Perspectives Manager: ACTIVO`);
   logger.info(`⭐ Rating & Feedback System: ACTIVO`);
   logger.info(`💬 WhatsApp Business Service: ACTIVO`);
+  logger.info(`🎮 Gamification System: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
