@@ -30,6 +30,8 @@ const OfflineSyncSystem = require('./offline-sync-system');
 const initOfflineRouter = require('./offline-router');
 const UnifiedMessagingSystem = require('./unified-messaging-system');
 const initUnifiedMessagingRouter = require('./unified-messaging-router');
+const MLRecommendationEngine = require('./ml-recommendation-engine');
+const initMLRecommendationRouter = require('./ml-recommendation-router');
 
 // Configuración
 require('dotenv').config();
@@ -79,6 +81,7 @@ const analyticsSystem = new AdvancedAnalyticsSystem();
 const bookingSystem = new BookingPaymentSystem();
 const offlineSystem = new OfflineSyncSystem(null, null); // Will be initialized with db and redis
 const messagingSystem = new UnifiedMessagingSystem(whatsappService, null, null); // Will be initialized with db and redis
+const mlRecommendationEngine = new MLRecommendationEngine(null, null); // Will be initialized with db and redis
 
 // Middleware
 app.use(helmet());
@@ -411,6 +414,9 @@ app.use('/api/offline', initOfflineRouter(offlineSystem));
 // Mount Unified Messaging router
 app.use('/api/messages', initUnifiedMessagingRouter(messagingSystem));
 
+// Mount ML Recommendation router
+app.use('/api/recommendations', initMLRecommendationRouter(mlRecommendationEngine));
+
 // ============================================
 // WEBSOCKET EVENTS
 // ============================================
@@ -683,6 +689,36 @@ messagingSystem.on('conversation:closed', (data) => {
   logger.info(`✅ Conversation closed: ${data.conversationId}`);
 });
 
+// Event listeners del MLRecommendationEngine
+mlRecommendationEngine.on('interaction:tracked', (data) => {
+  // Track user interaction for analytics
+  io.to(`user-${data.userId}`).emit('interaction-tracked', {
+    tourId: data.tourId,
+    interactionType: data.interactionType,
+    weight: data.weight
+  });
+  logger.info(`🎯 Interaction tracked: ${data.userId} - ${data.interactionType} - ${data.tourId}`);
+});
+
+mlRecommendationEngine.on('profile:updated', (data) => {
+  // Notify user about profile update
+  io.to(`user-${data.userId}`).emit('profile-updated', {
+    userId: data.userId,
+    hasPreferences: Object.keys(data.featureVector.categoryPreferences || {}).length > 0
+  });
+  logger.info(`👤 User profile updated: ${data.userId}`);
+});
+
+mlRecommendationEngine.on('recommendations:generated', (data) => {
+  // Notify user about new recommendations
+  io.to(`user-${data.userId}`).emit('recommendations-ready', {
+    algorithm: data.algorithm,
+    count: data.count,
+    timestamp: data.timestamp
+  });
+  logger.info(`🎲 Recommendations generated: ${data.userId} (${data.algorithm}) - ${data.count} tours`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -717,6 +753,7 @@ server.listen(PORT, () => {
   logger.info(`💳 Booking & Payment System: ACTIVO`);
   logger.info(`📴 Offline Sync System: ACTIVO`);
   logger.info(`💬 Unified Messaging System: ACTIVO`);
+  logger.info(`🎲 ML Recommendation Engine: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
