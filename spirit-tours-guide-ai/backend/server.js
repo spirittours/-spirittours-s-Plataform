@@ -28,6 +28,8 @@ const BookingPaymentSystem = require('./booking-payment-system');
 const initBookingRouter = require('./booking-router');
 const OfflineSyncSystem = require('./offline-sync-system');
 const initOfflineRouter = require('./offline-router');
+const UnifiedMessagingSystem = require('./unified-messaging-system');
+const initUnifiedMessagingRouter = require('./unified-messaging-router');
 
 // Configuración
 require('dotenv').config();
@@ -76,6 +78,7 @@ const gamificationSystem = new GamificationSystem();
 const analyticsSystem = new AdvancedAnalyticsSystem();
 const bookingSystem = new BookingPaymentSystem();
 const offlineSystem = new OfflineSyncSystem(null, null); // Will be initialized with db and redis
+const messagingSystem = new UnifiedMessagingSystem(whatsappService, null, null); // Will be initialized with db and redis
 
 // Middleware
 app.use(helmet());
@@ -405,6 +408,9 @@ app.use('/api/bookings', initBookingRouter(bookingSystem));
 // Mount Offline Sync router
 app.use('/api/offline', initOfflineRouter(offlineSystem));
 
+// Mount Unified Messaging router
+app.use('/api/messages', initUnifiedMessagingRouter(messagingSystem));
+
 // ============================================
 // WEBSOCKET EVENTS
 // ============================================
@@ -636,6 +642,47 @@ offlineSystem.on('conflict:resolved', (data) => {
   logger.info(`✅ Conflict resolved: ${data.entityType} ${data.entityId} using ${data.strategy}`);
 });
 
+// Event listeners del UnifiedMessagingSystem
+messagingSystem.on('message:received', (data) => {
+  // Notify assigned agent about new message
+  if (data.conversation.assigned_agent_id) {
+    io.to(`agent-${data.conversation.assigned_agent_id}`).emit('new-message', data);
+  }
+  // Notify all supervisors
+  io.to('supervisors').emit('new-message', data);
+  logger.info(`💬 Message received: ${data.channel} - ${data.conversationId}`);
+});
+
+messagingSystem.on('message:sent', (data) => {
+  // Notify conversation participants
+  io.to(`conversation-${data.conversationId}`).emit('message-sent', data);
+  logger.info(`📤 Message sent: ${data.channel} - ${data.messageId}`);
+});
+
+messagingSystem.on('conversation:created', (data) => {
+  // Notify all agents about new conversation
+  io.to('agents').emit('new-conversation', data);
+  logger.info(`🆕 New conversation: ${data.channel} - ${data.conversationId}`);
+});
+
+messagingSystem.on('conversation:queued', (data) => {
+  // Notify available agents about queued conversation
+  io.to('agents').emit('conversation-queued', data);
+  logger.warn(`⏳ Conversation queued: ${data.conversationId} (priority: ${data.priority})`);
+});
+
+messagingSystem.on('agent:assigned', (data) => {
+  // Notify agent about new assignment
+  io.to(`agent-${data.agentId}`).emit('conversation-assigned', data);
+  logger.info(`👤 Agent assigned: ${data.agentId} → ${data.conversationId}`);
+});
+
+messagingSystem.on('conversation:closed', (data) => {
+  // Notify participants about closed conversation
+  io.to(`conversation-${data.conversationId}`).emit('conversation-closed', data);
+  logger.info(`✅ Conversation closed: ${data.conversationId}`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -669,6 +716,7 @@ server.listen(PORT, () => {
   logger.info(`📊 Advanced Analytics System: ACTIVO`);
   logger.info(`💳 Booking & Payment System: ACTIVO`);
   logger.info(`📴 Offline Sync System: ACTIVO`);
+  logger.info(`💬 Unified Messaging System: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
