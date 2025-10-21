@@ -22,6 +22,8 @@ const WhatsAppBusinessService = require('./whatsapp-business-service');
 const initWhatsAppRouter = require('./whatsapp-router');
 const GamificationSystem = require('./gamification-system');
 const initGamificationRouter = require('./gamification-router');
+const AdvancedAnalyticsSystem = require('./advanced-analytics-system');
+const initAnalyticsRouter = require('./analytics-router');
 
 // Configuración
 require('dotenv').config();
@@ -67,6 +69,7 @@ const routesManager = new RoutesManager();
 const ratingSystem = new RatingFeedbackSystem(aiOrchestrator, null); // null for now, can add notification system later
 const whatsappService = new WhatsAppBusinessService(null); // Can integrate with notification system later
 const gamificationSystem = new GamificationSystem();
+const analyticsSystem = new AdvancedAnalyticsSystem();
 
 // Middleware
 app.use(helmet());
@@ -306,6 +309,7 @@ app.get('/api/stats', (req, res) => {
       ratings: ratingSystem.getStatistics(),
       whatsapp: whatsappService.getStatistics(),
       gamification: gamificationSystem.getStatistics(),
+      analytics: analyticsSystem.getStatistics(),
       server: {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
@@ -376,6 +380,13 @@ app.use('/api/whatsapp', initWhatsAppRouter(whatsappService));
 
 // Mount Gamification router
 app.use('/api/gamification', initGamificationRouter(gamificationSystem));
+
+// ============================================
+// ADVANCED ANALYTICS API ROUTES
+// ============================================
+
+// Mount Analytics router
+app.use('/api/analytics', initAnalyticsRouter(analyticsSystem));
 
 // ============================================
 // WEBSOCKET EVENTS
@@ -531,6 +542,31 @@ gamificationSystem.on('streak:milestone', (data) => {
   logger.info(`🔥 ${data.userId} reached streak milestone: ${data.streak} days!`);
 });
 
+// Event listeners del AdvancedAnalyticsSystem
+analyticsSystem.on('event:tracked', (data) => {
+  // Broadcast event tracking for real-time monitoring
+  io.emit('analytics-event-tracked', {
+    eventType: data.eventType,
+    timestamp: data.timestamp,
+  });
+});
+
+analyticsSystem.on('tour:recorded', (data) => {
+  // Notify analytics dashboard of new tour data
+  io.emit('analytics-tour-recorded', {
+    tourId: data.tourId,
+    revenue: data.revenue,
+    rating: data.rating,
+  });
+  logger.info(`Analytics: Tour ${data.tourId} recorded - Revenue: $${data.revenue}`);
+});
+
+analyticsSystem.on('alert:created', (data) => {
+  // Broadcast critical alerts to all admins/managers
+  io.emit('analytics-alert', data);
+  logger.warn(`Analytics Alert [${data.severity}]: ${data.title}`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -561,6 +597,7 @@ server.listen(PORT, () => {
   logger.info(`⭐ Rating & Feedback System: ACTIVO`);
   logger.info(`💬 WhatsApp Business Service: ACTIVO`);
   logger.info(`🎮 Gamification System: ACTIVO`);
+  logger.info(`📊 Advanced Analytics System: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
