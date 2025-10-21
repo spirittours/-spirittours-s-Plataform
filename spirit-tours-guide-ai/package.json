@@ -1,0 +1,84 @@
+{
+  "name": "spirit-tours-guide-ai",
+  "version": "1.0.0",
+  "description": "Sistema de Guía Virtual con IA Multiperspectiva, Rutas Inteligentes y PWA",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "nodemon backend/server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:frontend && npm run build:pwa",
+    "build:frontend": "cd frontend && npm run build",
+    "build:pwa": "node scripts/build-pwa.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --ext .js,.ts,.tsx",
+    "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
+    "deploy": "npm run build && npm run deploy:server",
+    "deploy:server": "pm2 start ecosystem.config.js --env production",
+    "pwa:generate-icons": "node scripts/generate-pwa-icons.js",
+    "pwa:test": "workbox generateSW workbox-config.js"
+  },
+  "keywords": [
+    "tourism",
+    "ai",
+    "guide",
+    "multi-perspective",
+    "pwa",
+    "religious-tourism",
+    "cultural-tourism",
+    "real-time-tracking",
+    "notifications"
+  ],
+  "author": "Spirit Tours Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "socket.io-client": "^4.6.1",
+    "winston": "^3.11.0",
+    "redis": "^4.6.10",
+    "mongodb": "^6.3.0",
+    "pg": "^8.11.3",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^7.1.5",
+    "qrcode": "^1.5.3",
+    "web-push": "^3.6.6",
+    "nodemailer": "^6.9.7",
+    "twilio": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.1",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "concurrently": "^8.2.2",
+    "workbox-cli": "^7.0.0",
+    "sharp": "^0.33.1",
+    "pm2": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spirit-tours/guide-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/spirit-tours/guide-ai/issues"
+  },
+  "homepage": "https://spirit-tours.com"
+}
