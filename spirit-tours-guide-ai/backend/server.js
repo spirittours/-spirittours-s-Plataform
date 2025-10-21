@@ -32,6 +32,7 @@ const UnifiedMessagingSystem = require('./unified-messaging-system');
 const initUnifiedMessagingRouter = require('./unified-messaging-router');
 const MLRecommendationEngine = require('./ml-recommendation-engine');
 const initMLRecommendationRouter = require('./ml-recommendation-router');
+const { dbManager } = require('./database');
 
 // Configuración
 require('dotenv').config();
@@ -65,23 +66,52 @@ const io = socketIo(server, {
   }
 });
 
-// Inicializar managers
-const aiOrchestrator = new MultiAIOrchestrator({
-  defaultStrategy: OPTIMIZATION_STRATEGIES.CASCADE,
-  fallbackChain: ['grok', 'meta', 'qwen', 'openai'],
-  costLimit: 0.05
-});
+// Variables para managers (se inicializarán después de conectar DB)
+let aiOrchestrator;
+let perspectivesManager;
+let routesManager;
+let ratingSystem;
+let whatsappService;
+let gamificationSystem;
+let analyticsSystem;
+let bookingSystem;
+let offlineSystem;
+let messagingSystem;
+let mlRecommendationEngine;
 
-const perspectivesManager = new PerspectivesManager(aiOrchestrator);
-const routesManager = new RoutesManager();
-const ratingSystem = new RatingFeedbackSystem(aiOrchestrator, null); // null for now, can add notification system later
-const whatsappService = new WhatsAppBusinessService(null); // Can integrate with notification system later
-const gamificationSystem = new GamificationSystem();
-const analyticsSystem = new AdvancedAnalyticsSystem();
-const bookingSystem = new BookingPaymentSystem();
-const offlineSystem = new OfflineSyncSystem(null, null); // Will be initialized with db and redis
-const messagingSystem = new UnifiedMessagingSystem(whatsappService, null, null); // Will be initialized with db and redis
-const mlRecommendationEngine = new MLRecommendationEngine(null, null); // Will be initialized with db and redis
+/**
+ * Inicializar todos los sistemas después de conectar a la base de datos
+ */
+async function initializeSystems() {
+  try {
+    // Conectar a las bases de datos
+    logger.info('🔌 Connecting to databases...');
+    await dbManager.connectAll();
+
+    // Inicializar managers con conexiones DB
+    aiOrchestrator = new MultiAIOrchestrator({
+      defaultStrategy: OPTIMIZATION_STRATEGIES.CASCADE,
+      fallbackChain: ['grok', 'meta', 'qwen', 'openai'],
+      costLimit: 0.05
+    });
+
+    perspectivesManager = new PerspectivesManager(aiOrchestrator);
+    routesManager = new RoutesManager();
+    ratingSystem = new RatingFeedbackSystem(aiOrchestrator, null);
+    whatsappService = new WhatsAppBusinessService(null);
+    gamificationSystem = new GamificationSystem();
+    analyticsSystem = new AdvancedAnalyticsSystem();
+    bookingSystem = new BookingPaymentSystem();
+    offlineSystem = new OfflineSyncSystem(dbManager.postgres, dbManager.redis.client);
+    messagingSystem = new UnifiedMessagingSystem(whatsappService, dbManager.postgres, dbManager.redis.client);
+    mlRecommendationEngine = new MLRecommendationEngine(dbManager.postgres, dbManager.redis.client);
+
+    logger.info('✅ All systems initialized successfully');
+  } catch (error) {
+    logger.error('❌ Failed to initialize systems:', error);
+    throw error;
+  }
+}
 
 // Middleware
 app.use(helmet());
@@ -740,40 +770,82 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 
-server.listen(PORT, () => {
-  logger.info(`🚀 Servidor iniciado en puerto ${PORT}`);
-  logger.info(`📍 Ambiente: ${NODE_ENV}`);
-  logger.info(`🤖 Multi-IA Orchestrator: ACTIVO`);
-  logger.info(`🗺️ Routes Manager: ACTIVO`);
-  logger.info(`🕌 Perspectives Manager: ACTIVO`);
-  logger.info(`⭐ Rating & Feedback System: ACTIVO`);
-  logger.info(`💬 WhatsApp Business Service: ACTIVO`);
-  logger.info(`🎮 Gamification System: ACTIVO`);
-  logger.info(`📊 Advanced Analytics System: ACTIVO`);
-  logger.info(`💳 Booking & Payment System: ACTIVO`);
-  logger.info(`📴 Offline Sync System: ACTIVO`);
-  logger.info(`💬 Unified Messaging System: ACTIVO`);
-  logger.info(`🎲 ML Recommendation Engine: ACTIVO`);
-  logger.info(`📡 WebSocket Server: ACTIVO`);
-  logger.info('');
-  logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
-});
+async function startServer() {
+  try {
+    // Inicializar sistemas primero
+    await initializeSystems();
+
+    // Luego iniciar el servidor
+    server.listen(PORT, () => {
+      logger.info('='.repeat(60));
+      logger.info(`🚀 Spirit Tours Guide AI Server - Started`);
+      logger.info('='.repeat(60));
+      logger.info(`📍 Environment: ${NODE_ENV}`);
+      logger.info(`🌐 Port: ${PORT}`);
+      logger.info(`🕐 Started at: ${new Date().toISOString()}`);
+      logger.info('');
+      logger.info('📦 Systems Status:');
+      logger.info(`   🤖 Multi-IA Orchestrator: ${aiOrchestrator ? '✅' : '❌'}`);
+      logger.info(`   🗺️ Routes Manager: ${routesManager ? '✅' : '❌'}`);
+      logger.info(`   🕌 Perspectives Manager: ${perspectivesManager ? '✅' : '❌'}`);
+      logger.info(`   ⭐ Rating & Feedback System: ${ratingSystem ? '✅' : '❌'}`);
+      logger.info(`   💬 WhatsApp Business Service: ${whatsappService ? '✅' : '❌'}`);
+      logger.info(`   🎮 Gamification System: ${gamificationSystem ? '✅' : '❌'}`);
+      logger.info(`   📊 Advanced Analytics System: ${analyticsSystem ? '✅' : '❌'}`);
+      logger.info(`   💳 Booking & Payment System: ${bookingSystem ? '✅' : '❌'}`);
+      logger.info(`   📴 Offline Sync System: ${offlineSystem ? '✅' : '❌'}`);
+      logger.info(`   💬 Unified Messaging System: ${messagingSystem ? '✅' : '❌'}`);
+      logger.info(`   🎲 ML Recommendation Engine: ${mlRecommendationEngine ? '✅' : '❌'}`);
+      logger.info(`   📡 WebSocket Server: ✅`);
+      logger.info('');
+      logger.info('🗄️ Database Connections:');
+      logger.info(`   🐘 PostgreSQL: ${dbManager.postgres.pool ? '✅ Connected' : '❌ Disconnected'}`);
+      logger.info(`   🔴 Redis: ${dbManager.redis.isReady ? '✅ Connected' : '⚠️ Not Available'}`);
+      logger.info(`   🍃 MongoDB: ${dbManager.mongodb.db ? '✅ Connected' : '⚠️ Not Available'}`);
+      logger.info('');
+      logger.info('='.repeat(60));
+      logger.info('✨ Spirit Tours Guide AI - Sistema completamente operacional');
+      logger.info('='.repeat(60));
+    });
+  } catch (error) {
+    logger.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Iniciar servidor
+startServer();
 
 // Manejo de señales de terminación
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('SIGTERM recibido, cerrando servidor...');
-  server.close(() => {
-    logger.info('Servidor cerrado');
+  server.close(async () => {
+    logger.info('Cerrando conexiones de base de datos...');
+    await dbManager.closeAll();
+    logger.info('Servidor cerrado completamente');
     process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('SIGINT recibido, cerrando servidor...');
-  server.close(() => {
-    logger.info('Servidor cerrado');
+  server.close(async () => {
+    logger.info('Cerrando conexiones de base de datos...');
+    await dbManager.closeAll();
+    logger.info('Servidor cerrado completamente');
     process.exit(0);
   });
 });
 
-module.exports = { app, server, io };
+// Manejo de errores no capturados
+process.on('uncaughtException', (error) => {
+  logger.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+module.exports = { app, server, io, dbManager };
