@@ -153,7 +153,37 @@ Sistema avanzado de guía turístico virtual con inteligencia artificial que ofr
   - Notificaciones basadas en ubicación
   - Notificaciones condicionales
 
-### 8️⃣ **Mapa Interactivo con Rutas de Colores**
+### 8️⃣ **WhatsApp Business Integration**
+- ✅ Comunicación bidireccional automatizada:
+  - 📲 Confirmaciones de tour por WhatsApp
+  - ⏰ Recordatorios automáticos (24h y 1h antes)
+  - 🚗 Notificación de conductor asignado
+  - 📍 Actualizaciones de ubicación en tiempo real
+  - ⭐ Solicitudes de rating post-tour
+
+- ✅ Tipos de mensajes soportados:
+  - Mensajes de plantilla pre-aprobados
+  - Mensajes de texto simples
+  - Imágenes con caption (perfil conductor, QR)
+  - Ubicaciones GPS en vivo
+  - Botones interactivos (hasta 3 opciones)
+  - Listas desplegables (selección de perspectivas)
+
+- ✅ Gestión de conversaciones:
+  - Historial completo de mensajes
+  - Sistema de opt-in/opt-out
+  - Enrutamiento inteligente a agentes humanos
+  - Respuestas automáticas con IA
+  - Seguimiento de estado (enviado, entregado, leído)
+
+- ✅ Integración empresarial:
+  - WhatsApp Business API oficial (Meta)
+  - Cumplimiento de rate limits (80 msg/seg)
+  - Cola de mensajes con Redis
+  - Reintentos automáticos en fallos
+  - Estadísticas detalladas de uso
+
+### 9️⃣ **Mapa Interactivo con Rutas de Colores**
 - ✅ Visualización tipo metro/subway:
   - Rutas diferenciadas por color según tour
   - Líneas visuales conectando puntos

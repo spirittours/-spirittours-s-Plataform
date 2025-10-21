@@ -18,6 +18,8 @@ const { MultiAIOrchestrator, OPTIMIZATION_STRATEGIES } = require('./multi-ai-orc
 const { PerspectivesManager } = require('./perspectives-manager');
 const { RoutesManager } = require('./routes-manager');
 const RatingFeedbackSystem = require('./rating-feedback-system');
+const WhatsAppBusinessService = require('./whatsapp-business-service');
+const initWhatsAppRouter = require('./whatsapp-router');
 
 // Configuración
 require('dotenv').config();
@@ -61,6 +63,7 @@ const aiOrchestrator = new MultiAIOrchestrator({
 const perspectivesManager = new PerspectivesManager(aiOrchestrator);
 const routesManager = new RoutesManager();
 const ratingSystem = new RatingFeedbackSystem(aiOrchestrator, null); // null for now, can add notification system later
+const whatsappService = new WhatsAppBusinessService(null); // Can integrate with notification system later
 
 // Middleware
 app.use(helmet());
@@ -298,6 +301,7 @@ app.get('/api/stats', (req, res) => {
       perspectives: perspectivesManager.getStats(),
       routes: routesManager.getStats(),
       ratings: ratingSystem.getStatistics(),
+      whatsapp: whatsappService.getStatistics(),
       server: {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
@@ -354,6 +358,13 @@ app.post('/api/ratings/guide/:guideId/insights', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// ============================================
+// WHATSAPP BUSINESS API ROUTES
+// ============================================
+
+// Mount WhatsApp router
+app.use('/api/whatsapp', initWhatsAppRouter(whatsappService));
 
 // ============================================
 // WEBSOCKET EVENTS
@@ -442,6 +453,26 @@ ratingSystem.on('guide:alert', (data) => {
   logger.warn(`Guide alert sent to ${data.guideId}`);
 });
 
+// Event listeners del WhatsAppBusinessService
+whatsappService.on('message:sent', (data) => {
+  io.to(`tour-${data.tourId || 'all'}`).emit('whatsapp-message-sent', data);
+  logger.info(`WhatsApp message sent to ${data.to}`);
+});
+
+whatsappService.on('message:received', (data) => {
+  io.emit('whatsapp-message-received', data);
+  logger.info(`WhatsApp message received from ${data.from}: ${data.type}`);
+});
+
+whatsappService.on('message:status', (data) => {
+  io.emit('whatsapp-message-status', data);
+  logger.info(`WhatsApp message ${data.messageId} status: ${data.status}`);
+});
+
+whatsappService.on('message:failed', (data) => {
+  logger.error(`WhatsApp message failed for ${data.to}: ${data.error}`);
+});
+
 // ============================================
 // CATCH-ALL ROUTE
 // ============================================
@@ -470,6 +501,7 @@ server.listen(PORT, () => {
   logger.info(`🗺️ Routes Manager: ACTIVO`);
   logger.info(`🕌 Perspectives Manager: ACTIVO`);
   logger.info(`⭐ Rating & Feedback System: ACTIVO`);
+  logger.info(`💬 WhatsApp Business Service: ACTIVO`);
   logger.info(`📡 WebSocket Server: ACTIVO`);
   logger.info('');
   logger.info('Spirit Tours Guide AI - Sistema completamente operacional ✨');
