@@ -1,0 +1,1700 @@
+openapi: 3.1.0
+info:
+  title: Spirit Tours Platform API
+  description: |
+    Complete API documentation for Spirit Tours travel platform.
+    
+    ## Features
+    - 🏖️ Tour and hotel booking management
+    - 💳 Unified payment processing (Stripe, MercadoPago, PayPal, PayU)
+    - 🤖 AI-powered chatbot with NLU
+    - 📊 Advanced analytics and ML predictions
+    - 🔔 Real-time notifications via WebSocket
+    - 📧 Email service with queuing and templates
+    
+    ## Authentication
+    The API uses JWT Bearer tokens for authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limiting
+    - Standard users: 100 requests per minute
+    - Premium users: 1000 requests per minute
+    - Enterprise: Unlimited
+    
+    ## Environments
+    - Production: https://api.spirittours.com
+    - Staging: https://api-staging.spirittours.com
+    - Development: http://localhost:8000
+    
+  version: 2.0.0
+  termsOfService: https://spirittours.com/terms
+  contact:
+    name: Spirit Tours API Support
+    email: api-support@spirittours.com
+    url: https://support.spirittours.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.spirittours.com/v2
+    description: Production server
+  - url: https://api-staging.spirittours.com/v2
+    description: Staging server
+  - url: http://localhost:8000/v2
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Tours
+    description: Tour management and search
+  - name: Bookings
+    description: Booking operations
+  - name: Hotels
+    description: Hotel search and management
+  - name: Payments
+    description: Payment processing
+  - name: Users
+    description: User profile management
+  - name: Chatbot
+    description: AI chatbot interactions
+  - name: Analytics
+    description: Analytics and reporting
+  - name: ML
+    description: Machine Learning predictions
+  - name: Notifications
+    description: Notification management
+  - name: WebSocket
+    description: Real-time WebSocket connections
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  # ==================== Authentication ====================
+  
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+            examples:
+              standard:
+                value:
+                  email: user@example.com
+                  password: SecureP@ss123
+                  name: John Doe
+                  phone: "+1234567890"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: User already exists
+  
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                remember_me:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout user
+      operationId: logoutUser
+      responses:
+        '204':
+          description: Logout successful
+  
+  # ==================== Tours ====================
+  
+  /tours:
+    get:
+      tags: [Tours]
+      summary: Search and list tours
+      operationId: searchTours
+      parameters:
+        - name: destination
+          in: query
+          description: Filter by destination
+          schema:
+            type: string
+          example: Cancun
+        - name: start_date
+          in: query
+          description: Tour start date
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Tour end date
+          schema:
+            type: string
+            format: date
+        - name: min_price
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: max_price
+          in: query
+          schema:
+            type: number
+        - name: duration_days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [adventure, cultural, beach, city, nature, luxury]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [price_asc, price_desc, rating, popularity, date]
+            default: popularity
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Tours found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tour'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  filters_applied:
+                    type: object
+    
+    post:
+      tags: [Tours]
+      summary: Create new tour
+      operationId: createTour
+      security:
+        - BearerAuth: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TourCreate'
+      responses:
+        '201':
+          description: Tour created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  
+  /tours/{tourId}:
+    get:
+      tags: [Tours]
+      summary: Get tour details
+      operationId: getTourById
+      parameters:
+        - $ref: '#/components/parameters/TourId'
+        - name: include
+          in: query
+          description: Include related data
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [hotels, reviews, itinerary, pricing]
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: Tour details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TourDetailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags: [Tours]
+      summary: Update tour
+      operationId: updateTour
+      security:
+        - BearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/TourId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TourUpdate'
+      responses:
+        '200':
+          description: Tour updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+    
+    delete:
+      tags: [Tours]
+      summary: Delete tour
+      operationId: deleteTour
+      security:
+        - BearerAuth: [admin]
+      parameters:
+        - $ref: '#/components/parameters/TourId'
+      responses:
+        '204':
+          description: Tour deleted
+  
+  /tours/{tourId}/availability:
+    get:
+      tags: [Tours]
+      summary: Check tour availability
+      operationId: checkTourAvailability
+      parameters:
+        - $ref: '#/components/parameters/TourId'
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: passengers
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Availability information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  available:
+                    type: boolean
+                  spots_remaining:
+                    type: integer
+                  price_per_person:
+                    type: number
+                  total_price:
+                    type: number
+                  next_available_date:
+                    type: string
+                    format: date
+  
+  # ==================== Bookings ====================
+  
+  /bookings:
+    get:
+      tags: [Bookings]
+      summary: List user bookings
+      operationId: getUserBookings
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, cancelled, completed]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: User bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    
+    post:
+      tags: [Bookings]
+      summary: Create new booking
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          headers:
+            Location:
+              description: URL of the created booking
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Tour not available
+  
+  /bookings/{bookingId}:
+    get:
+      tags: [Bookings]
+      summary: Get booking details
+      operationId: getBookingById
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingDetailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    patch:
+      tags: [Bookings]
+      summary: Update booking
+      operationId: updateBooking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingUpdate'
+      responses:
+        '200':
+          description: Booking updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+  
+  /bookings/{bookingId}/cancel:
+    post:
+      tags: [Bookings]
+      summary: Cancel booking
+      operationId: cancelBooking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Booking cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  booking_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [cancelled]
+                  refund_amount:
+                    type: number
+                  refund_status:
+                    type: string
+  
+  /bookings/{bookingId}/confirm:
+    post:
+      tags: [Bookings]
+      summary: Confirm booking after payment
+      operationId: confirmBooking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payment_id]
+              properties:
+                payment_id:
+                  type: string
+                transaction_id:
+                  type: string
+      responses:
+        '200':
+          description: Booking confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingConfirmation'
+  
+  # ==================== Payments ====================
+  
+  /payments/create:
+    post:
+      tags: [Payments]
+      summary: Create payment intent
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreate'
+      responses:
+        '200':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+  
+  /payments/{paymentId}/process:
+    post:
+      tags: [Payments]
+      summary: Process payment
+      operationId: processPayment
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentProcess'
+      responses:
+        '200':
+          description: Payment processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResult'
+        '400':
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentError'
+  
+  /payments/{paymentId}/refund:
+    post:
+      tags: [Payments]
+      summary: Refund payment
+      operationId: refundPayment
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  description: Partial refund amount (full if not specified)
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Refund processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResult'
+  
+  /payments/webhooks/{provider}:
+    post:
+      tags: [Payments]
+      summary: Payment provider webhooks
+      operationId: paymentWebhook
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [stripe, mercadopago, paypal, payu]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+  
+  # ==================== Chatbot ====================
+  
+  /chatbot/message:
+    post:
+      tags: [Chatbot]
+      summary: Send message to chatbot
+      operationId: sendChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+      responses:
+        '200':
+          description: Chatbot response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+  
+  /chatbot/voice:
+    post:
+      tags: [Chatbot]
+      summary: Send voice message to chatbot
+      operationId: sendVoiceMessage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio file (WAV, MP3, OGG)
+                language:
+                  type: string
+                  enum: [es, en, pt, fr]
+                  default: es
+      responses:
+        '200':
+          description: Voice response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceResponse'
+  
+  /chatbot/history:
+    get:
+      tags: [Chatbot]
+      summary: Get chat history
+      operationId: getChatHistory
+      parameters:
+        - name: session_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatHistoryMessage'
+                  session_id:
+                    type: string
+  
+  # ==================== ML Predictions ====================
+  
+  /ml/demand-forecast:
+    post:
+      tags: [ML]
+      summary: Get demand forecast
+      operationId: getDemandForecast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destination, periods]
+              properties:
+                destination:
+                  type: string
+                periods:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                include_seasonality:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Demand forecast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandForecast'
+  
+  /ml/price-optimization:
+    post:
+      tags: [ML]
+      summary: Get optimized pricing
+      operationId: getOptimizedPrice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tour_id, date]
+              properties:
+                tour_id:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                current_demand:
+                  type: number
+                competitor_prices:
+                  type: array
+                  items:
+                    type: number
+      responses:
+        '200':
+          description: Optimized price
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceOptimization'
+  
+  /ml/recommendations:
+    get:
+      tags: [ML]
+      summary: Get personalized recommendations
+      operationId: getRecommendations
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Personalized recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommendations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recommendation'
+                  based_on:
+                    type: string
+  
+  /ml/churn-prediction:
+    get:
+      tags: [ML]
+      summary: Predict customer churn
+      operationId: predictChurn
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Churn prediction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChurnPrediction'
+  
+  # ==================== WebSocket ====================
+  
+  /ws/connect:
+    get:
+      tags: [WebSocket]
+      summary: Establish WebSocket connection
+      operationId: wsConnect
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: JWT token for authentication
+      responses:
+        '101':
+          description: Switching Protocols
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  # ==================== Analytics ====================
+  
+  /analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: Get analytics dashboard
+      operationId: getAnalyticsDashboard
+      security:
+        - BearerAuth: [admin]
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: metrics
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [revenue, bookings, users, conversion, churn]
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsDashboard'
+
+# ==================== Components ====================
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token authentication
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API Key authentication
+  
+  parameters:
+    TourId:
+      name: tourId
+      in: path
+      required: true
+      description: Tour identifier
+      schema:
+        type: string
+        format: uuid
+    
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      description: Booking identifier
+      schema:
+        type: string
+        pattern: '^BK[0-9]{6}$'
+    
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    
+    LimitParam:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    TooManyRequests:
+      description: Too many requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  
+  schemas:
+    # Basic schemas
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+    
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total_pages:
+          type: integer
+        total_items:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+    
+    # Auth schemas
+    UserRegistration:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        name:
+          type: string
+          minLength: 2
+        phone:
+          type: string
+        preferred_language:
+          type: string
+          enum: [es, en, pt, fr]
+          default: es
+    
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: Bearer
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+    
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        verified:
+          type: boolean
+    
+    # Tour schemas
+    Tour:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        destination:
+          type: string
+        price:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          enum: [USD, EUR, MXN, COP, BRL]
+        duration_days:
+          type: integer
+        category:
+          type: string
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        available_dates:
+          type: array
+          items:
+            type: string
+            format: date
+    
+    TourDetailed:
+      allOf:
+        - $ref: '#/components/schemas/Tour'
+        - type: object
+          properties:
+            itinerary:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: integer
+                  title:
+                    type: string
+                  activities:
+                    type: array
+                    items:
+                      type: string
+            included:
+              type: array
+              items:
+                type: string
+            excluded:
+              type: array
+              items:
+                type: string
+            hotels:
+              type: array
+              items:
+                $ref: '#/components/schemas/Hotel'
+            reviews:
+              type: array
+              items:
+                $ref: '#/components/schemas/Review'
+    
+    TourCreate:
+      type: object
+      required: [name, description, destination, price, duration_days]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        destination:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+          enum: [USD, EUR, MXN, COP, BRL]
+        duration_days:
+          type: integer
+        category:
+          type: string
+        max_capacity:
+          type: integer
+    
+    TourUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        available_dates:
+          type: array
+          items:
+            type: string
+            format: date
+    
+    # Booking schemas
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        tour_id:
+          type: string
+        user_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        booking_date:
+          type: string
+          format: date-time
+        travel_date:
+          type: string
+          format: date
+        passengers:
+          type: integer
+        total_amount:
+          type: number
+        currency:
+          type: string
+        payment_status:
+          type: string
+          enum: [pending, processing, completed, failed, refunded]
+    
+    BookingDetailed:
+      allOf:
+        - $ref: '#/components/schemas/Booking'
+        - type: object
+          properties:
+            tour:
+              $ref: '#/components/schemas/Tour'
+            passengers_details:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  phone:
+                    type: string
+                  document_type:
+                    type: string
+                  document_number:
+                    type: string
+            hotel:
+              $ref: '#/components/schemas/Hotel'
+            special_requests:
+              type: string
+            cancellation_policy:
+              type: object
+    
+    BookingCreate:
+      type: object
+      required: [tour_id, travel_date, passengers]
+      properties:
+        tour_id:
+          type: string
+        travel_date:
+          type: string
+          format: date
+        passengers:
+          type: integer
+          minimum: 1
+        passengers_details:
+          type: array
+          items:
+            type: object
+            required: [name, email]
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+                format: email
+              phone:
+                type: string
+              document_type:
+                type: string
+              document_number:
+                type: string
+        hotel_id:
+          type: string
+        special_requests:
+          type: string
+        promo_code:
+          type: string
+    
+    BookingUpdate:
+      type: object
+      properties:
+        travel_date:
+          type: string
+          format: date
+        passengers:
+          type: integer
+        special_requests:
+          type: string
+    
+    BookingConfirmation:
+      type: object
+      properties:
+        booking_id:
+          type: string
+        status:
+          type: string
+          enum: [confirmed]
+        confirmation_code:
+          type: string
+        qr_code:
+          type: string
+          format: uri
+        voucher_url:
+          type: string
+          format: uri
+        instructions:
+          type: string
+    
+    # Hotel schemas
+    Hotel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: integer
+          minimum: 1
+          maximum: 5
+        address:
+          type: string
+        city:
+          type: string
+        amenities:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        price_per_night:
+          type: number
+        rating:
+          type: number
+    
+    # Payment schemas
+    PaymentCreate:
+      type: object
+      required: [amount, currency, booking_id]
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          enum: [USD, EUR, MXN, COP, BRL]
+        booking_id:
+          type: string
+        payment_method:
+          type: string
+          enum: [card, paypal, mercadopago, payu, bank_transfer]
+        return_url:
+          type: string
+          format: uri
+        cancel_url:
+          type: string
+          format: uri
+    
+    PaymentIntent:
+      type: object
+      properties:
+        payment_id:
+          type: string
+        client_secret:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        payment_method:
+          type: string
+        provider:
+          type: string
+          enum: [stripe, mercadopago, paypal, payu]
+        expires_at:
+          type: string
+          format: date-time
+    
+    PaymentProcess:
+      type: object
+      required: [payment_method_id]
+      properties:
+        payment_method_id:
+          type: string
+        save_payment_method:
+          type: boolean
+          default: false
+    
+    PaymentResult:
+      type: object
+      properties:
+        payment_id:
+          type: string
+        status:
+          type: string
+          enum: [succeeded, processing, requires_action, failed]
+        transaction_id:
+          type: string
+        receipt_url:
+          type: string
+          format: uri
+        amount_paid:
+          type: number
+        payment_method:
+          type: object
+    
+    PaymentError:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        decline_code:
+          type: string
+        payment_id:
+          type: string
+    
+    RefundResult:
+      type: object
+      properties:
+        refund_id:
+          type: string
+        payment_id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, succeeded, failed]
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    
+    # Chatbot schemas
+    ChatMessage:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 1000
+        session_id:
+          type: string
+        metadata:
+          type: object
+    
+    ChatResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [text, card, carousel, quick_reply, media, form, payment]
+        text:
+          type: string
+        quick_replies:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            type: object
+        session_id:
+          type: string
+        intent:
+          type: string
+        confidence:
+          type: number
+        typing_delay:
+          type: integer
+    
+    VoiceResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        audio_url:
+          type: string
+          format: uri
+        language:
+          type: string
+        duration:
+          type: number
+    
+    ChatHistoryMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        sender:
+          type: string
+          enum: [user, bot]
+        text:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        intent:
+          type: string
+        sentiment:
+          type: number
+    
+    # ML schemas
+    DemandForecast:
+      type: object
+      properties:
+        destination:
+          type: string
+        forecasts:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              predicted_demand:
+                type: number
+              lower_bound:
+                type: number
+              upper_bound:
+                type: number
+              confidence:
+                type: number
+        seasonality_factors:
+          type: object
+    
+    PriceOptimization:
+      type: object
+      properties:
+        tour_id:
+          type: string
+        date:
+          type: string
+          format: date
+        current_price:
+          type: number
+        optimized_price:
+          type: number
+        expected_revenue:
+          type: number
+        demand_elasticity:
+          type: number
+        competitor_analysis:
+          type: object
+    
+    Recommendation:
+      type: object
+      properties:
+        tour_id:
+          type: string
+        tour:
+          $ref: '#/components/schemas/Tour'
+        score:
+          type: number
+        reason:
+          type: string
+        personalization_factors:
+          type: array
+          items:
+            type: string
+    
+    ChurnPrediction:
+      type: object
+      properties:
+        user_id:
+          type: string
+        churn_probability:
+          type: number
+          minimum: 0
+          maximum: 1
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+        contributing_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              weight:
+                type: number
+        retention_strategies:
+          type: array
+          items:
+            type: string
+        predicted_ltv:
+          type: number
+    
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        user_name:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        verified_purchase:
+          type: boolean
+    
+    # Analytics schemas
+    AnalyticsDashboard:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+        metrics:
+          type: object
+          properties:
+            revenue:
+              type: object
+              properties:
+                total:
+                  type: number
+                growth:
+                  type: number
+                by_day:
+                  type: array
+                  items:
+                    type: object
+            bookings:
+              type: object
+              properties:
+                total:
+                  type: integer
+                confirmed:
+                  type: integer
+                cancelled:
+                  type: integer
+                conversion_rate:
+                  type: number
+            users:
+              type: object
+              properties:
+                new:
+                  type: integer
+                active:
+                  type: integer
+                retention_rate:
+                  type: number
+        top_destinations:
+          type: array
+          items:
+            type: object
+            properties:
+              destination:
+                type: string
+              bookings:
+                type: integer
+              revenue:
+                type: number
+        performance:
+          type: object
+          properties:
+            api_latency:
+              type: number
+            error_rate:
+              type: number
+            uptime:
+              type: number
