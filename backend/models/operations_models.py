@@ -464,8 +464,8 @@ class OperationalAlert(Base):
     last_notification = Column(DateTime(timezone=True))
     notification_count = Column(Integer, default=0)
     
-    # Metadata
-    metadata = Column(JSON)
+    # Metadata adicional
+    alert_metadata = Column(JSON)
     
     # Auditoría
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -506,7 +506,7 @@ class ReservationAttachment(Base):
     description = Column(Text)
     
     # Metadata
-    metadata = Column(JSON)
+    attachment_metadata = Column(JSON)
     
     # Auditoría
     uploaded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -641,7 +641,7 @@ class NotificationLog(Base):
     reservation_id = Column(UUID(as_uuid=True), ForeignKey('provider_reservations.id'))
     
     # Metadata
-    metadata = Column(JSON)
+    attachment_metadata = Column(JSON)
     
     # Timestamps
     sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

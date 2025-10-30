@@ -14,8 +14,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from backend.models.operations_models import Base
-from backend.database import get_database_url
 import logging
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,8 +29,8 @@ def create_operations_tables():
     Create all operations-related tables
     """
     try:
-        # Get database URL
-        database_url = get_database_url()
+        # Get database URL from environment
+        database_url = os.getenv('DATABASE_URL', 'postgresql://user:password@localhost:5432/webapp_db')
         logger.info(f"Connecting to database...")
         
         # Create engine
