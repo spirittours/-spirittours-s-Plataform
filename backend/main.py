@@ -39,7 +39,8 @@ from backend.api import (
     social_media_credentials_api,
     ai_content_api,
     scheduler_api,
-    sentiment_analysis_api
+    sentiment_analysis_api,
+    operations_api
 )
 
 # Import open-source services router
@@ -105,6 +106,7 @@ app.include_router(access_control_router)
 app.include_router(ai_content_api.router)
 app.include_router(scheduler_api.router)
 app.include_router(sentiment_analysis_api.router)
+app.include_router(operations_api.router)
 
 # Include open-source services router
 app.include_router(opensource_router)
