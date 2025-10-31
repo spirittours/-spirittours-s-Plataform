@@ -15,7 +15,12 @@ const logger = require('./utils/logger');
 
 // Initialize Express app
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
 const PORT = process.env.NODE_PORT || 5001;
+
+// Initialize WebSocket server
+const websocketServer = require('./services/websocket_server');
 
 // Middleware
 app.use(cors({
@@ -72,6 +77,21 @@ try {
   app.use('/api/admin/system-config', systemConfigRoutes);
   logger.info('✅ System configuration routes registered');
 
+  // Trips management routes
+  const tripsRoutes = require('./routes/trips.routes');
+  app.use('/api/trips', tripsRoutes);
+  logger.info('✅ Trips management routes registered');
+
+  // Smart notifications routes
+  const smartNotificationsRoutes = require('./routes/smart_notifications.routes');
+  app.use('/api/smart-notifications', smartNotificationsRoutes);
+  logger.info('✅ Smart notifications routes registered');
+
+  // WhatsApp Business API routes
+  const whatsappRoutes = require('./routes/whatsapp.routes');
+  app.use('/api/whatsapp', whatsappRoutes);
+  logger.info('✅ WhatsApp Business API routes registered');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
@@ -105,14 +125,27 @@ async function startServer() {
     await configManager.initialize();
     logger.info('✅ Configuration manager initialized');
 
+    // Initialize WebSocket server
+    logger.info('Initializing WebSocket server...');
+    websocketServer.initialize(server);
+    logger.info('✅ WebSocket server initialized');
+
     // Start HTTP server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       logger.info(`🚀 Spirit Tours Backend Server running on port ${PORT}`);
       logger.info(`📧 Nodemailer API: http://localhost:${PORT}/api/nodemailer`);
       logger.info(`⚙️ System Config API: http://localhost:${PORT}/api/admin/system-config`);
       logger.info(`📧 Email Config API: http://localhost:${PORT}/api/admin/email-config`);
       logger.info(`📝 Email Templates API: http://localhost:${PORT}/api/admin/email-templates`);
+      logger.info(`🚗 Trips API: http://localhost:${PORT}/api/trips`);
+      logger.info(`🔔 Notifications API: http://localhost:${PORT}/api/smart-notifications`);
+      logger.info(`📱 WhatsApp API: http://localhost:${PORT}/api/whatsapp`);
+      logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      
+      // Log WebSocket stats
+      const stats = websocketServer.getStats();
+      logger.info(`WebSocket Status: ${stats.connected_users} users, ${stats.active_trip_rooms} active rooms`);
     });
 
     // Handle graceful shutdown

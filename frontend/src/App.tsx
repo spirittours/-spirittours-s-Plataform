@@ -12,6 +12,9 @@ import LoginPage from './components/Auth/LoginPage';
 import CRMDashboard from './components/CRM/CRMDashboard';
 import UserManagement from './components/CRM/UserManagement';
 
+// AI Agents Components
+import AIAgentsRouter from './components/AIAgents/AIAgentsRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -111,6 +114,9 @@ const App: React.FC = () => {
                 
                 {/* Main CRM Dashboard */}
                 <Route path="/crm" element={<CRMDashboard />} />
+                
+                {/* AI Agents Routes */}
+                <Route path="/ai-agents/*" element={<AIAgentsRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 

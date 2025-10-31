@@ -32,6 +32,21 @@ from .email_models import (
     SendResponseRequest, CreateEmailTemplateRequest
 )
 
+from .operations_models import (
+    # Enums
+    ServiceType, ReservationStatus, PaymentStatus, AgentType,
+    OperationalStatus, ClosureStatus, ValidationStatus, ValidationType,
+    AlertSeverity, AlertType,
+    # Models
+    Provider, TourGroup, ProviderReservation, GroupClosureItem,
+    ValidationLog, OperationalAlert, ReservationAttachment,
+    GroupParticipant, ProviderContract,
+    # Schemas
+    ProviderCreate, ProviderResponse, ReservationCreate, ReservationResponse,
+    GroupCreate, GroupResponse, ValidationRequest, ValidationResponse,
+    AlertCreate, AlertResponse, ClosureChecklistResponse
+)
+
 __all__ = [
     # Base
     'Base',
@@ -59,5 +74,20 @@ __all__ = [
     'EmailPriority', 'EmailStatus', 'ResponseType', 'EmailLanguage',
     'EmailAccountResponse', 'EmailMessageResponse', 'EmailClassificationResponse',
     'EmailAnalyticsResponse', 'EmailDashboardResponse', 'ClassifyEmailRequest',
-    'SendResponseRequest', 'CreateEmailTemplateRequest'
+    'SendResponseRequest', 'CreateEmailTemplateRequest',
+    
+    # Operations Models - Enums
+    'ServiceType', 'ReservationStatus', 'PaymentStatus', 'AgentType',
+    'OperationalStatus', 'ClosureStatus', 'ValidationStatus', 'ValidationType',
+    'AlertSeverity', 'AlertType',
+    
+    # Operations Models - Database Models
+    'Provider', 'TourGroup', 'ProviderReservation', 'GroupClosureItem',
+    'ValidationLog', 'OperationalAlert', 'ReservationAttachment',
+    'GroupParticipant', 'ProviderContract',
+    
+    # Operations Models - Schemas
+    'ProviderCreate', 'ProviderResponse', 'ReservationCreate', 'ReservationResponse',
+    'GroupCreate', 'GroupResponse', 'ValidationRequest', 'ValidationResponse',
+    'AlertCreate', 'AlertResponse', 'ClosureChecklistResponse'
 ]
