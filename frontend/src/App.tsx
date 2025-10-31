@@ -24,6 +24,9 @@ import PortalsRouter from './components/Portals/PortalsRouter';
 // Payments Components
 import PaymentsRouter from './components/Payments/PaymentsRouter';
 
+// File Manager Components
+import FileManagerRouter from './components/FileManager/FileManagerRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -135,6 +138,9 @@ const App: React.FC = () => {
                 
                 {/* Payments Routes */}
                 <Route path="/payments/*" element={<PaymentsRouter />} />
+                
+                {/* File Manager Routes */}
+                <Route path="/files/*" element={<FileManagerRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
