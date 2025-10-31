@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -7,36 +7,31 @@ import { motion } from 'framer-motion';
 // RBAC Store
 import { useRBACStore } from './store/rbacStore';
 
-// Main Components
-import LoginPage from './components/Auth/LoginPage';
-import CRMDashboard from './components/CRM/CRMDashboard';
-import UserManagement from './components/CRM/UserManagement';
+// Lazy-loaded route components
+import {
+  LoginPage,
+  CRMDashboard,
+  UserManagement,
+  AIAgentsRouter,
+  AnalyticsRouter,
+  PortalsRouter,
+  PaymentsRouter,
+  FileManagerRouter,
+  NotificationsRouter,
+  Layout,
+  Dashboard,
+  ComingSoon,
+  preloadCriticalRoutes,
+  preloadRoleBasedRoutes,
+} from './routes/lazyRoutes';
 
-// AI Agents Components
-import AIAgentsRouter from './components/AIAgents/AIAgentsRouter';
+// Suspense wrapper
+import { SuspenseWrapper } from './components/Suspense/SuspenseWrapper';
 
-// Analytics Components
-import AnalyticsRouter from './components/Analytics/AnalyticsRouter';
-
-// Portals Components
-import PortalsRouter from './components/Portals/PortalsRouter';
-
-// Payments Components
-import PaymentsRouter from './components/Payments/PaymentsRouter';
-
-// File Manager Components
-import FileManagerRouter from './components/FileManager/FileManagerRouter';
-
-// Notifications Components
-import NotificationsRouter from './components/Notifications/NotificationsRouter';
-
-// Legacy Components for gradual migration
-import Layout from './components/Layout/Layout';
+// Protected Route (keep non-lazy for auth logic)
 import ProtectedRoute from './components/Auth/ProtectedRoute';
-import Dashboard from './components/Dashboard/Dashboard';
-import ComingSoon from './components/Placeholder/ComingSoon';
 
-// RBAC Components
+// RBAC Components (keep non-lazy for permission logic)
 import { AgentGate, AdminGate } from './components/RBAC/PermissionGate';
 
 // Styles
@@ -60,6 +55,19 @@ const App: React.FC = () => {
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  // Preload critical routes after authentication
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      // Preload critical routes
+      preloadCriticalRoutes();
+      
+      // Preload role-based routes after 2 seconds
+      setTimeout(() => {
+        preloadRoleBasedRoutes(isAdmin);
+      }, 2000);
+    }
+  }, [isAuthenticated, isLoading, isAdmin]);
 
   if (isLoading) {
     return (
@@ -128,32 +136,83 @@ const App: React.FC = () => {
                 <Route path="/register" element={<Navigate to="/crm" replace />} />
                 
                 {/* Main CRM Dashboard */}
-                <Route path="/crm" element={<CRMDashboard />} />
+                <Route 
+                  path="/crm" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <CRMDashboard />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* AI Agents Routes */}
-                <Route path="/ai-agents/*" element={<AIAgentsRouter />} />
+                <Route 
+                  path="/ai-agents/*" 
+                  element={
+                    <SuspenseWrapper fallback="default">
+                      <AIAgentsRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* Analytics Routes */}
-                <Route path="/analytics/*" element={<AnalyticsRouter />} />
+                <Route 
+                  path="/analytics/*" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <AnalyticsRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* Portals Routes */}
-                <Route path="/portals/*" element={<PortalsRouter />} />
+                <Route 
+                  path="/portals/*" 
+                  element={
+                    <SuspenseWrapper fallback="default">
+                      <PortalsRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* Payments Routes */}
-                <Route path="/payments/*" element={<PaymentsRouter />} />
+                <Route 
+                  path="/payments/*" 
+                  element={
+                    <SuspenseWrapper fallback="default">
+                      <PaymentsRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* File Manager Routes */}
-                <Route path="/files/*" element={<FileManagerRouter />} />
+                <Route 
+                  path="/files/*" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <FileManagerRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* Notifications Routes */}
-                <Route path="/notifications/*" element={<NotificationsRouter />} />
+                <Route 
+                  path="/notifications/*" 
+                  element={
+                    <SuspenseWrapper fallback="default">
+                      <NotificationsRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
                   path="/crm/user-management" 
                   element={
                     <AdminGate fallback={<UnauthorizedAccess />}>
-                      <UserManagement isAdmin={isAdmin} />
+                      <SuspenseWrapper fallback="default">
+                        <UserManagement isAdmin={isAdmin} />
+                      </SuspenseWrapper>
                     </AdminGate>
                   } 
                 />
