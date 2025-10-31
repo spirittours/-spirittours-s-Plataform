@@ -27,6 +27,9 @@ import PaymentsRouter from './components/Payments/PaymentsRouter';
 // File Manager Components
 import FileManagerRouter from './components/FileManager/FileManagerRouter';
 
+// Notifications Components
+import NotificationsRouter from './components/Notifications/NotificationsRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -141,6 +144,9 @@ const App: React.FC = () => {
                 
                 {/* File Manager Routes */}
                 <Route path="/files/*" element={<FileManagerRouter />} />
+                
+                {/* Notifications Routes */}
+                <Route path="/notifications/*" element={<NotificationsRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
