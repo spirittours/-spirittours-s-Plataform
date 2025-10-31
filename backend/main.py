@@ -54,8 +54,7 @@ from backend.api import (
     ai_content_api,
     scheduler_api,
     sentiment_analysis_api,
-    operations_api,
-    analytics_dashboard_api
+    operations_api
 )
 
 # Import open-source services router
@@ -122,10 +121,6 @@ app.include_router(ai_content_api.router)
 app.include_router(scheduler_api.router)
 app.include_router(sentiment_analysis_api.router)
 app.include_router(operations_api.router)
-try:
-    app.include_router(analytics_dashboard_api.router)
-except Exception as e:
-    logger.warning(f"Analytics Dashboard API not loaded: {e}")
 
 # Include open-source services router
 app.include_router(opensource_router)
