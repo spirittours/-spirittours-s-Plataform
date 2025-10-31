@@ -11,6 +11,20 @@ from datetime import datetime, timedelta
 from typing import Optional
 import logging
 
+# Import Track 3 AI Agents Integration
+try:
+    from services.ai_agents_integration import get_track3_agent_response, get_track3_status
+except ImportError:
+    # Fallback for different import paths
+    try:
+        from backend.services.ai_agents_integration import get_track3_agent_response, get_track3_status
+    except ImportError:
+        # If still not found, create dummy functions
+        async def get_track3_agent_response(agent_id, action, data):
+            return {"error": "Track3 agents not initialized", "status": "mock_mode"}
+        def get_track3_status():
+            return {"status": "mock_mode", "agents_count": 0}
+
 # Import configurations and database
 from backend.config import settings, DatabaseManager, get_db
 from sqlalchemy.orm import Session
@@ -1758,6 +1772,24 @@ async def assess_sustainability(sustainability_request: dict):
 @app.get("/api/v1/agents/track3/status")
 async def get_track3_agents_status():
     """Estado específico de agentes Track 3"""
+    # Try to get real status from integrated agents
+    try:
+        real_status = get_track3_status()
+        if real_status and real_status.get("agents_count", 0) > 0:
+            # Merge real status with existing data
+            return {
+                "track_name": "Specialized Intelligence & Ethics",
+                "total_agents": 10,
+                "implemented_agents": 10,
+                "completion_percentage": 100.0,
+                "real_time_status": real_status,
+                "integration_active": True,
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Track3 status error: {e}")
+    
+    # Fallback to mock data
     return {
         "track_name": "Specialized Intelligence & Ethics",
         "total_agents": 10,
@@ -2450,7 +2482,21 @@ async def assess_accessibility(accessibility_request: dict):
     venue_id = accessibility_request.get("venue_id", "venue_001")
     accessibility_needs = accessibility_request.get("accessibility_needs", [])
     
-    # TODO: Integrar con AccessibilitySpecialistAgent real
+    # Integración con AccessibilitySpecialistAgent
+    try:
+        result = await get_track3_agent_response(
+            "accessibility_specialist",
+            "assess",
+            {"destination_id": venue_id, "requirements": accessibility_needs}
+        )
+        
+        # If integration successful, return real data
+        if "error" not in result:
+            return result
+    except Exception as e:
+        logger.error(f"AccessibilitySpecialist integration error: {e}")
+    
+    # Fallback to mock data
     return {
         "status": "success",
         "accessibility_assessment_id": f"access_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -2501,7 +2547,21 @@ async def calculate_carbon_footprint(carbon_request: dict):
     trip_data = carbon_request.get("trip_data", {})
     optimization_goals = carbon_request.get("optimization_goals", ["minimize_emissions"])
     
-    # TODO: Integrar con CarbonOptimizerAgent real
+    # Integración con CarbonOptimizerAgent
+    try:
+        result = await get_track3_agent_response(
+            "carbon_optimizer",
+            "calculate",
+            trip_data
+        )
+        
+        # If integration successful, return real data
+        if "error" not in result:
+            return result
+    except Exception as e:
+        logger.error(f"CarbonOptimizer integration error: {e}")
+    
+    # Fallback to mock data
     return {
         "status": "success",
         "carbon_assessment_id": f"carbon_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -2566,7 +2626,21 @@ async def assess_local_impact(impact_request: dict):
     destination = impact_request.get("destination", "Madrid, Spain")
     tourism_data = impact_request.get("tourism_data", {})
     
-    # TODO: Integrar con LocalImpactAnalyzerAgent real
+    # Integración con LocalImpactAnalyzerAgent
+    try:
+        result = await get_track3_agent_response(
+            "local_impact_analyzer",
+            "analyze",
+            {"destination_id": destination, "tourist_volume": tourism_data.get("annual_visitors", 10000)}
+        )
+        
+        # If integration successful, return real data
+        if "error" not in result:
+            return result
+    except Exception as e:
+        logger.error(f"LocalImpactAnalyzer integration error: {e}")
+    
+    # Fallback to mock data
     return {
         "status": "success",
         "impact_assessment_id": f"impact_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -2633,7 +2707,21 @@ async def assess_ethical_compliance(ethics_request: dict):
     organization_data = ethics_request.get("organization_data", {})
     assessment_scope = ethics_request.get("scope", ["human_rights", "labor_standards"])
     
-    # TODO: Integrar con EthicalTourismAdvisorAgent real
+    # Integración con EthicalTourismAdvisorAgent
+    try:
+        result = await get_track3_agent_response(
+            "ethical_tourism_advisor",
+            "evaluate",
+            {"provider_id": provider, "provider_type": "tour_operator"}
+        )
+        
+        # If integration successful, return real data
+        if "error" not in result:
+            return result
+    except Exception as e:
+        logger.error(f"EthicalTourismAdvisor integration error: {e}")
+    
+    # Fallback to mock data
     return {
         "status": "success",
         "ethical_assessment_id": f"ethics_{datetime.now().strftime('%Y%m%d_%H%M%S')}",

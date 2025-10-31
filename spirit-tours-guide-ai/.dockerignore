@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.example
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+test/
+tests/
+__tests__/
+
+# Documentation
+*.md
+docs/
+ROADMAP.md
+ROADMAP_PROGRESS.md
+DEPLOYMENT.md
+
+# Build artifacts
+dist/
+build/
+frontend/build/
+frontend/node_modules/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Docker files (don't copy docker files into docker image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Database
+*.sql
+*.sqlite
+*.db
+
+# Media files (should be served from CDN/S3)
+uploads/
+media/
+
+# Misc
+.cache/
+.parcel-cache/

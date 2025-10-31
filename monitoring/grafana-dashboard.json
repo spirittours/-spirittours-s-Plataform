@@ -1,0 +1,137 @@
+{
+  "dashboard": {
+    "title": "B2B2B Platform - Overview",
+    "tags": ["b2b2b", "production"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m])) by (status)",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
+            "legendFormat": "{{endpoint}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+            "legendFormat": "Error Rate"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 4,
+        "title": "Active Users",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(active_users) by (user_type)",
+            "legendFormat": "{{user_type}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 6, "h": 8}
+      },
+      {
+        "id": 5,
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "database_connections_active",
+            "legendFormat": "Active"
+          },
+          {
+            "expr": "database_connections_idle",
+            "legendFormat": "Idle"
+          }
+        ],
+        "gridPos": {"x": 18, "y": 8, "w": 6, "h": 8}
+      },
+      {
+        "id": 6,
+        "title": "Cache Hit Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sum(rate(cache_hits_total[5m])) / (sum(rate(cache_hits_total[5m])) + sum(rate(cache_misses_total[5m])))"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 6, "h": 8}
+      },
+      {
+        "id": 7,
+        "title": "CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "system_cpu_usage_percent",
+            "legendFormat": "CPU %"
+          }
+        ],
+        "gridPos": {"x": 6, "y": 16, "w": 6, "h": 8}
+      },
+      {
+        "id": 8,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "system_memory_usage_bytes / 1024 / 1024 / 1024",
+            "legendFormat": "Memory GB"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 16, "w": 6, "h": 8}
+      },
+      {
+        "id": 9,
+        "title": "Bookings per Hour",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(bookings_total[1h])) by (product_type)",
+            "legendFormat": "{{product_type}}"
+          }
+        ],
+        "gridPos": {"x": 18, "y": 16, "w": 6, "h": 8}
+      },
+      {
+        "id": 10,
+        "title": "Revenue per Hour",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(bookings_revenue_total[1h]))",
+            "legendFormat": "Revenue"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 4}
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  }
+}

@@ -6,42 +6,47 @@ process.env.NODE_ENV = 'test';
 process.env.REACT_APP_API_URL = 'http://localhost:8000';
 process.env.REACT_APP_ENV = 'test';
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
+// Check if we're in a browser-like environment (frontend tests)
+const isBrowserEnvironment = typeof window !== 'undefined';
 
-// Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-  takeRecords() {
-    return [];
-  }
-};
+if (isBrowserEnvironment) {
+  // Mock window.matchMedia (for frontend tests)
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-global.localStorage = localStorageMock;
+  // Mock IntersectionObserver (for frontend tests)
+  global.IntersectionObserver = class IntersectionObserver {
+    constructor() {}
+    disconnect() {}
+    observe() {}
+    unobserve() {}
+    takeRecords() {
+      return [];
+    }
+  };
 
-// Mock fetch
+  // Mock localStorage (for frontend tests)
+  const localStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
+  };
+  global.localStorage = localStorageMock;
+}
+
+// Mock fetch (for both frontend and backend tests)
 global.fetch = jest.fn();
 
 // Setup console mocks to avoid noise in test output

@@ -1,0 +1,319 @@
+#!/bin/bash
+
+###############################################################################
+# Spirit Tours - SSL/TLS Setup Script
+# Version: 1.0.0
+# Descripción: Configuración automática de SSL con Let's Encrypt
+###############################################################################
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() {
+    echo -e "${BLUE}ℹ ${NC}$@"
+}
+
+log_success() {
+    echo -e "${GREEN}✓${NC} $@"
+}
+
+log_warning() {
+    echo -e "${YELLOW}⚠${NC} $@"
+}
+
+log_error() {
+    echo -e "${RED}✗${NC} $@"
+}
+
+print_header() {
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  $1"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+}
+
+check_root() {
+    if [ "$EUID" -ne 0 ]; then 
+        log_error "Este script debe ejecutarse como root o con sudo"
+        exit 1
+    fi
+}
+
+install_certbot() {
+    print_header "Instalando Certbot"
+    
+    if command -v certbot &> /dev/null; then
+        log_success "Certbot ya está instalado"
+        certbot --version
+        return 0
+    fi
+    
+    log_info "Instalando Certbot y el plugin de Nginx..."
+    
+    # Ubuntu/Debian
+    if command -v apt-get &> /dev/null; then
+        apt-get update
+        apt-get install -y certbot python3-certbot-nginx
+    # CentOS/RHEL
+    elif command -v dnf &> /dev/null; then
+        dnf install -y certbot python3-certbot-nginx
+    else
+        log_error "Sistema operativo no soportado"
+        exit 1
+    fi
+    
+    log_success "Certbot instalado exitosamente"
+}
+
+configure_domains() {
+    print_header "Configuración de Dominios"
+    
+    echo "Ingrese los dominios para los que desea obtener certificados SSL:"
+    echo "Puede ingresar múltiples dominios separados por espacios"
+    echo ""
+    echo "Ejemplo: app.spirittours.com api.spirittours.com"
+    echo ""
+    read -p "Dominios: " DOMAINS
+    
+    if [ -z "$DOMAINS" ]; then
+        log_error "Debe ingresar al menos un dominio"
+        exit 1
+    fi
+    
+    log_info "Dominios configurados: $DOMAINS"
+    
+    # Validate domains
+    for domain in $DOMAINS; do
+        log_info "Verificando dominio: $domain"
+        
+        # Check DNS resolution
+        if host "$domain" > /dev/null 2>&1; then
+            log_success "$domain resuelve correctamente"
+        else
+            log_warning "$domain no resuelve. Asegúrese de que el DNS esté configurado correctamente"
+        fi
+    done
+    
+    echo ""
+    read -p "Ingrese su email para notificaciones de Let's Encrypt: " EMAIL
+    
+    if [ -z "$EMAIL" ]; then
+        log_error "Debe ingresar un email válido"
+        exit 1
+    fi
+    
+    log_success "Email configurado: $EMAIL"
+}
+
+obtain_certificates() {
+    print_header "Obteniendo Certificados SSL"
+    
+    # Convert domains to certbot format
+    local domain_args=""
+    for domain in $DOMAINS; do
+        domain_args="$domain_args -d $domain"
+    done
+    
+    log_info "Obteniendo certificados para: $DOMAINS"
+    log_info "Esto puede tomar unos minutos..."
+    
+    # Run certbot
+    certbot --nginx \
+        $domain_args \
+        --email "$EMAIL" \
+        --agree-tos \
+        --no-eff-email \
+        --redirect \
+        --hsts \
+        --staple-ocsp
+    
+    if [ $? -eq 0 ]; then
+        log_success "Certificados SSL obtenidos exitosamente"
+    else
+        log_error "Error al obtener certificados SSL"
+        log_error "Verifique que:"
+        log_error "  1. Los dominios apuntan a este servidor"
+        log_error "  2. Nginx está corriendo"
+        log_error "  3. Los puertos 80 y 443 están abiertos"
+        exit 1
+    fi
+}
+
+setup_auto_renewal() {
+    print_header "Configurando Renovación Automática"
+    
+    log_info "Configurando cron job para renovación automática..."
+    
+    # Test renewal
+    log_info "Probando renovación (dry-run)..."
+    certbot renew --dry-run
+    
+    if [ $? -eq 0 ]; then
+        log_success "Test de renovación exitoso"
+    else
+        log_warning "Test de renovación falló, pero los certificados están instalados"
+    fi
+    
+    # Certbot automatically sets up renewal via systemd timer or cron
+    log_success "Renovación automática configurada"
+    log_info "Los certificados se renovarán automáticamente cada 60 días"
+}
+
+configure_security_headers() {
+    print_header "Configurando Security Headers"
+    
+    local nginx_ssl_conf="/etc/nginx/snippets/ssl-params.conf"
+    
+    log_info "Creando configuración de seguridad SSL..."
+    
+    cat > "$nginx_ssl_conf" << 'EOF'
+# SSL Security Parameters
+# Generated by Spirit Tours SSL Setup Script
+
+# SSL Protocol Configuration
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+
+# SSL Session Configuration
+ssl_session_cache shared:SSL:50m;
+ssl_session_timeout 1d;
+ssl_session_tickets off;
+
+# OCSP Stapling
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+
+# Security Headers
+add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+# Additional Security
+add_header Content-Security-Policy "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';" always;
+add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+
+# Disable server tokens
+server_tokens off;
+EOF
+    
+    log_success "Configuración de seguridad creada: $nginx_ssl_conf"
+    
+    log_info "Actualizando configuración de Nginx..."
+    
+    # Add include to nginx.conf if not already present
+    if ! grep -q "ssl-params.conf" /etc/nginx/nginx.conf; then
+        sed -i '/http {/a \    include /etc/nginx/snippets/ssl-params.conf;' /etc/nginx/nginx.conf
+        log_success "Configuración incluida en nginx.conf"
+    else
+        log_info "Configuración ya está incluida en nginx.conf"
+    fi
+}
+
+test_ssl_configuration() {
+    print_header "Verificando Configuración SSL"
+    
+    log_info "Probando configuración de Nginx..."
+    nginx -t
+    
+    if [ $? -eq 0 ]; then
+        log_success "Configuración de Nginx es válida"
+        
+        log_info "Recargando Nginx..."
+        systemctl reload nginx
+        log_success "Nginx recargado"
+    else
+        log_error "Error en la configuración de Nginx"
+        exit 1
+    fi
+    
+    # Test SSL certificates
+    for domain in $DOMAINS; do
+        log_info "Verificando certificado para $domain..."
+        
+        if timeout 5 openssl s_client -connect "$domain:443" -servername "$domain" </dev/null 2>/dev/null | grep -q "Verify return code: 0"; then
+            log_success "Certificado SSL válido para $domain"
+        else
+            log_warning "No se pudo verificar el certificado para $domain"
+            log_warning "Esto puede deberse a propagación de DNS o firewall"
+        fi
+    done
+}
+
+display_summary() {
+    print_header "Resumen de Configuración SSL"
+    
+    echo ""
+    echo "✅ Certificados SSL instalados exitosamente"
+    echo ""
+    echo "🔒 Dominios configurados:"
+    for domain in $DOMAINS; do
+        echo "   • https://$domain"
+    done
+    echo ""
+    echo "📧 Email de contacto: $EMAIL"
+    echo ""
+    echo "🔄 Renovación automática:"
+    echo "   • Configurada mediante systemd timer/cron"
+    echo "   • Se ejecuta automáticamente cada 60 días"
+    echo "   • Verificar: certbot renew --dry-run"
+    echo ""
+    echo "📁 Ubicación de certificados:"
+    for domain in $DOMAINS; do
+        echo "   • /etc/letsencrypt/live/$domain/"
+    done
+    echo ""
+    echo "🔍 Verificar configuración SSL:"
+    for domain in $DOMAINS; do
+        echo "   • https://www.ssllabs.com/ssltest/analyze.html?d=$domain"
+    done
+    echo ""
+    echo "⚠️  Importante:"
+    echo "   • Los certificados expiran cada 90 días"
+    echo "   • La renovación es automática"
+    echo "   • Recibirá emails antes de la expiración"
+    echo ""
+    
+    log_success "Configuración SSL completada"
+}
+
+main() {
+    cat << "EOF"
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║            🔒  SPIRIT TOURS - SSL/TLS SETUP  🔒                     ║
+║                                                                      ║
+║                    Let's Encrypt Configuration                       ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+EOF
+
+    check_root
+    install_certbot
+    configure_domains
+    obtain_certificates
+    setup_auto_renewal
+    configure_security_headers
+    test_ssl_configuration
+    display_summary
+    
+    echo ""
+    log_success "🎉 Setup de SSL completado exitosamente! 🎉"
+    echo ""
+}
+
+# Trap errors
+trap 'log_error "Error en línea $LINENO. Setup fallido."; exit 1' ERR
+
+main "$@"

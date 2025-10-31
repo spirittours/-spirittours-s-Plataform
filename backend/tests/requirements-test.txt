@@ -1,0 +1,110 @@
+# Testing Dependencies for Spirit Tours Platform
+
+# Core Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-timeout==2.2.0
+pytest-xdist==3.5.0
+pytest-mock==3.12.0
+
+# HTTP Testing
+httpx==0.25.2
+requests-mock==1.11.0
+
+# FastAPI Testing
+fastapi[all]==0.104.1
+python-multipart==0.0.6
+
+# Database Testing
+pytest-postgresql==5.0.0
+sqlalchemy==2.0.23
+alembic==1.12.1
+
+# Factory & Fixtures
+factory-boy==3.3.0
+faker==20.1.0
+
+# Performance Testing
+pytest-benchmark==4.0.0
+locust==2.19.1
+
+# Load Testing
+pytest-stress==1.0.1
+
+# Security Testing
+bandit==1.7.5
+safety==2.3.5
+
+# Code Quality
+pylint==3.0.3
+flake8==6.1.0
+black==23.12.1
+isort==5.13.2
+mypy==1.7.1
+
+# Coverage
+coverage[toml]==7.3.3
+
+# Mocking & Stubbing
+responses==0.24.1
+freezegun==1.4.0
+
+# Property-based Testing
+hypothesis==6.92.1
+
+# Snapshot Testing
+pytest-snapshot==0.9.0
+
+# API Testing
+tavern==2.9.2
+
+# Browser Testing (for E2E)
+playwright==1.40.0
+selenium==4.16.0
+
+# Report Generation
+pytest-html==4.1.1
+allure-pytest==2.13.2
+
+# Parallel Testing
+pytest-parallel==0.1.1
+
+# Environment Management
+python-dotenv==1.0.0
+
+# Date/Time Testing
+pytest-freezegun==0.4.2
+
+# Logging
+pytest-loguru==0.3.0
+
+# Retry Mechanism
+pytest-rerunfailures==12.0
+
+# Test Data
+mimesis==11.1.0
+
+# API Documentation Testing
+openapi-spec-validator==0.7.1
+
+# Performance Monitoring
+memory-profiler==0.61.0
+py-spy==0.3.14
+
+# Database Mocking
+mongomock==4.1.2  # If using MongoDB
+redislite==6.2.805859  # If using Redis
+
+# Async Testing Support
+aioresponses==0.7.6
+asynctest==0.13.0
+
+# Utilities
+pydantic==2.5.2
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Development Tools
+ipython==8.18.1
+ipdb==0.13.13
