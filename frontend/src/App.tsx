@@ -21,6 +21,9 @@ import AnalyticsRouter from './components/Analytics/AnalyticsRouter';
 // Portals Components
 import PortalsRouter from './components/Portals/PortalsRouter';
 
+// Payments Components
+import PaymentsRouter from './components/Payments/PaymentsRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -129,6 +132,9 @@ const App: React.FC = () => {
                 
                 {/* Portals Routes */}
                 <Route path="/portals/*" element={<PortalsRouter />} />
+                
+                {/* Payments Routes */}
+                <Route path="/payments/*" element={<PaymentsRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
