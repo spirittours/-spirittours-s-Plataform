@@ -18,6 +18,9 @@ import AIAgentsRouter from './components/AIAgents/AIAgentsRouter';
 // Analytics Components
 import AnalyticsRouter from './components/Analytics/AnalyticsRouter';
 
+// Portals Components
+import PortalsRouter from './components/Portals/PortalsRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -123,6 +126,9 @@ const App: React.FC = () => {
                 
                 {/* Analytics Routes */}
                 <Route path="/analytics/*" element={<AnalyticsRouter />} />
+                
+                {/* Portals Routes */}
+                <Route path="/portals/*" element={<PortalsRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
