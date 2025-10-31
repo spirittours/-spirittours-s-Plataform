@@ -15,6 +15,9 @@ import UserManagement from './components/CRM/UserManagement';
 // AI Agents Components
 import AIAgentsRouter from './components/AIAgents/AIAgentsRouter';
 
+// Analytics Components
+import AnalyticsRouter from './components/Analytics/AnalyticsRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -117,6 +120,9 @@ const App: React.FC = () => {
                 
                 {/* AI Agents Routes */}
                 <Route path="/ai-agents/*" element={<AIAgentsRouter />} />
+                
+                {/* Analytics Routes */}
+                <Route path="/analytics/*" element={<AnalyticsRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
@@ -254,10 +260,7 @@ const App: React.FC = () => {
                   path="/crm/analytics" 
                   element={
                     <PermissionGate permission="analytics_dashboard:read:dashboard">
-                      <ComingSoon 
-                        title="Panel de Analíticas" 
-                        description="Métricas avanzadas y análisis de rendimiento." 
-                      />
+                      <Navigate to="/analytics" replace />
                     </PermissionGate>
                   } 
                 />
