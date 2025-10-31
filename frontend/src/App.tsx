@@ -12,6 +12,24 @@ import LoginPage from './components/Auth/LoginPage';
 import CRMDashboard from './components/CRM/CRMDashboard';
 import UserManagement from './components/CRM/UserManagement';
 
+// AI Agents Components
+import AIAgentsRouter from './components/AIAgents/AIAgentsRouter';
+
+// Analytics Components
+import AnalyticsRouter from './components/Analytics/AnalyticsRouter';
+
+// Portals Components
+import PortalsRouter from './components/Portals/PortalsRouter';
+
+// Payments Components
+import PaymentsRouter from './components/Payments/PaymentsRouter';
+
+// File Manager Components
+import FileManagerRouter from './components/FileManager/FileManagerRouter';
+
+// Notifications Components
+import NotificationsRouter from './components/Notifications/NotificationsRouter';
+
 // Legacy Components for gradual migration
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -111,6 +129,24 @@ const App: React.FC = () => {
                 
                 {/* Main CRM Dashboard */}
                 <Route path="/crm" element={<CRMDashboard />} />
+                
+                {/* AI Agents Routes */}
+                <Route path="/ai-agents/*" element={<AIAgentsRouter />} />
+                
+                {/* Analytics Routes */}
+                <Route path="/analytics/*" element={<AnalyticsRouter />} />
+                
+                {/* Portals Routes */}
+                <Route path="/portals/*" element={<PortalsRouter />} />
+                
+                {/* Payments Routes */}
+                <Route path="/payments/*" element={<PaymentsRouter />} />
+                
+                {/* File Manager Routes */}
+                <Route path="/files/*" element={<FileManagerRouter />} />
+                
+                {/* Notifications Routes */}
+                <Route path="/notifications/*" element={<NotificationsRouter />} />
                 
                 {/* CRM Module Routes with RBAC Protection */}
                 <Route 
@@ -248,10 +284,7 @@ const App: React.FC = () => {
                   path="/crm/analytics" 
                   element={
                     <PermissionGate permission="analytics_dashboard:read:dashboard">
-                      <ComingSoon 
-                        title="Panel de Analíticas" 
-                        description="Métricas avanzadas y análisis de rendimiento." 
-                      />
+                      <Navigate to="/analytics" replace />
                     </PermissionGate>
                   } 
                 />
