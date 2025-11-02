@@ -17,8 +17,9 @@ import uuid
 from .models import (
     Invoice, InvoiceCreateRequest, InvoiceLine,
     DocumentStatus, PaymentStatus, CompanyInfo,
-    TaxInvoice, CreditNote, DebitNote, DigitalSignature
+    TaxInvoice, CreditNote, DebitNote, DigitalSignature, Customer
 )
+from .database_integration import db_integration
 
 
 class InvoiceService:

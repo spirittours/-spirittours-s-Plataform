@@ -11,7 +11,7 @@ from datetime import datetime
 import logging
 import uuid
 
-from ..services.payments.advanced_payment_orchestrator import (
+from services.payments.advanced_payment_orchestrator import (
     AdvancedPaymentOrchestrator, 
     PaymentRequest, 
     PaymentResult,
@@ -224,7 +224,7 @@ async def analyze_fraud_risk(
     Realiza análisis de fraude independiente para una transacción
     """
     try:
-        from ..services.payments.fraud_detection_system import FraudContext
+        from services.payments.fraud_detection_system import FraudContext
         
         # Crear contexto de fraude
         context = FraudContext(
@@ -273,7 +273,7 @@ async def calculate_dynamic_pricing(
     Calcula precio dinámico con múltiples factores
     """
     try:
-        from ..services.payments.multi_currency_pricing_engine import PricingContext
+        from services.payments.multi_currency_pricing_engine import PricingContext
         
         # Crear contexto de pricing
         context = PricingContext(

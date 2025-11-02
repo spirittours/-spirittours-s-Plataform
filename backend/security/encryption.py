@@ -27,7 +27,7 @@ from cryptography.hazmat.backends import default_backend
 import bcrypt
 import re
 
-from backend.utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

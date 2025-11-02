@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 import logging
 from urllib.parse import urlencode
 
-from backend.services.advanced_auth_service import (
+from services.advanced_auth_service import (
     AdvancedAuthService, 
     B2CRegistrationRequest,
     B2BRegistrationRequest, 
@@ -22,8 +22,8 @@ from backend.services.advanced_auth_service import (
     UserType,
     AccountStatus
 )
-from backend.config.database import get_db
-from backend.services.notification_service import NotificationService
+from config.database import get_db
+from services.notification_service import NotificationService
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -273,7 +273,7 @@ async def verify_email(
     4. Send welcome notification
     """
     try:
-        from backend.services.advanced_auth_service import User
+        from services.advanced_auth_service import User
         
         # Find user by verification token
         user = db.query(User).filter(User.email_verification_token == token).first()
@@ -338,7 +338,7 @@ async def resend_verification_email(
     Resend email verification for unverified accounts.
     """
     try:
-        from backend.services.advanced_auth_service import User
+        from services.advanced_auth_service import User
         import secrets
         from datetime import datetime
         
@@ -386,7 +386,7 @@ async def forgot_password(
     Initiate password reset process.
     """
     try:
-        from backend.services.advanced_auth_service import User
+        from services.advanced_auth_service import User
         import secrets
         
         user = db.query(User).filter(User.email == email).first()
@@ -428,7 +428,7 @@ async def get_user_profile(
     """
     try:
         import jwt
-        from backend.services.advanced_auth_service import User
+        from services.advanced_auth_service import User
         
         # Decode JWT token
         payload = jwt.decode(
@@ -499,7 +499,7 @@ async def update_marketing_consent(
     """
     try:
         import jwt
-        from backend.services.advanced_auth_service import User, MarketingConsent
+        from services.advanced_auth_service import User, MarketingConsent
         from datetime import datetime
         
         # Decode JWT token

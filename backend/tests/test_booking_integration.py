@@ -10,12 +10,12 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 from fastapi.testclient import TestClient
 
-from backend.main import app
-from backend.models.booking import Booking, BookingStatus
-from backend.models.tour import Tour
-from backend.services.booking_service import BookingService
-from backend.services.payment_service import PaymentService
-from backend.services.notification_service import NotificationService
+from main import app
+from models.booking import Booking, BookingStatus
+from models.tour import Tour
+from services.booking_service import BookingService
+from services.payment_service import PaymentService
+from services.notification_service import NotificationService
 
 client = TestClient(app)
 

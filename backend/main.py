@@ -17,7 +17,7 @@ try:
 except ImportError:
     # Fallback for different import paths
     try:
-        from backend.services.ai_agents_integration import get_track3_agent_response, get_track3_status
+        from services.ai_agents_integration import get_track3_agent_response, get_track3_status
     except ImportError:
         # If still not found, create dummy functions
         async def get_track3_agent_response(agent_id, action, data):
@@ -26,11 +26,11 @@ except ImportError:
             return {"status": "mock_mode", "agents_count": 0}
 
 # Import configurations and database
-from backend.config import settings, DatabaseManager, get_db
+from config import settings, DatabaseManager, get_db
 from sqlalchemy.orm import Session
 
 # Import API routers
-from backend.api import (
+from api import (
     admin_api,
     auth_api, 
     communications_api,
@@ -58,20 +58,20 @@ from backend.api import (
 )
 
 # Import open-source services router
-from backend.routers.opensource_router import router as opensource_router
+from routers.opensource_router import router as opensource_router
 
 # Import access control router
-from backend.routers.access_control_router import router as access_control_router
+from routers.access_control_router import router as access_control_router
 
 # Import services for startup initialization
-from backend.services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
-from backend.services.omnichannel_crm_service import OmnichannelCRMService
-from backend.services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
-from backend.services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
-from backend.services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
+from services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
+from services.omnichannel_crm_service import OmnichannelCRMService
+from services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
+from services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
+from services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
 
 # Import WebSocket handler
-from backend.websocket_handler import websocket_endpoint
+from websocket_handler import websocket_endpoint
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -236,7 +236,7 @@ async def startup_event():
         
         # Initialize Open Source Services
         try:
-            from backend.services.opensource.opensource_integration_manager import opensource_manager
+            from services.opensource.opensource_integration_manager import opensource_manager
             
             services_status = await opensource_manager.initialize_all_services()
             

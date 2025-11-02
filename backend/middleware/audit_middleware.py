@@ -14,9 +14,9 @@ from fastapi.routing import APIRoute
 from starlette.middleware.base import BaseHTTPMiddleware
 import asyncio
 
-from backend.services.enhanced_audit_service import EnhancedAuditService, get_audit_service
-from backend.models.enhanced_audit_models import ActionType, RiskLevel
-from backend.models.rbac_models import User
+from services.enhanced_audit_service import EnhancedAuditService, get_audit_service
+from models.enhanced_audit_models import ActionType, RiskLevel
+from models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 

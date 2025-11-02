@@ -13,13 +13,13 @@ from sqlalchemy import and_, or_, func
 from pydantic import BaseModel, Field
 
 # Import database and models
-from ..config.database import get_db
-from ..models.business_models import (
+from config.database import get_db
+from models.business_models import (
     TourOperator, TravelAgency, SalesAgent, BusinessBooking, PaymentStatement,
     TourOperatorCreate, TravelAgencyCreate, SalesAgentCreate,
     TourOperatorResponse, CustomerType, PaymentTerms
 )
-from ..models.rbac_models import User
+from models.rbac_models import User
 
 router = APIRouter(prefix="/api/v1/b2b", tags=["B2B Management"])
 

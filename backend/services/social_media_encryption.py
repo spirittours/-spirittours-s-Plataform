@@ -284,7 +284,7 @@ def get_encryption_service() -> CredentialsEncryptionService:
         CredentialsEncryptionService instance
         
     Usage in API endpoints:
-        >>> from backend.services.social_media_encryption import get_encryption_service
+        >>> from services.social_media_encryption import get_encryption_service
         >>> encryption = get_encryption_service()
         >>> encrypted_token = encryption.encrypt(user_token)
     """

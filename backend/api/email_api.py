@@ -20,12 +20,12 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 
-from backend.database import get_db
-from backend.services.email_service import EmailService
-from backend.services.email_classifier import EmailClassifier
-from backend.auth.rbac_middleware import get_current_active_user
-from backend.models.rbac_models import User
-from backend.models.email_models import (
+from database import get_db
+from services.email_service import EmailService
+from services.email_classifier import EmailClassifier
+from auth.rbac_middleware import get_current_active_user
+from models.rbac_models import User
+from models.email_models import (
     EmailCategory, EmailIntent, EmailPriority, EmailStatus, ResponseType,
     EmailAccountResponse, EmailMessageResponse, EmailClassificationResponse,
     EmailAnalyticsResponse, EmailDashboardResponse, ClassifyEmailRequest,

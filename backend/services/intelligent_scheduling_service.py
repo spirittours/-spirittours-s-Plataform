@@ -16,9 +16,9 @@ from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field
 
 # Import our models and services
-from backend.models.rbac_models import Base
-from backend.config.production_database import get_db_write, get_db_read
-from backend.services.call_reporting_service import CallReport, FollowUpTask
+from models.rbac_models import Base
+from config.production_database import get_db_write, get_db_read
+from services.call_reporting_service import CallReport, FollowUpTask
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -341,7 +341,7 @@ class IntelligentSchedulingService:
     async def _analyze_customer_timezone(self, customer_phone: str) -> Dict[str, Any]:
         """Analizar timezone del cliente basado en su teléfono"""
         
-        from backend.services.call_reporting_service import CallReportingService
+        from services.call_reporting_service import CallReportingService
         reporting_service = CallReportingService()
         
         # Use the location analysis from call reporting service

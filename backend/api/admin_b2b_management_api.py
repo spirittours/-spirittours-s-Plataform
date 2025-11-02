@@ -13,7 +13,7 @@ from decimal import Decimal
 from enum import Enum
 import logging
 
-from backend.services.advanced_auth_service import (
+from services.advanced_auth_service import (
     AdvancedAuthService,
     User,
     PartnerApplication,
@@ -21,8 +21,8 @@ from backend.services.advanced_auth_service import (
     AccountStatus,
     OAuthProvider
 )
-from backend.config.database import get_db
-from backend.services.notification_service import NotificationService
+from config.database import get_db
+from services.notification_service import NotificationService
 from pydantic import BaseModel, EmailStr, Field, validator
 
 # Configure logging

@@ -26,10 +26,10 @@ import bleach
 from sqlalchemy.orm import Session
 
 # Import our security components
-from backend.security.authentication.jwt_manager import AdvancedJWTManager, TokenType, TokenStatus
-from backend.security.authorization.rbac_system import RBACManager, AccessRequest, AccessResponse
-from backend.security.audit.security_audit_system import AdvancedSecurityAuditor, SecurityEvent, EventType, EventSeverity
-from backend.security.encryption.end_to_end_encryption import AdvancedEncryptionManager, EncryptionAlgorithm
+from security.authentication.jwt_manager import AdvancedJWTManager, TokenType, TokenStatus
+from security.authorization.rbac_system import RBACManager, AccessRequest, AccessResponse
+from security.audit.security_audit_system import AdvancedSecurityAuditor, SecurityEvent, EventType, EventSeverity
+from security.encryption.end_to_end_encryption import AdvancedEncryptionManager, EncryptionAlgorithm
 
 
 @dataclass

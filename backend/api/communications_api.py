@@ -10,10 +10,10 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 import asyncio
 
-from backend.models.rbac_models import User
-from backend.auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
-from backend.config.database import get_db
-from backend.integrations.pbx_3cx import (
+from models.rbac_models import User
+from auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
+from config.database import get_db
+from integrations.pbx_3cx import (
     PBX3CXManager, CommunicationManager, CallLog, CallCampaign, 
     create_pbx_manager
 )

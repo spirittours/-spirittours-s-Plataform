@@ -7,9 +7,9 @@ Tests invoice generation, receipt management, and financial reports.
 import pytest
 from decimal import Decimal
 from datetime import date, timedelta
-from backend.accounting.invoice_service import InvoiceService, PaymentStatus
-from backend.accounting.receipt_service import ReceiptService
-from backend.accounting.financial_reports_service import FinancialReportsService
+from accounting.invoice_service import InvoiceService, PaymentStatus
+from accounting.receipt_service import ReceiptService
+from accounting.financial_reports_service import FinancialReportsService
 
 
 class TestInvoiceService:
@@ -237,7 +237,7 @@ class TestDashboardService:
     @pytest.mark.asyncio
     async def test_get_kpis(self):
         """Test KPI calculation."""
-        from backend.accounting.dashboard_service import AccountingDashboardService, TimePeriod
+        from accounting.dashboard_service import AccountingDashboardService, TimePeriod
         
         service = AccountingDashboardService()
         
@@ -255,7 +255,7 @@ class TestDashboardService:
     @pytest.mark.asyncio
     async def test_revenue_chart_generation(self):
         """Test revenue chart data generation."""
-        from backend.accounting.dashboard_service import (
+        from accounting.dashboard_service import (
             AccountingDashboardService,
             TimePeriod,
             ChartType
@@ -280,7 +280,7 @@ class TestReconciliationService:
     @pytest.mark.asyncio
     async def test_auto_reconciliation(self):
         """Test automatic reconciliation."""
-        from backend.accounting.reconciliation_service import ReconciliationService
+        from accounting.reconciliation_service import ReconciliationService
         
         service = ReconciliationService()
         
@@ -300,7 +300,7 @@ class TestReconciliationService:
     @pytest.mark.asyncio
     async def test_matching_strategies(self):
         """Test different matching strategies."""
-        from backend.accounting.reconciliation_service import (
+        from accounting.reconciliation_service import (
             ReconciliationService,
             MatchingStrategy
         )

@@ -7,9 +7,9 @@ Tests agent management, commissions, and white label functionality.
 import pytest
 from decimal import Decimal
 from datetime import date, timedelta
-from backend.b2b2b.agent_service import AgentService, AgentStatus, AgentTier
-from backend.b2b2b.commission_service import CommissionService, CommissionStatus
-from backend.b2b2b.advanced_commission_service import (
+from b2b2b.agent_service import AgentService, AgentStatus, AgentTier
+from b2b2b.commission_service import CommissionService, CommissionStatus
+from b2b2b.advanced_commission_service import (
     AdvancedCommissionService,
     ProductCategory
 )
@@ -265,7 +265,7 @@ class TestWhiteLabelService:
     @pytest.mark.asyncio
     async def test_enable_white_label(self):
         """Test enabling white label for agent."""
-        from backend.b2b2b.white_label_service import WhiteLabelService
+        from b2b2b.white_label_service import WhiteLabelService
         
         service = WhiteLabelService()
         
@@ -277,7 +277,7 @@ class TestWhiteLabelService:
     @pytest.mark.asyncio
     async def test_white_label_configuration(self):
         """Test white label configuration."""
-        from backend.b2b2b.white_label_service import WhiteLabelService
+        from b2b2b.white_label_service import WhiteLabelService
         
         service = WhiteLabelService()
         
@@ -294,7 +294,7 @@ class TestWhiteLabelService:
     @pytest.mark.asyncio
     async def test_domain_validation(self):
         """Test custom domain validation."""
-        from backend.b2b2b.white_label_service import WhiteLabelService
+        from b2b2b.white_label_service import WhiteLabelService
         
         service = WhiteLabelService()
         

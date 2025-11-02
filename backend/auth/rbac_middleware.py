@@ -15,11 +15,11 @@ import secrets
 from functools import wraps
 import logging
 
-from backend.models.rbac_models import (
+from models.rbac_models import (
     User, Role, Permission, Branch, AuditLog, SessionToken,
     PermissionScope, UserLevel, PermissionChecker
 )
-from backend.config.database import get_db
+from config.database import get_db
 
 logger = logging.getLogger(__name__)
 

@@ -9,9 +9,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from backend.config.database import get_db, engine
-from backend.models.rbac_models import Base
-from backend.database.init_rbac_expanded import initialize_enterprise_rbac_system
+from config.database import get_db, engine
+from models.rbac_models import Base
+from database.init_rbac_expanded import initialize_enterprise_rbac_system
 
 def main():
     """Setup complete enterprise system"""

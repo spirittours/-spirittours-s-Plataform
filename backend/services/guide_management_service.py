@@ -15,17 +15,17 @@ from enum import Enum
 import uuid
 import json
 
-from backend.models.package_quotation import (
+from models.package_quotation import (
     TourGuide, GuideType, GuideAssignment,
     GuideAvailability, GuideLanguage,
     GuideSpecialization, GuideCertification,
     GuideRate, GuidePaymentType,
     ItineraryDay, PackageQuotation
 )
-from backend.services.email_service import EmailService
-from backend.services.notification_service import NotificationService
-from backend.core.cache import cache_manager
-from backend.core.exceptions import BusinessLogicError
+from services.email_service import EmailService
+from services.notification_service import NotificationService
+from core.cache import cache_manager
+from core.exceptions import BusinessLogicError
 
 logger = logging.getLogger(__name__)
 

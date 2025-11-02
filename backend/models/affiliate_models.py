@@ -11,7 +11,7 @@ import uuid
 import enum
 from decimal import Decimal
 
-from backend.models.rbac_models import Base
+from models.rbac_models import Base
 
 # ========================================
 # ENUMS

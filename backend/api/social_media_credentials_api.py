@@ -8,9 +8,9 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 
-from backend.services.social_credentials_service import SocialCredentialsService
-from backend.database import get_db
-from backend.auth import get_current_admin_user, AdminUser
+from services.social_credentials_service import SocialCredentialsService
+from database import get_db
+from auth import get_current_admin_user, AdminUser
 
 router = APIRouter(
     prefix="/api/admin/social-media/credentials",
@@ -343,7 +343,7 @@ async def test_platform_connection(
     
     try:
         # Import platform adapter dynamically
-        from backend.services.social_media_adapters import get_platform_adapter
+        from services.social_media_adapters import get_platform_adapter
         
         adapter = get_platform_adapter(platform)
         result = await service.test_connection(platform, adapter)

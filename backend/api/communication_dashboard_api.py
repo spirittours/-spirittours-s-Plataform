@@ -19,12 +19,12 @@ from pydantic import BaseModel
 import asyncio
 import json
 
-from backend.models.rbac_models import User
-from backend.auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
-from backend.config.database import get_db
-from backend.communication.intelligent_router import IntelligentRouter, Department, CustomerType
-from backend.communication.human_agent_queue import HumanAgentQueue
-from backend.communication.multi_channel_gateway import MultiChannelGateway
+from models.rbac_models import User
+from auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
+from config.database import get_db
+from communication.intelligent_router import IntelligentRouter, Department, CustomerType
+from communication.human_agent_queue import HumanAgentQueue
+from communication.multi_channel_gateway import MultiChannelGateway
 
 logger = logging.getLogger(__name__)
 

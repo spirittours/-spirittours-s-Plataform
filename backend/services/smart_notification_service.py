@@ -28,15 +28,15 @@ from sqlalchemy.ext.declarative import declarative_base
 
 # Import existing services
 try:
-    from backend.services.notification_service import (
+    from services.notification_service import (
         NotificationService as BaseNotificationService,
         NotificationConfig,
         NotificationType,
         NotificationPriority,
         NotificationStatus
     )
-    from backend.integrations.whatsapp_business import WhatsAppBusinessAPI, MessageType
-    from backend.models.rbac_models import Base
+    from integrations.whatsapp_business import WhatsAppBusinessAPI, MessageType
+    from models.rbac_models import Base
 except ImportError:
     from sqlalchemy.ext.declarative import declarative_base
     Base = declarative_base()
@@ -630,7 +630,7 @@ class SmartNotificationService:
             if not self.notification_service:
                 return {"success": False, "error": "Email service not configured"}
             
-            from backend.services.notification_service import NotificationRequest
+            from services.notification_service import NotificationRequest
             
             request = NotificationRequest(
                 recipient=email,
@@ -662,7 +662,7 @@ class SmartNotificationService:
             if not self.notification_service:
                 return {"success": False, "error": "SMS service not configured"}
             
-            from backend.services.notification_service import NotificationRequest
+            from services.notification_service import NotificationRequest
             
             # Limitar contenido a 160 caracteres para SMS
             sms_content = content[:160] if len(content) > 160 else content

@@ -13,7 +13,7 @@ import uuid
 from decimal import Decimal
 
 # Import models and schemas
-from ..models.operations_models import (
+from models.operations_models import (
     Provider, TourGroup, ProviderReservation, GroupClosureItem,
     ValidationLog, OperationalAlert, ReservationAttachment,
     GroupParticipant, ProviderContract,
@@ -23,11 +23,11 @@ from ..models.operations_models import (
     GroupCreate, GroupResponse, ValidationRequest, ValidationResponse,
     AlertCreate, AlertResponse, ClosureChecklistResponse
 )
-from ..models.rbac_models import User, PermissionChecker
-from ..database import get_db
-from ..auth import get_current_user
-from ..services.ai_validation_service import AIValidationService
-from ..services.notification_service import NotificationService
+from models.rbac_models import User, PermissionChecker
+from database import get_db
+from auth import get_current_user
+from services.ai_validation_service import AIValidationService
+from services.notification_service import NotificationService
 
 router = APIRouter(prefix="/api/operations", tags=["Operations"])
 

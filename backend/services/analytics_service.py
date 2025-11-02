@@ -13,7 +13,7 @@ from decimal import Decimal
 import json
 from collections import defaultdict
 
-from backend.models.database import (
+from models.database import (
     User, Booking, BusinessBooking, PaymentTransaction,
     TourOperator, TravelAgency, SalesAgent, Tour,
     NotificationLog, AIQueryLog, PaymentRefund

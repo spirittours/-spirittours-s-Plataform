@@ -19,7 +19,7 @@ try:
         get_analytics_info
     )
 except ImportError:
-    from backend.services.analytics_dashboard_service import (
+    from services.analytics_dashboard_service import (
         get_analytics_dashboard,
         get_analytics_metric,
         generate_analytics_report,

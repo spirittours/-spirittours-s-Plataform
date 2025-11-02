@@ -11,15 +11,15 @@ from pydantic import BaseModel, EmailStr
 import hashlib
 from datetime import datetime, timedelta
 
-from backend.models.rbac_models import (
+from models.rbac_models import (
     User, Role, Permission, Branch,
     UserResponse, PermissionScope, UserLevel
 )
-from backend.auth.rbac_middleware import (
+from auth.rbac_middleware import (
     RBACManager, get_current_active_user,
     AuthenticationError, AuthorizationError
 )
-from backend.config.database import get_db
+from config.database import get_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -451,5 +451,5 @@ async def get_dashboard_access(
 # Helper functions
 def _user_to_response(user: User) -> UserResponse:
     """Convert User model to UserResponse"""
-    from backend.api.admin_api import _user_to_response as admin_user_to_response
+    from api.admin_api import _user_to_response as admin_user_to_response
     return admin_user_to_response(user)

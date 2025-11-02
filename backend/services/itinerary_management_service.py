@@ -17,10 +17,10 @@ import json
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 
-from backend.core.cache import cache_manager
-from backend.core.exceptions import BusinessLogicError
-from backend.services.ai_service import AIService
-from backend.services.advanced_cost_calculation_service import AdvancedCostCalculationService
+from core.cache import cache_manager
+from core.exceptions import BusinessLogicError
+from services.ai_service import AIService
+from services.advanced_cost_calculation_service import AdvancedCostCalculationService
 
 logger = logging.getLogger(__name__)
 

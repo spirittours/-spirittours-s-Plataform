@@ -15,7 +15,7 @@ import io
 import json
 import asyncio
 
-from backend.services.ai_voice_agents_service import (
+from services.ai_voice_agents_service import (
     AIVoiceAgentsService,
     VoiceAgentType,
     ConversationState,
@@ -24,10 +24,10 @@ from backend.services.ai_voice_agents_service import (
     VoiceAgentResponse,
     ai_voice_agents_service
 )
-from backend.services.pbx_3cx_integration_service import PBX3CXIntegrationService
-from backend.services.omnichannel_crm_service import OmnichannelCRMService
-from backend.services.advanced_auth_service import AdvancedAuthService, User, UserType
-from backend.config.database import get_db
+from services.pbx_3cx_integration_service import PBX3CXIntegrationService
+from services.omnichannel_crm_service import OmnichannelCRMService
+from services.advanced_auth_service import AdvancedAuthService, User, UserType
+from config.database import get_db
 from pydantic import BaseModel, Field
 import base64
 

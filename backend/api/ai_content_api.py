@@ -19,9 +19,9 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 import logging
 
-from ..database import get_db
-from ..services.ai_content_service import AIContentService, get_content_templates
-from ..services.ai_providers_base import (
+from database import get_db
+from services.ai_content_service import AIContentService, get_content_templates
+from services.ai_providers_base import (
     SocialPlatform,
     ToneStyle,
     ContentType,

@@ -20,10 +20,10 @@ from typing import List, Optional
 from datetime import datetime
 import logging
 
-from backend.database import get_db
-from backend.services.scheduling_service import SchedulingService
-from backend.auth.rbac_middleware import get_current_active_user
-from backend.models.rbac_models import User
+from config.database import get_db
+from services.scheduling_service import SchedulingService
+from auth.rbac_middleware import get_current_active_user
+from models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 
@@ -533,7 +533,7 @@ async def get_task_status(
     **Returns**: Task status, progress, result, and any errors
     """
     try:
-        from backend.celery_config import celery_app
+        from celery_config import celery_app
         
         task = celery_app.AsyncResult(task_id)
         
@@ -566,7 +566,7 @@ async def get_scheduler_config():
     - Timezone information
     - Supported cron patterns
     """
-    from backend.services.scheduling_service import SchedulingService
+    from services.scheduling_service import SchedulingService
     
     return {
         'success': True,
@@ -592,7 +592,7 @@ async def health_check():
     **Returns:** Service status and Celery worker status
     """
     try:
-        from backend.celery_config import celery_app
+        from celery_config import celery_app
         
         # Check if Celery is running
         inspector = celery_app.control.inspect()

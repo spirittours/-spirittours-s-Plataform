@@ -21,7 +21,7 @@ from email.mime.multipart import MIMEMultipart
 import requests
 import jwt
 
-from backend.models.rbac_models import User, Base
+from models.rbac_models import User, Base
 
 logger = logging.getLogger(__name__)
 

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Use the same Base as rbac_models
 try:
-    from backend.models.rbac_models import Base
+    from models.rbac_models import Base
 except ImportError:
     # Fallback for when rbac_models is not available
     from sqlalchemy.ext.declarative import declarative_base

@@ -14,12 +14,12 @@ from pydantic import BaseModel, Field, validator
 import uuid
 
 # Import database and models
-from ..config.database import get_db
-from ..models.business_models import (
+from config.database import get_db
+from models.business_models import (
     BusinessBooking, TourOperator, TravelAgency, SalesAgent,
     CustomerType, BookingChannel
 )
-from ..models.rbac_models import User
+from models.rbac_models import User
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
 

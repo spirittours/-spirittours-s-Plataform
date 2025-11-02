@@ -23,9 +23,9 @@ import uuid
 import aiohttp
 import websockets
 
-from backend.config.settings import settings
-from backend.services.pbx_3cx_integration_service import PBX3CXIntegrationService
-from backend.services.omnichannel_crm_service import OmnichannelCRMService
+from config.settings import settings
+from services.pbx_3cx_integration_service import PBX3CXIntegrationService
+from services.omnichannel_crm_service import OmnichannelCRMService
 
 # Configure logging
 logger = logging.getLogger(__name__)

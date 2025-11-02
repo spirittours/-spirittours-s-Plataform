@@ -14,7 +14,7 @@ import logging
 import json
 import asyncio
 
-from backend.services.pbx_3cx_integration_service import (
+from services.pbx_3cx_integration_service import (
     PBX3CXIntegrationService,
     PBX3CXConfig,
     CallRequest,
@@ -27,7 +27,7 @@ from backend.services.pbx_3cx_integration_service import (
     AgentStatus,
     CallStatus
 )
-from backend.services.omnichannel_crm_service import (
+from services.omnichannel_crm_service import (
     OmnichannelCRMService,
     SendMessageRequest,
     ConversationSummary,
@@ -38,8 +38,8 @@ from backend.services.omnichannel_crm_service import (
     MessageTemplate,
     MessageStatus
 )
-from backend.services.advanced_auth_service import AdvancedAuthService, User, UserType, AccountStatus
-from backend.config.database import get_db
+from services.advanced_auth_service import AdvancedAuthService, User, UserType, AccountStatus
+from config.database import get_db
 from pydantic import BaseModel, Field, validator
 import os
 
@@ -481,7 +481,7 @@ async def configure_social_platform(
     - TikTok Business Messages
     """
     try:
-        from backend.services.omnichannel_crm_service import SocialPlatformConfig
+        from services.omnichannel_crm_service import SocialPlatformConfig
         
         # Check if configuration exists
         existing_config = crm_service.db.query(SocialPlatformConfig).filter(

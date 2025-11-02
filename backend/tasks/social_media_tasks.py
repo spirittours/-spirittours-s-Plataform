@@ -17,10 +17,10 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 import asyncio
 
-from backend.celery_config import celery_app
-from backend.database import get_db
-from backend.services.ai_content_service import AIContentService
-from backend.services.social_media_adapters import (
+from celery_config import celery_app
+from database import get_db
+from services.ai_content_service import AIContentService
+from services.social_media_adapters import (
     FacebookAdapter,
     InstagramAdapter,
     TwitterAdapter
@@ -79,8 +79,8 @@ def publish_scheduled_post(
             raise ValueError(f"Unsupported platform: {platform}")
         
         # Initialize adapter with credentials
-        from backend.services.ai_providers_base import ProviderConfig
-        from backend.services.ai_providers_base import AIProvider
+        from services.ai_providers_base import ProviderConfig
+        from services.ai_providers_base import AIProvider
         
         # Create adapter instance
         # Note: This is simplified - actual implementation would use proper config
@@ -336,7 +336,7 @@ def _update_post_status(post_id: int, status: str, metadata: Optional[Dict] = No
     """Update scheduled post status in database"""
     try:
         from sqlalchemy import update
-        from backend.database import get_db
+        from database import get_db
         
         db = next(get_db())
         
@@ -357,7 +357,7 @@ def _create_scheduled_post(
 ) -> int:
     """Create a scheduled post record in database"""
     try:
-        from backend.database import get_db
+        from database import get_db
         
         db = next(get_db())
         
@@ -378,7 +378,7 @@ def _create_scheduled_post(
 def _get_pending_posts(current_time: datetime) -> list:
     """Get posts scheduled for publication"""
     try:
-        from backend.database import get_db
+        from database import get_db
         
         db = next(get_db())
         
@@ -395,7 +395,7 @@ def _get_pending_posts(current_time: datetime) -> list:
 def _get_post_by_id(post_id: int) -> Optional[Dict]:
     """Get post details by ID"""
     try:
-        from backend.database import get_db
+        from database import get_db
         
         db = next(get_db())
         

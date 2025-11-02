@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from backend.models.operations_models import Base
+from models.operations_models import Base
 import logging
 import os
 from dotenv import load_dotenv
@@ -77,7 +77,7 @@ def add_sample_data():
     Add sample data for testing
     """
     try:
-        from backend.models.operations_models import (
+        from models.operations_models import (
             Provider, ServiceType, TourGroup, OperationalStatus,
             ClosureStatus
         )

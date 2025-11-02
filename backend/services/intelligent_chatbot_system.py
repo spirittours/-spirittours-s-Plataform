@@ -59,14 +59,14 @@ import wave
 import pyaudio
 
 # Importar servicios del sistema
-from backend.services.advanced_email_service import AdvancedEmailService
-from backend.integrations.unified_payment_gateway import UnifiedPaymentGateway
-from backend.integrations.advanced_websocket_manager import AdvancedWebSocketManager
-from backend.ml.advanced_recommendation_engine import AdvancedMLSystem
-from backend.models.database import get_db
-from backend.models import User, Tour, Booking, Hotel, Customer, Conversation
-from backend.services.event_bus import EventBus
-from backend.services.workflow_engine import WorkflowEngine
+from services.advanced_email_service import AdvancedEmailService
+from integrations.unified_payment_gateway import UnifiedPaymentGateway
+from integrations.advanced_websocket_manager import AdvancedWebSocketManager
+from ml.advanced_recommendation_engine import AdvancedMLSystem
+from models.database import get_db
+from models import User, Tour, Booking, Hotel, Customer, Conversation
+from services.event_bus import EventBus
+from services.workflow_engine import WorkflowEngine
 
 logger = logging.getLogger(__name__)
 

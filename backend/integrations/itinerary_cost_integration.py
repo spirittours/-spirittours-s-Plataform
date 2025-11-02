@@ -12,9 +12,9 @@ from enum import Enum
 import uuid
 import json
 
-from backend.core.event_bus import EventBus, Event, EventType, EventMetadata, get_event_bus
-from backend.services.advanced_cost_calculation_service import AdvancedCostCalculationService
-from backend.core.cache import cache_manager
+from core.event_bus import EventBus, Event, EventType, EventMetadata, get_event_bus
+from services.advanced_cost_calculation_service import AdvancedCostCalculationService
+from core.cache import cache_manager
 
 logger = logging.getLogger(__name__)
 

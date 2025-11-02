@@ -10,13 +10,13 @@ from datetime import datetime, timedelta
 import logging
 import json
 
-from ..config.database import get_db
-from ..services.payment_service import (
+from config.database import get_db
+from services.payment_service import (
     PaymentService, PaymentConfig, PaymentRequest, PaymentIntentRequest,
     RefundRequest, PaymentResponse, PaymentProvider, PaymentMethod,
     PaymentStatus, Currency, PaymentTransaction, PaymentRefund
 )
-from ..auth.dependencies import get_current_user
+from auth.dependencies import get_current_user
 from pydantic import BaseModel, Field
 from decimal import Decimal
 

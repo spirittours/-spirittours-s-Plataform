@@ -22,8 +22,8 @@ from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field
 
 # Import our services
-from backend.models.rbac_models import Base
-from backend.config.production_database import get_db_write, get_db_read
+from models.rbac_models import Base
+from config.production_database import get_db_write, get_db_read
 
 # Configure logging
 logger = logging.getLogger(__name__)

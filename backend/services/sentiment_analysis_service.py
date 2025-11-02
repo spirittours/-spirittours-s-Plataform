@@ -420,7 +420,7 @@ class SentimentAnalysisService:
     ):
         """Store analysis results in database"""
         try:
-            from backend.database import InteractionSentiment
+            from database import InteractionSentiment
             
             interaction = InteractionSentiment(
                 post_id=post_id,
@@ -489,7 +489,7 @@ class SentimentAnalysisService:
             Dict with sentiment statistics
         """
         try:
-            from backend.database import InteractionSentiment
+            from database import InteractionSentiment
             from sqlalchemy import func, and_
             
             # Build query

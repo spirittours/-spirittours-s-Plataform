@@ -9,12 +9,12 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
 
-from ..config.database import get_db
-from ..services.cache_service import (
+from config.database import get_db
+from services.cache_service import (
     CacheService, CacheConfig, CacheStats, SerializationMethod,
     create_cache_service
 )
-from ..auth.dependencies import get_current_user
+from auth.dependencies import get_current_user
 from pydantic import BaseModel, Field
 import os
 

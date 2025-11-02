@@ -13,20 +13,20 @@ Author: GenSpark AI Developer
 Phase: 7 - Performance Optimization
 """
 
-from backend.performance.redis_cache import (
+from performance.redis_cache import (
     RedisCache,
     get_cache,
     init_cache,
     cache_result
 )
-from backend.performance.query_optimizer import (
+from performance.query_optimizer import (
     QueryOptimizer,
     get_optimizer,
     init_optimizer,
     QueryAnalysis,
     IndexRecommendation
 )
-from backend.performance.connection_pool import (
+from performance.connection_pool import (
     ConnectionPool,
     ConnectionConfig,
     ConnectionStats,
@@ -34,7 +34,7 @@ from backend.performance.connection_pool import (
     init_connection_pool,
     get_pool_statistics
 )
-from backend.performance.cdn_config import (
+from performance.cdn_config import (
     CDNManager,
     CDNConfig,
     CDNProvider,

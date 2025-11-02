@@ -9,10 +9,10 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-from backend.models.rbac_models import User
-from backend.auth.rbac_middleware import get_current_active_user, AdminRequiredDep
-from backend.config.database import get_db
-from backend.services.alert_service import AlertService, AlertSeverity, AlertType, get_alert_service
+from models.rbac_models import User
+from auth.rbac_middleware import get_current_active_user, AdminRequiredDep
+from config.database import get_db
+from services.alert_service import AlertService, AlertSeverity, AlertType, get_alert_service
 
 router = APIRouter(prefix="/alerts", tags=["Security Alerts"])
 

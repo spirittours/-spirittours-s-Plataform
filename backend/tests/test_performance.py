@@ -12,9 +12,9 @@ from typing import List, Dict
 from fastapi.testclient import TestClient
 import numpy as np
 
-from backend.main import app
-from backend.core.cache_manager import CacheManager
-from backend.core.database import get_db
+from main import app
+from core.cache_manager import CacheManager
+from core.database import get_db
 
 client = TestClient(app)
 

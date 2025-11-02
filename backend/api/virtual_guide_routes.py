@@ -10,10 +10,10 @@ from pydantic import BaseModel, Field
 import asyncio
 import json
 
-from ..database import get_db
+from database import get_db
 from ..virtual_guide.guide_service import VirtualGuideService
 from ..virtual_guide.models import GuideMode, ContentType, ContentFormat
-from ..auth.middleware import get_current_user
+from auth.middleware import get_current_user
 
 router = APIRouter(prefix="/api/guide", tags=["Virtual Guide"])
 

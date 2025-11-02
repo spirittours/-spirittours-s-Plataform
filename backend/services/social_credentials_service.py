@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, and_, or_
 from sqlalchemy.orm import selectinload
 
-from backend.services.social_media_encryption import get_encryption_service
-from backend.models import (
+from services.social_media_encryption import get_encryption_service
+from models import (
     SocialMediaCredentials,
     SocialCredentialsAuditLog,
     SocialMediaAccounts

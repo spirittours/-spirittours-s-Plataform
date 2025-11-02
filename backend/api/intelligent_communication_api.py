@@ -17,14 +17,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Backgrou
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from backend.models.rbac_models import User
-from backend.auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
-from backend.config.database import get_db
-from backend.communication.multi_channel_gateway import MultiChannelGateway, Channel
-from backend.communication.intelligent_router import IntelligentRouter, Department, RoutingMode
-from backend.communication.ai_sales_agent import AISalesAgent
-from backend.communication.human_agent_queue import HumanAgentQueue, AgentStatus
-from backend.ai.intelligent_chatbot import IntelligentChatbot
+from models.rbac_models import User
+from auth.rbac_middleware import get_current_active_user, PermissionRequiredDep
+from config.database import get_db
+from communication.multi_channel_gateway import MultiChannelGateway, Channel
+from communication.intelligent_router import IntelligentRouter, Department, RoutingMode
+from communication.ai_sales_agent import AISalesAgent
+from communication.human_agent_queue import HumanAgentQueue, AgentStatus
+from ai.intelligent_chatbot import IntelligentChatbot
 
 logger = logging.getLogger(__name__)
 
@@ -521,7 +521,7 @@ async def test_route_message(
     - Routing decisions
     """
     try:
-        from backend.communication.multi_channel_gateway import NormalizedMessage
+        from communication.multi_channel_gateway import NormalizedMessage
         from datetime import datetime
         
         # Create normalized message

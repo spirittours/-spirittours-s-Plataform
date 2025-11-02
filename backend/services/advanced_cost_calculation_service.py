@@ -16,12 +16,12 @@ import uuid
 import json
 import math
 
-from backend.models.package_quotation import (
+from models.package_quotation import (
     PackageQuotation, ItineraryDay, TourGuide,
     TransportProvider, GroupPricingTable
 )
-from backend.core.cache import cache_manager
-from backend.core.exceptions import BusinessLogicError
+from core.cache import cache_manager
+from core.exceptions import BusinessLogicError
 
 logger = logging.getLogger(__name__)
 

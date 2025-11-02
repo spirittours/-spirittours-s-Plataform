@@ -16,7 +16,7 @@ Author: GenSpark AI Developer
 Phase: 8 - Security & Compliance
 """
 
-from backend.security.security_middleware import (
+from security.security_middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
     InputValidationMiddleware,
@@ -24,7 +24,7 @@ from backend.security.security_middleware import (
     setup_cors
 )
 
-from backend.security.encryption import (
+from security.encryption import (
     EncryptionService,
     PasswordHasher,
     TokenManager,
@@ -33,7 +33,7 @@ from backend.security.encryption import (
     get_encryption
 )
 
-from backend.security.compliance import (
+from security.compliance import (
     GDPRComplianceManager,
     PCIDSSComplianceHelper,
     ConsentType,

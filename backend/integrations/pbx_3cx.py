@@ -13,7 +13,7 @@ import aiohttp
 from sqlalchemy.orm import Session
 from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from backend.models.rbac_models import User, Base
+from models.rbac_models import User, Base
 
 logger = logging.getLogger(__name__)
 

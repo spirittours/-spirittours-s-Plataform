@@ -551,7 +551,7 @@ def cached_query(ttl: int = 600):
             cache_key = f"query:{func.__name__}:{str(args)}:{str(kwargs)}"
             
             # Try to get from cache
-            from backend.core.cache_manager import cache_manager
+            from core.cache_manager import cache_manager
             cached = await cache_manager.get(cache_key)
             if cached:
                 return cached
