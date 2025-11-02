@@ -13,8 +13,8 @@ import asyncio
 import time
 from contextlib import asynccontextmanager
 
-from backend.models.rbac_models import User
-from backend.models.enhanced_audit_models import (
+from models.rbac_models import User
+from models.enhanced_audit_models import (
     EnhancedAuditLog, BookingAuditLog, AIAgentUsageLog, 
     LoginActivityLog, DataAccessLog, ActionType, RiskLevel
 )

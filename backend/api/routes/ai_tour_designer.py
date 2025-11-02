@@ -13,7 +13,7 @@ import asyncio
 import os
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.ai.generative.tour_designer import (
+from ai.generative.tour_designer import (
     GenerativeTourDesigner,
     UserProfile,
     TourPreferences,
@@ -21,10 +21,10 @@ from backend.ai.generative.tour_designer import (
     GeneratedTour,
     TourDesignerAPI
 )
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.cache_manager import CacheManager
-from backend.models.user import User
+from core.database import get_db
+from core.auth import get_current_user
+from core.cache_manager import CacheManager
+from models.user import User
 
 # Initialize router
 router = APIRouter(prefix="/api/ai/tour-designer", tags=["AI Tour Designer"])

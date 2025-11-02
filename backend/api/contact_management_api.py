@@ -26,19 +26,19 @@ import qrcode
 from email_validator import validate_email
 import re
 
-from backend.database.session import get_db
-from backend.models.contact_management_models import (
+from database.session import get_db
+from models.contact_management_models import (
     Contact, ContactGroup, ContactTag, ContactShare, ContactActivity,
     ContactCommunication, ContactImportJob, ContactExportLog, ContactAccessLog,
     ContactSyncConfiguration, ContactMergeHistory, ContactPrivacyRequest,
     ContactType, ContactSource, ContactStatus, SharePermission, AccessLevel,
     SyncStatus, ExportRequest, CommunicationChannel
 )
-from backend.services.auth_service import get_current_user
-from backend.services.notification_service import NotificationService
-from backend.services.cache_service import cache_service
-from backend.core.security import check_permission
-from backend.core.config import settings
+from services.auth_service import get_current_user
+from services.notification_service import NotificationService
+from services.cache_service import cache_service
+from core.security import check_permission
+from core.config import settings
 
 router = APIRouter(prefix="/api/contacts", tags=["Contact Management"])
 notification_service = NotificationService()

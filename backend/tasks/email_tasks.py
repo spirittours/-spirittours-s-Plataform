@@ -33,8 +33,8 @@ def fetch_new_emails(account_id: Optional[str] = None) -> Dict[str, Any]:
         Dict with fetch results
     """
     try:
-        from backend.database import get_sync_db
-        from backend.services.email_service import EmailService
+        from database import get_sync_db
+        from services.email_service import EmailService
         
         logger.info(f"Starting email fetch for account: {account_id or 'all'}")
         
@@ -108,9 +108,9 @@ def classify_pending_emails(batch_size: int = 10) -> Dict[str, Any]:
         Dict with classification results
     """
     try:
-        from backend.database import get_sync_db
-        from backend.services.email_service import EmailService
-        from backend.models.email_models import EmailMessage, EmailStatus
+        from database import get_sync_db
+        from services.email_service import EmailService
+        from models.email_models import EmailMessage, EmailStatus
         from sqlalchemy import select
         
         logger.info(f"Starting email classification batch (size: {batch_size})")
@@ -192,9 +192,9 @@ def send_auto_responses(batch_size: int = 5) -> Dict[str, Any]:
         Dict with send results
     """
     try:
-        from backend.database import get_sync_db
-        from backend.services.email_service import EmailService
-        from backend.models.email_models import EmailMessage, EmailStatus
+        from database import get_sync_db
+        from services.email_service import EmailService
+        from models.email_models import EmailMessage, EmailStatus
         from sqlalchemy import select, and_
         
         logger.info(f"Starting auto-response batch (size: {batch_size})")
@@ -273,9 +273,9 @@ def check_sla_breaches() -> Dict[str, Any]:
         Dict with breach check results
     """
     try:
-        from backend.database import get_sync_db
-        from backend.services.email_service import EmailService
-        from backend.models.email_models import EmailMessage, EmailStatus
+        from database import get_sync_db
+        from services.email_service import EmailService
+        from models.email_models import EmailMessage, EmailStatus
         from sqlalchemy import select, and_
         
         logger.info("Checking for SLA breaches")
@@ -358,9 +358,9 @@ def aggregate_daily_analytics(date: Optional[str] = None) -> Dict[str, Any]:
         Dict with aggregation results
     """
     try:
-        from backend.database import get_sync_db
-        from backend.services.email_service import EmailService
-        from backend.models.email_models import EmailMessage, EmailAccount, EmailAnalytics
+        from database import get_sync_db
+        from services.email_service import EmailService
+        from models.email_models import EmailMessage, EmailAccount, EmailAnalytics
         from sqlalchemy import select, func, and_, extract
         
         # Parse date or use yesterday
@@ -512,8 +512,8 @@ def sync_email_account(account_id: str, full_sync: bool = False) -> Dict[str, An
         Dict with sync results
     """
     try:
-        from backend.database import get_sync_db
-        from backend.services.email_service import EmailService
+        from database import get_sync_db
+        from services.email_service import EmailService
         
         logger.info(f"Syncing email account {account_id} (full_sync={full_sync})")
         

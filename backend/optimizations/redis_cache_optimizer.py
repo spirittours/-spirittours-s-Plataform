@@ -600,8 +600,8 @@ class AdvancedRedisCacheManager:
         """Warm tour data cache"""
         # Example: Load popular tours
         try:
-            from backend.models import Tour
-            from backend.database import get_db
+            from models import Tour
+            from database import get_db
             
             async with get_db() as db:
                 # Get top 100 tours

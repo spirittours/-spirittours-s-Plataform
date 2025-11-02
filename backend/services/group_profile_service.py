@@ -15,9 +15,9 @@ from enum import Enum
 import uuid
 import json
 
-from backend.core.cache import cache_manager
-from backend.core.exceptions import BusinessLogicError
-from backend.services.ai_service import AIService
+from core.cache import cache_manager
+from core.exceptions import BusinessLogicError
+from services.ai_service import AIService
 
 logger = logging.getLogger(__name__)
 

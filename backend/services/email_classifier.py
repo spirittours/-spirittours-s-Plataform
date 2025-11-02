@@ -14,11 +14,11 @@ import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from backend.models.email_models import (
+from models.email_models import (
     EmailMessage, EmailClassification, EmailCategory, 
     EmailIntent, EmailPriority, EmailLanguage
 )
-from backend.services.sentiment_analysis_service import SentimentAnalysisService
+from services.sentiment_analysis_service import SentimentAnalysisService
 
 logger = logging.getLogger(__name__)
 

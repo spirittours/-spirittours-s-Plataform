@@ -24,7 +24,7 @@ from fastapi.responses import Response as FastAPIResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.datastructures import Headers, MutableHeaders
 
-from backend.utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

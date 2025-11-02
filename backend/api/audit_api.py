@@ -10,11 +10,11 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 import json
 
-from backend.models.rbac_models import User
-from backend.auth.rbac_middleware import get_current_active_user, AdminRequiredDep, PermissionRequiredDep
-from backend.config.database import get_db
-from backend.services.enhanced_audit_service import EnhancedAuditService, get_audit_service
-from backend.models.enhanced_audit_models import (
+from models.rbac_models import User
+from auth.rbac_middleware import get_current_active_user, AdminRequiredDep, PermissionRequiredDep
+from config.database import get_db
+from services.enhanced_audit_service import EnhancedAuditService, get_audit_service
+from models.enhanced_audit_models import (
     EnhancedAuditLog, BookingAuditLog, AIAgentUsageLog, LoginActivityLog, DataAccessLog,
     AuditLogResponse, BookingAuditResponse, AIAgentUsageResponse, AuditSearchFilters,
     ActionType, RiskLevel

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import logging
 
-from backend.services.commission_management_service import (
+from services.commission_management_service import (
     CommissionManagementService,
     CommissionStructureRequest,
     CommissionCalculationRequest,
@@ -23,8 +23,8 @@ from backend.services.commission_management_service import (
     CommissionType,
     PaymentFrequency
 )
-from backend.services.advanced_auth_service import AdvancedAuthService, User, UserType, AccountStatus
-from backend.config.database import get_db
+from services.advanced_auth_service import AdvancedAuthService, User, UserType, AccountStatus
+from config.database import get_db
 from pydantic import BaseModel, Field
 
 # Configure logging

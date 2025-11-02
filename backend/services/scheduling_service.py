@@ -19,7 +19,7 @@ import logging
 from croniter import croniter
 import pytz
 
-from backend.tasks.social_media_tasks import (
+from tasks.social_media_tasks import (
     publish_scheduled_post,
     generate_and_schedule,
     bulk_schedule_posts
@@ -108,7 +108,7 @@ class SchedulingService:
                     }
             
             # Create scheduled post record
-            from backend.database import ScheduledPost
+            from database import ScheduledPost
             
             post = ScheduledPost(
                 platform=platform,
@@ -252,7 +252,7 @@ class SchedulingService:
             List of scheduled posts
         """
         try:
-            from backend.database import ScheduledPost
+            from database import ScheduledPost
             
             query = select(ScheduledPost)
             
@@ -303,7 +303,7 @@ class SchedulingService:
             Dict with cancellation result
         """
         try:
-            from backend.database import ScheduledPost
+            from database import ScheduledPost
             
             result = await self.db.execute(
                 update(ScheduledPost)
@@ -350,7 +350,7 @@ class SchedulingService:
             Dict with rescheduling result
         """
         try:
-            from backend.database import ScheduledPost
+            from database import ScheduledPost
             
             result = await self.db.execute(
                 update(ScheduledPost)

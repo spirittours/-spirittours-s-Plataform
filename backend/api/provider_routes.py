@@ -8,10 +8,10 @@ from typing import List, Dict, Optional, Any
 from datetime import date, datetime
 from pydantic import BaseModel, Field
 
-from ..database import get_db
+from database import get_db
 from ..provider_management.services import ProviderManagementService
 from ..provider_management.models import Provider, ProviderType, BookingStatus
-from ..auth.middleware import get_current_user
+from auth.middleware import get_current_user
 
 router = APIRouter(prefix="/api/providers", tags=["Provider Management"])
 

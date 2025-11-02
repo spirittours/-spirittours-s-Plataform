@@ -432,7 +432,7 @@ class EmailAutomationEngine:
         }
         
         # Crear y enviar email
-        from backend.email_marketing.core.email_engine import create_email_message
+        from email_marketing.core.email_engine import create_email_message
         
         message = create_email_message(
             to_email=contact_data['email'],

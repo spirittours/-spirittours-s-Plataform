@@ -28,18 +28,18 @@ import requests
 from O365 import Account, FileSystemTokenBackend
 
 # WhatsApp Business API
-from backend.services.whatsapp_business_service import WhatsAppBusinessService
+from services.whatsapp_business_service import WhatsAppBusinessService
 
-from backend.models.contacts_models import (
+from models.contacts_models import (
     Contact, ContactGroup, ContactTag, ContactShare, ContactActivity,
     ContactImport, ContactExport, ContactSyncSettings, ContactDuplicateCandidate,
     ContactPermission, ContactType, ContactSource, ContactVisibility, 
     SharePermission, SyncStatus, DataSensitivity
 )
-from backend.models.user_models import User, Role
-from backend.core.security import encrypt_data, decrypt_data
-from backend.core.cache import cache_result, invalidate_cache
-from backend.core.exceptions import (
+from models.user_models import User, Role
+from core.security import encrypt_data, decrypt_data
+from core.cache import cache_result, invalidate_cache
+from core.exceptions import (
     PermissionDeniedError, ValidationError, NotFoundError,
     DuplicateError, ExportLimitExceededError
 )

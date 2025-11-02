@@ -11,17 +11,17 @@ from pydantic import BaseModel, EmailStr, Field, validator
 import pandas as pd
 import io
 
-from backend.database import get_db
-from backend.auth import get_current_user
-from backend.models.user_models import User
-from backend.models.contacts_models import (
+from database import get_db
+from auth import get_current_user
+from models.user_models import User
+from models.contacts_models import (
     Contact, ContactGroup, ContactTag, ContactShare,
     ContactType, ContactSource, ContactVisibility,
     SharePermission, SyncStatus
 )
-from backend.services.contacts_service import ContactsService
-from backend.core.rate_limiter import rate_limit
-from backend.core.audit import audit_log
+from services.contacts_service import ContactsService
+from core.rate_limiter import rate_limit
+from core.audit import audit_log
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/contacts", tags=["Contacts"])

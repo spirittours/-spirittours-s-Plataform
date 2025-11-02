@@ -4,7 +4,7 @@ Unit Tests for IntelligentRouter
 
 import pytest
 from datetime import datetime
-from backend.communication.intelligent_router import (
+from communication.intelligent_router import (
     IntelligentRouter,
     ConversationContext,
     ContactInfo,

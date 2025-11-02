@@ -8,13 +8,13 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from ..services.module_configuration_service import (
+from services.module_configuration_service import (
     module_configuration_service,
     ModuleCategory,
     ModuleStatus,
     ModuleConfig
 )
-from ..auth import get_current_user, require_role
+from auth import get_current_user, require_role
 
 router = APIRouter(
     prefix="/api/v1/modules",

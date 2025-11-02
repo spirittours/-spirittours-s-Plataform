@@ -14,12 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.orm import selectinload
 
-from backend.models.email_models import (
+from models.email_models import (
     EmailAccount, EmailMessage, EmailClassification, EmailResponse,
     EmailAnalytics, EmailTemplate, EmailCategory, EmailIntent,
     EmailPriority, EmailStatus, ResponseType, EmailLanguage
 )
-from backend.services.email_classifier import EmailClassifier
+from services.email_classifier import EmailClassifier
 
 logger = logging.getLogger(__name__)
 

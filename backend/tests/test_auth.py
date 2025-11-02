@@ -10,10 +10,10 @@ from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from backend.main import app
-from backend.models.user import User
-from backend.core.auth import create_access_token, verify_password, get_password_hash
-from backend.core.database import get_db
+from main import app
+from models.user import User
+from core.auth import create_access_token, verify_password, get_password_hash
+from core.database import get_db
 
 client = TestClient(app)
 

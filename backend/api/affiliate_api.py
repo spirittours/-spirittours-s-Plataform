@@ -15,17 +15,17 @@ import hashlib
 import json
 import uuid
 
-from backend.database import get_db
-from backend.models.affiliate_models import (
+from database import get_db
+from models.affiliate_models import (
     Affiliate, AffiliateClick, AffiliateConversion, AffiliatePayment,
     AffiliateMaterial, AffiliatePromoCode, AffiliateNotification,
     AffiliateType, AffiliateTier, AffiliateStatus, ConversionStatus,
     PaymentStatus, PaymentMethod
 )
-from backend.models.business_models import Booking, Tour, Customer
-from backend.auth import get_current_user, create_access_token
-from backend.services.email_service import EmailService
-from backend.services.cache_service import cache_service
+from models.business_models import Booking, Tour, Customer
+from auth import get_current_user, create_access_token
+from services.email_service import EmailService
+from services.cache_service import cache_service
 from pydantic import BaseModel, EmailStr, Field, validator
 
 router = APIRouter(prefix="/api/affiliate", tags=["Affiliate Program"])

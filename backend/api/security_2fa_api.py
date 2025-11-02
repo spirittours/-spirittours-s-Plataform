@@ -9,10 +9,10 @@ from typing import Dict, Any, List
 from pydantic import BaseModel
 from datetime import datetime
 
-from backend.models.rbac_models import User
-from backend.auth.rbac_middleware import get_current_active_user, AdminRequiredDep
-from backend.auth.security_2fa import SecurityManager, TwoFactorAuth
-from backend.config.database import get_db
+from models.rbac_models import User
+from auth.rbac_middleware import get_current_active_user, AdminRequiredDep
+from auth.security_2fa import SecurityManager, TwoFactorAuth
+from config.database import get_db
 
 router = APIRouter(prefix="/security/2fa", tags=["Two-Factor Authentication"])
 

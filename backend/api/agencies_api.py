@@ -12,17 +12,17 @@ import json
 from pydantic import BaseModel, EmailStr, validator
 import logging
 
-from ..database import get_db
-from ..models.agencies_models import (
+from database import get_db
+from models.agencies_models import (
     Agency, AgencyDocument, AgencyContract, 
     AgencyCommission, AgencyPayment, AgencyUser
 )
-from ..services.agencies_service import AgenciesService
-from ..services.auth_service import get_current_user, require_role
-from ..utils.email import send_email
-from ..utils.file_storage import store_file, validate_file
-from ..utils.pdf_generator import generate_contract_pdf
-from ..utils.digital_signature import verify_signature, create_signature_hash
+from services.agencies_service import AgenciesService
+from services.auth_service import get_current_user, require_role
+from utils.email import send_email
+from utils.file_storage import store_file, validate_file
+from utils.pdf_generator import generate_contract_pdf
+from utils.digital_signature import verify_signature, create_signature_hash
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/agencies", tags=["agencies"])

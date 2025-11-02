@@ -8,12 +8,12 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from ..services.plugin_marketplace_service import (
+from services.plugin_marketplace_service import (
     plugin_marketplace_service,
     PluginType,
     PluginLicense
 )
-from ..auth import get_current_user, require_role
+from auth import get_current_user, require_role
 
 router = APIRouter(
     prefix="/api/v1/marketplace",

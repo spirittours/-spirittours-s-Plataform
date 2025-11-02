@@ -9,10 +9,10 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field
 import asyncio
 
-from ..database import get_db
+from database import get_db
 from ..vip_tours.quotation_service import VIPQuotationService
 from ..vip_tours.models import VIPItinerary, VIPQuote, QuoteStatus, ClientType
-from ..auth.middleware import get_current_user
+from auth.middleware import get_current_user
 
 router = APIRouter(prefix="/api/vip", tags=["VIP Tours"])
 

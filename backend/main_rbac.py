@@ -18,16 +18,16 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Database imports
-from backend.config.database import engine, get_db
-from backend.models.rbac_models import Base
-from backend.database.init_rbac import initialize_rbac_system
+from config.database import engine, get_db
+from models.rbac_models import Base
+from database.init_rbac import initialize_rbac_system
 
 # API Routers
-from backend.api.auth_api import router as auth_router
-from backend.api.admin_api import router as admin_router
+from api.auth_api import router as auth_router
+from api.admin_api import router as admin_router
 
 # RBAC Middleware
-from backend.auth.rbac_middleware import (
+from auth.rbac_middleware import (
     get_current_active_user, 
     RBACManager, 
     AuditMiddleware,

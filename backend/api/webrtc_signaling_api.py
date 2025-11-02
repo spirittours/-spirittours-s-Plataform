@@ -10,7 +10,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 import logging
 
-from ..services.webrtc_signaling_service import (
+from services.webrtc_signaling_service import (
     webrtc_signaling_service,
     CallStatus,
     SignalingMessageType
@@ -246,7 +246,7 @@ async def end_session(session_id: str):
         
         # Finalizar sesión
         if session.call_status not in [CallStatus.ENDED, CallStatus.FAILED]:
-            from ..services.webrtc_signaling_service import SignalingMessage
+            from services.webrtc_signaling_service import SignalingMessage
             
             await webrtc_signaling_service.handle_call_ended(
                 session.websocket,

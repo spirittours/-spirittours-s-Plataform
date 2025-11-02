@@ -9,10 +9,10 @@ from sqlalchemy.orm import Session
 import asyncio
 import json
 
-from backend.database import get_db
-from backend.auth import get_current_user
-from backend.services.analytics_service import AnalyticsService
-from backend.models.database import User
+from database import get_db
+from auth import get_current_user
+from services.analytics_service import AnalyticsService
+from models.database import User
 
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])

@@ -13,12 +13,12 @@ import io
 import os
 import mimetypes
 
-from ..config.database import get_db
-from ..services.file_service import (
+from config.database import get_db
+from services.file_service import (
     FileService, StorageConfig, FileInfo, UploadResult,
     StorageProvider, FileCategory, FileStatus
 )
-from ..auth.dependencies import get_current_user
+from auth.dependencies import get_current_user
 from pydantic import BaseModel, Field
 
 # Configure logging
@@ -449,7 +449,7 @@ async def list_files(
     """List files with pagination and filters"""
     
     try:
-        from ..services.file_service import FileRecord
+        from services.file_service import FileRecord
         
         # Build query
         query = db.query(FileRecord).filter(
@@ -538,7 +538,7 @@ async def search_files(
     """Search files with advanced filters"""
     
     try:
-        from ..services.file_service import FileRecord
+        from services.file_service import FileRecord
         from sqlalchemy import and_, or_
         
         # Build query

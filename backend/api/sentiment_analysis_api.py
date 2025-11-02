@@ -18,10 +18,10 @@ from typing import List, Optional
 from datetime import datetime
 import logging
 
-from backend.database import get_db
-from backend.services.sentiment_analysis_service import SentimentAnalysisService
-from backend.auth.rbac_middleware import get_current_active_user
-from backend.models.rbac_models import User
+from database import get_db
+from services.sentiment_analysis_service import SentimentAnalysisService
+from auth.rbac_middleware import get_current_active_user
+from models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +238,7 @@ async def get_intent_categories():
     - Keywords associated with each intent
     - Description of each intent type
     """
-    from backend.services.sentiment_analysis_service import SentimentAnalysisService
+    from services.sentiment_analysis_service import SentimentAnalysisService
     
     return {
         'success': True,
@@ -281,7 +281,7 @@ async def get_response_templates():
     - Response templates by category
     - Usage guidelines
     """
-    from backend.services.sentiment_analysis_service import SentimentAnalysisService
+    from services.sentiment_analysis_service import SentimentAnalysisService
     
     return {
         'success': True,
@@ -304,7 +304,7 @@ async def get_sentiment_config():
     - Available features
     - Configuration settings
     """
-    from backend.services.sentiment_analysis_service import TRANSFORMERS_AVAILABLE
+    from services.sentiment_analysis_service import TRANSFORMERS_AVAILABLE
     
     return {
         'success': True,
@@ -337,7 +337,7 @@ async def health_check():
     
     **Returns:** Service status and model availability
     """
-    from backend.services.sentiment_analysis_service import TRANSFORMERS_AVAILABLE
+    from services.sentiment_analysis_service import TRANSFORMERS_AVAILABLE
     
     return {
         'status': 'healthy',

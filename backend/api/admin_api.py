@@ -11,17 +11,17 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 import uuid
 
-from backend.models.rbac_models import (
+from models.rbac_models import (
     User, Role, Permission, Branch, AuditLog, SessionToken,
     PermissionScope, UserLevel, PermissionChecker,
     UserResponse, CreateUserRequest, UpdateUserRequest,
     RoleResponse, PermissionResponse, BranchResponse
 )
-from backend.auth.rbac_middleware import (
+from auth.rbac_middleware import (
     get_current_active_user, AdminRequiredDep, PermissionRequiredDep,
     RBACManager, AuthorizationError, require_admin
 )
-from backend.config.database import get_db
+from config.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["Admin Management"])
 

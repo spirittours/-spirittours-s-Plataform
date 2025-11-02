@@ -9,7 +9,7 @@ import hashlib
 import uuid
 from datetime import datetime
 
-from backend.models.rbac_models import (
+from models.rbac_models import (
     User, Role, Permission, Branch,
     PermissionScope, UserLevel
 )

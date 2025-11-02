@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime, timedelta
-from ..services.monitoring_service import (
+from services.monitoring_service import (
     get_monitoring_service, 
     AdvancedMonitoringService, 
     ServiceMetric, 

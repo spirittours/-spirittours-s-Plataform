@@ -19,7 +19,7 @@ from sqlalchemy import select, and_, or_, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from backend.models.transport_models import (
+from models.transport_models import (
     TransportProvider, TransportVehicle, TransportDriver,
     ServiceRequest, TransportQuote, ServiceConfirmation,
     VehicleAssignment, ServiceCommunication, ProviderDocument,

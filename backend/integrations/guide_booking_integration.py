@@ -12,8 +12,8 @@ from enum import Enum
 import uuid
 import json
 
-from backend.core.event_bus import EventBus, Event, EventType, EventMetadata, get_event_bus
-from backend.services.guide_management_service import GuideManagementService
+from core.event_bus import EventBus, Event, EventType, EventMetadata, get_event_bus
+from services.guide_management_service import GuideManagementService
 
 logger = logging.getLogger(__name__)
 

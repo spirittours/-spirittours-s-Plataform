@@ -14,7 +14,7 @@ import base64
 import tempfile
 import os
 
-from ..services.advanced_voice_service import (
+from services.advanced_voice_service import (
     advanced_voice_service,
     VoiceProfile,
     VoiceCloningRequest,

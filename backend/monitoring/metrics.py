@@ -28,7 +28,7 @@ import time
 import psutil
 import asyncio
 
-from backend.utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -13,7 +13,7 @@ from enum import Enum
 from dataclasses import dataclass, asdict
 import inspect
 
-from backend.core.event_bus import EventBus, Event, EventType, EventMetadata, get_event_bus
+from core.event_bus import EventBus, Event, EventType, EventMetadata, get_event_bus
 
 logger = logging.getLogger(__name__)
 

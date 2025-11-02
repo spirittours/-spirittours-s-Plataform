@@ -9,14 +9,14 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 
-from ..config.database import get_db
-from ..services.notification_service import (
+from config.database import get_db
+from services.notification_service import (
     NotificationService, NotificationConfig, NotificationRequest,
     BulkNotificationRequest, NotificationResponse, NotificationType,
     NotificationPriority, NotificationStatus, NotificationTemplate,
     NotificationLog, send_booking_confirmation_email, send_booking_reminder_sms
 )
-from ..auth.dependencies import get_current_user
+from auth.dependencies import get_current_user
 from pydantic import BaseModel, Field
 
 # Configure logging

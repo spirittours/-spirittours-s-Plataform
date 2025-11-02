@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY, INET, BYTEA
-from backend.database.session import Base
+from database.session import Base
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum

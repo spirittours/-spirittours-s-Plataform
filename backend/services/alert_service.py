@@ -12,11 +12,11 @@ from sqlalchemy import func, and_, or_, desc
 import json
 from enum import Enum
 
-from backend.models.enhanced_audit_models import (
+from models.enhanced_audit_models import (
     EnhancedAuditLog, LoginActivityLog, BookingAuditLog, 
     AIAgentUsageLog, ActionType, RiskLevel
 )
-from backend.models.rbac_models import User
+from models.rbac_models import User
 
 logger = logging.getLogger(__name__)
 

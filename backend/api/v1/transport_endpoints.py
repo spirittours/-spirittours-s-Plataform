@@ -14,13 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field, validator
 import uuid
 
-from backend.database import get_db
-from backend.services.transport_service import TransportManagementService
-from backend.models.transport_models import (
+from database import get_db
+from services.transport_service import TransportManagementService
+from models.transport_models import (
     ProviderStatus, ProviderTier, VehicleType, VehicleStatus,
     DriverStatus, ServiceRequestStatus, QuoteStatus, ServiceType
 )
-from backend.auth.dependencies import get_current_user, require_role
+from auth.dependencies import get_current_user, require_role
 
 # Configure logging
 logger = logging.getLogger(__name__)

@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
-from backend.database import Base
+from database import Base
 import uuid
 import enum
 from datetime import datetime, timedelta
