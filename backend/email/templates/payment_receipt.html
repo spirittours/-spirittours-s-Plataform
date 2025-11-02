@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Receipt - Spirit Tours{% endblock %}
+
+{% block header_title %}Payment Received{% endblock %}
+{% block header_subtitle %}Receipt for your transaction{% endblock %}
+
+{% block content %}
+<p>Dear {{ user_name }},</p>
+
+<p>This email confirms that we have received your payment for booking reference <strong>{{ booking_reference }}</strong>.</p>
+
+<div class="success-box">
+    <strong>✓ Payment Successful</strong><br>
+    Transaction ID: <strong>{{ transaction_id }}</strong>
+</div>
+
+<h2 style="color: #1976d2; margin: 30px 0 20px 0;">Payment Details</h2>
+
+<table class="details-table">
+    <tr>
+        <td class="label">Payment Date:</td>
+        <td>{{ payment_date|datetime }}</td>
+    </tr>
+    <tr>
+        <td class="label">Payment Method:</td>
+        <td>{{ payment_method }}</td>
+    </tr>
+    <tr>
+        <td class="label">Transaction ID:</td>
+        <td>{{ transaction_id }}</td>
+    </tr>
+    <tr style="font-size: 18px; font-weight: bold;">
+        <td class="label">Amount Paid:</td>
+        <td style="color: #1976d2;">{{ amount|currency(currency) }}</td>
+    </tr>
+</table>
+
+<h2 style="color: #1976d2; margin: 30px 0 20px 0;">Booking Information</h2>
+
+<table class="details-table">
+    <tr>
+        <td class="label">Booking Reference:</td>
+        <td><strong>{{ booking_reference }}</strong></td>
+    </tr>
+    <tr>
+        <td class="label">Tour Name:</td>
+        <td>{{ tour_name }}</td>
+    </tr>
+    <tr>
+        <td class="label">Date:</td>
+        <td>{{ booking_date|date('%B %d, %Y') }}</td>
+    </tr>
+    <tr>
+        <td class="label">Guests:</td>
+        <td>{{ guest_count }}</td>
+    </tr>
+</table>
+
+<div class="info-box">
+    <strong>Receipt Information:</strong><br>
+    This receipt serves as proof of payment. Please keep it for your records.
+    You can also download a PDF version from your account dashboard.
+</div>
+
+<center>
+    <a href="{{ receipt_pdf_url }}" class="button">Download PDF Receipt</a>
+</center>
+
+<p style="margin-top: 30px;">If you have any questions about this payment, please contact our support team.</p>
+
+<p>Thank you for choosing Spirit Tours!</p>
+
+<p>Best regards,<br>
+<strong>The Spirit Tours Team</strong></p>
+{% endblock %}

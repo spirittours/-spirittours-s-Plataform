@@ -1,0 +1,55 @@
+# Example Agent Configuration
+# ===========================
+# This is a template showing all available configuration options.
+# Copy this file and customize for each agent type.
+
+# Basic identification
+agent_type: "example-agent"
+agent_name: "Example Agent"
+
+# Enable/disable agent
+enabled: true
+
+# Execution parameters
+max_concurrent_tasks: 10
+timeout: 300  # seconds
+retry_attempts: 3
+retry_delay: 5  # seconds
+
+# Agent capabilities
+capabilities:
+  - "data_analysis"
+  - "recommendation"
+  - "notification"
+
+# Agent dependencies (other agents this agent depends on)
+dependencies:
+  - "database-agent"
+  - "notification-agent"
+
+# Agent priority for task routing (1-10, higher = more priority)
+priority: 5
+
+# Agent-specific parameters
+parameters:
+  # Example parameters - customize per agent
+  api_endpoint: "https://api.example.com"
+  api_key: "${API_KEY}"  # Use environment variable
+  cache_ttl: 3600
+  batch_size: 100
+  
+  # ML model parameters (if applicable)
+  model_name: "example-model-v1"
+  confidence_threshold: 0.85
+  
+  # Notification settings
+  alert_channels:
+    - "email"
+    - "slack"
+
+# Additional metadata
+metadata:
+  description: "Example agent demonstrating configuration structure"
+  version: "1.0.0"
+  author: "Spirit Tours Development Team"
+  created_at: "2025-11-02"

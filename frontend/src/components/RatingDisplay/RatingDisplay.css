@@ -1,0 +1,56 @@
+/**
+ * Rating Display Styles
+ */
+
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stars-container {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.star.small {
+  width: 16px;
+  height: 16px;
+}
+
+.star.medium {
+  width: 20px;
+  height: 20px;
+}
+
+.star.large {
+  width: 28px;
+  height: 28px;
+}
+
+.star.interactive {
+  cursor: pointer;
+}
+
+.star.interactive:hover {
+  transform: scale(1.1);
+}
+
+.review-count {
+  font-size: 0.875rem;
+  color: #666;
+  margin-left: 4px;
+}
+
+.rating-display.small .review-count {
+  font-size: 0.75rem;
+}
+
+.rating-display.large .review-count {
+  font-size: 1rem;
+}

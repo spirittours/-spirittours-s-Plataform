@@ -1,0 +1,94 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "startServerCommand": "npm run preview",
+      "startServerReadyPattern": "Local:",
+      "url": [
+        "http://localhost:4173",
+        "http://localhost:4173/tours",
+        "http://localhost:4173/bookings",
+        "http://localhost:4173/about"
+      ],
+      "settings": {
+        "preset": "desktop",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1
+        },
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1350,
+          "height": 940,
+          "deviceScaleFactor": 1,
+          "disabled": false
+        }
+      }
+    },
+    "assert": {
+      "preset": "lighthouse:recommended",
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.85 }],
+        "categories:accessibility": ["error", { "minScore": 0.90 }],
+        "categories:best-practices": ["error", { "minScore": 0.85 }],
+        "categories:seo": ["error", { "minScore": 0.90 }],
+        "categories:pwa": ["warn", { "minScore": 0.80 }],
+        
+        "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 300 }],
+        "speed-index": ["warn", { "maxNumericValue": 3400 }],
+        "interactive": ["warn", { "maxNumericValue": 3500 }],
+        
+        "max-potential-fid": ["warn", { "maxNumericValue": 130 }],
+        "server-response-time": ["warn", { "maxNumericValue": 600 }],
+        
+        "unused-css-rules": ["warn", { "maxLength": 1 }],
+        "unused-javascript": ["warn", { "maxLength": 1 }],
+        "modern-image-formats": ["warn", { "maxLength": 0 }],
+        "uses-optimized-images": ["warn", { "maxLength": 0 }],
+        "uses-text-compression": ["error", { "maxLength": 0 }],
+        "uses-responsive-images": ["warn", { "maxLength": 1 }],
+        
+        "render-blocking-resources": ["warn", { "maxLength": 1 }],
+        "offscreen-images": ["warn", { "maxLength": 1 }],
+        
+        "dom-size": ["warn", { "maxNumericValue": 1500 }],
+        "bootup-time": ["warn", { "maxNumericValue": 3500 }],
+        "mainthread-work-breakdown": ["warn", { "maxNumericValue": 4000 }],
+        
+        "font-display": "error",
+        "uses-long-cache-ttl": ["warn", { "minScore": 0.75 }],
+        "uses-http2": "error",
+        "efficient-animated-content": "warn",
+        
+        "viewport": "error",
+        "document-title": "error",
+        "meta-description": "error",
+        "link-text": "warn",
+        "crawlable-anchors": "error",
+        "is-crawlable": "error",
+        "robots-txt": "warn",
+        "hreflang": "warn",
+        "canonical": "warn",
+        
+        "color-contrast": "error",
+        "image-alt": "error",
+        "label": "error",
+        "button-name": "error",
+        "aria-roles": "error",
+        "aria-allowed-attr": "error",
+        "aria-required-attr": "error",
+        "aria-valid-attr": "error",
+        "aria-valid-attr-value": "error",
+        "tabindex": "warn",
+        "duplicate-id-aria": "error"
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

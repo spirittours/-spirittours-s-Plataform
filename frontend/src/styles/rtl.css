@@ -1,0 +1,349 @@
+/**
+ * RTL (Right-to-Left) Styles
+ * 
+ * Styles for proper RTL language support (Hebrew, Arabic).
+ * These styles are automatically applied when the document direction is RTL.
+ */
+
+/* ========================================
+   RTL Direction Overrides
+   ======================================== */
+
+[dir='rtl'] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ========================================
+   Text Alignment
+   ======================================== */
+
+[dir='rtl'] .text-left {
+  text-align: right !important;
+}
+
+[dir='rtl'] .text-right {
+  text-align: left !important;
+}
+
+/* ========================================
+   Margins and Padding
+   ======================================== */
+
+/* Margin Left/Right Swap */
+[dir='rtl'] .ml-1 { margin-right: 0.25rem; margin-left: 0; }
+[dir='rtl'] .ml-2 { margin-right: 0.5rem; margin-left: 0; }
+[dir='rtl'] .ml-3 { margin-right: 0.75rem; margin-left: 0; }
+[dir='rtl'] .ml-4 { margin-right: 1rem; margin-left: 0; }
+[dir='rtl'] .ml-5 { margin-right: 1.25rem; margin-left: 0; }
+
+[dir='rtl'] .mr-1 { margin-left: 0.25rem; margin-right: 0; }
+[dir='rtl'] .mr-2 { margin-left: 0.5rem; margin-right: 0; }
+[dir='rtl'] .mr-3 { margin-left: 0.75rem; margin-right: 0; }
+[dir='rtl'] .mr-4 { margin-left: 1rem; margin-right: 0; }
+[dir='rtl'] .mr-5 { margin-left: 1.25rem; margin-right: 0; }
+
+/* Padding Left/Right Swap */
+[dir='rtl'] .pl-1 { padding-right: 0.25rem; padding-left: 0; }
+[dir='rtl'] .pl-2 { padding-right: 0.5rem; padding-left: 0; }
+[dir='rtl'] .pl-3 { padding-right: 0.75rem; padding-left: 0; }
+[dir='rtl'] .pl-4 { padding-right: 1rem; padding-left: 0; }
+[dir='rtl'] .pl-5 { padding-right: 1.25rem; padding-left: 0; }
+
+[dir='rtl'] .pr-1 { padding-left: 0.25rem; padding-right: 0; }
+[dir='rtl'] .pr-2 { padding-left: 0.5rem; padding-right: 0; }
+[dir='rtl'] .pr-3 { padding-left: 0.75rem; padding-right: 0; }
+[dir='rtl'] .pr-4 { padding-left: 1rem; padding-right: 0; }
+[dir='rtl'] .pr-5 { padding-left: 1.25rem; padding-right: 0; }
+
+/* ========================================
+   Flexbox
+   ======================================== */
+
+[dir='rtl'] .flex-row {
+  flex-direction: row-reverse;
+}
+
+[dir='rtl'] .justify-start {
+  justify-content: flex-end !important;
+}
+
+[dir='rtl'] .justify-end {
+  justify-content: flex-start !important;
+}
+
+/* ========================================
+   Icons and Arrows
+   ======================================== */
+
+[dir='rtl'] .icon-left {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .icon-right {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .arrow-left::before {
+  content: '→';
+}
+
+[dir='rtl'] .arrow-right::before {
+  content: '←';
+}
+
+/* ========================================
+   Navigation
+   ======================================== */
+
+[dir='rtl'] .nav,
+[dir='rtl'] .navbar {
+  flex-direction: row-reverse;
+}
+
+[dir='rtl'] .nav-item:first-child {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+[dir='rtl'] .nav-item:last-child {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+
+[dir='rtl'] .btn-group {
+  flex-direction: row-reverse;
+}
+
+[dir='rtl'] .btn-icon-left {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+[dir='rtl'] .btn-icon-right {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+
+[dir='rtl'] .form-check {
+  padding-left: 0;
+  padding-right: 1.5rem;
+}
+
+[dir='rtl'] .form-check-input {
+  margin-left: 0;
+  margin-right: -1.5rem;
+}
+
+[dir='rtl'] input[type='checkbox'],
+[dir='rtl'] input[type='radio'] {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+/* ========================================
+   Modals and Dialogs
+   ======================================== */
+
+[dir='rtl'] .modal-header .close {
+  margin: -1rem auto -1rem -1rem;
+}
+
+[dir='rtl'] .modal-footer {
+  flex-direction: row-reverse;
+}
+
+/* ========================================
+   Lists
+   ======================================== */
+
+[dir='rtl'] ul,
+[dir='rtl'] ol {
+  padding-right: 2rem;
+  padding-left: 0;
+}
+
+[dir='rtl'] .list-group-item {
+  text-align: right;
+}
+
+/* ========================================
+   Tables
+   ======================================== */
+
+[dir='rtl'] .table {
+  text-align: right;
+}
+
+[dir='rtl'] .table th,
+[dir='rtl'] .table td {
+  text-align: right;
+}
+
+/* ========================================
+   Cards
+   ======================================== */
+
+[dir='rtl'] .card-header {
+  text-align: right;
+}
+
+[dir='rtl'] .card-body {
+  text-align: right;
+}
+
+[dir='rtl'] .card-footer {
+  text-align: right;
+}
+
+/* ========================================
+   Tooltips and Popovers
+   ======================================== */
+
+[dir='rtl'] .tooltip {
+  text-align: right;
+}
+
+[dir='rtl'] .popover {
+  text-align: right;
+}
+
+/* ========================================
+   Breadcrumbs
+   ======================================== */
+
+[dir='rtl'] .breadcrumb {
+  flex-direction: row-reverse;
+}
+
+[dir='rtl'] .breadcrumb-item + .breadcrumb-item::before {
+  padding-right: 0;
+  padding-left: 0.5rem;
+  content: '\\';
+}
+
+/* ========================================
+   Material-UI Specific
+   ======================================== */
+
+[dir='rtl'] .MuiDrawer-paperAnchorLeft {
+  right: 0;
+  left: auto;
+}
+
+[dir='rtl'] .MuiDrawer-paperAnchorRight {
+  left: 0;
+  right: auto;
+}
+
+[dir='rtl'] .MuiListItemIcon-root {
+  margin-right: 0;
+  margin-left: 16px;
+}
+
+[dir='rtl'] .MuiListItemText-root {
+  text-align: right;
+}
+
+[dir='rtl'] .MuiChip-icon {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+[dir='rtl'] .MuiChip-deleteIcon {
+  margin-left: 0;
+  margin-right: -6px;
+}
+
+[dir='rtl'] .MuiDialogActions-root {
+  flex-direction: row-reverse;
+}
+
+/* ========================================
+   Custom Component Overrides
+   ======================================== */
+
+/* Tour Cards */
+[dir='rtl'] .tour-card {
+  text-align: right;
+}
+
+[dir='rtl'] .tour-card-price {
+  text-align: left;
+}
+
+/* Booking Form */
+[dir='rtl'] .booking-form {
+  text-align: right;
+}
+
+/* Search Bar */
+[dir='rtl'] .search-bar input {
+  text-align: right;
+  padding-right: 2.5rem;
+  padding-left: 1rem;
+}
+
+[dir='rtl'] .search-icon {
+  right: auto;
+  left: 0.75rem;
+}
+
+/* Rating Stars */
+[dir='rtl'] .rating-stars {
+  flex-direction: row-reverse;
+}
+
+/* Language Selector */
+[dir='rtl'] .language-selector {
+  flex-direction: row-reverse;
+}
+
+/* ========================================
+   Animations for RTL
+   ======================================== */
+
+@keyframes slideInRight-rtl {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft-rtl {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+[dir='rtl'] .slide-in-right {
+  animation: slideInRight-rtl 0.3s ease-out;
+}
+
+[dir='rtl'] .slide-in-left {
+  animation: slideInLeft-rtl 0.3s ease-out;
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+
+@media print {
+  [dir='rtl'] body {
+    direction: rtl;
+    text-align: right;
+  }
+}

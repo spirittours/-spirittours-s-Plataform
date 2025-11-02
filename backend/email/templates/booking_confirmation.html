@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Confirmation - Spirit Tours{% endblock %}
+
+{% block header_title %}Booking Confirmed!{% endblock %}
+{% block header_subtitle %}Your adventure awaits{% endblock %}
+
+{% block content %}
+<p>Dear {{ user_name }},</p>
+
+<p>Thank you for booking with Spirit Tours! We're excited to confirm your reservation.</p>
+
+<div class="success-box">
+    <strong>✓ Your booking has been confirmed</strong><br>
+    Booking Reference: <strong>{{ booking_reference }}</strong>
+</div>
+
+<h2 style="color: #1976d2; margin: 30px 0 20px 0;">Booking Details</h2>
+
+<table class="details-table">
+    <tr>
+        <td class="label">Tour Name:</td>
+        <td><strong>{{ tour_name }}</strong></td>
+    </tr>
+    <tr>
+        <td class="label">Date:</td>
+        <td>{{ booking_date|date('%B %d, %Y') }}</td>
+    </tr>
+    <tr>
+        <td class="label">Time:</td>
+        <td>{{ booking_time }}</td>
+    </tr>
+    <tr>
+        <td class="label">Duration:</td>
+        <td>{{ tour_duration }}</td>
+    </tr>
+    <tr>
+        <td class="label">Number of Guests:</td>
+        <td>{{ guest_count }} {{ 'guest' if guest_count == 1 else 'guests' }}</td>
+    </tr>
+    <tr>
+        <td class="label">Meeting Point:</td>
+        <td>{{ meeting_point }}</td>
+    </tr>
+</table>
+
+<h2 style="color: #1976d2; margin: 30px 0 20px 0;">Payment Summary</h2>
+
+<table class="details-table">
+    <tr>
+        <td class="label">Subtotal:</td>
+        <td>{{ subtotal|currency(currency) }}</td>
+    </tr>
+    {% if discount > 0 %}
+    <tr>
+        <td class="label">Discount:</td>
+        <td style="color: #4caf50;">-{{ discount|currency(currency) }}</td>
+    </tr>
+    {% endif %}
+    {% if tax > 0 %}
+    <tr>
+        <td class="label">Tax:</td>
+        <td>{{ tax|currency(currency) }}</td>
+    </tr>
+    {% endif %}
+    <tr style="font-size: 18px; font-weight: bold;">
+        <td class="label">Total Paid:</td>
+        <td style="color: #1976d2;">{{ total_amount|currency(currency) }}</td>
+    </tr>
+</table>
+
+<div class="info-box">
+    <strong>What to bring:</strong><br>
+    • Valid ID or passport<br>
+    • Comfortable walking shoes<br>
+    • Water bottle<br>
+    • Camera (optional)<br>
+    • This confirmation email
+</div>
+
+<center>
+    <a href="{{ booking_details_url }}" class="button">View Full Booking Details</a>
+</center>
+
+<h2 style="color: #1976d2; margin: 30px 0 20px 0;">Important Information</h2>
+
+<p><strong>Cancellation Policy:</strong><br>
+Free cancellation up to 24 hours before the tour starts. After that, a cancellation fee may apply.</p>
+
+<p><strong>Weather Policy:</strong><br>
+In case of severe weather, we will contact you to reschedule or offer a full refund.</p>
+
+<p><strong>Contact Information:</strong><br>
+If you have any questions, please contact us at:<br>
+Email: bookings@spirittours.com<br>
+Phone: +1 (555) 123-4567</p>
+
+<p style="margin-top: 30px;">We look forward to showing you an unforgettable experience!</p>
+
+<p>Best regards,<br>
+<strong>The Spirit Tours Team</strong></p>
+{% endblock %}

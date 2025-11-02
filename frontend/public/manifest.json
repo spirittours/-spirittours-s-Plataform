@@ -1,7 +1,7 @@
 {
   "short_name": "Spirit Tours",
-  "name": "Spirit Tours - Tu Agencia de Viajes",
-  "description": "Plataforma completa de reservas de viajes con las mejores ofertas en vuelos, hoteles y paquetes turísticos",
+  "name": "Spirit Tours - Travel Management System",
+  "description": "Complete travel management system for tours, bookings, and customer management",
   "icons": [
     {
       "src": "favicon.ico",
@@ -23,84 +23,52 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#2E7D32",
+  "theme_color": "#1976d2",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "es-ES",
+  "categories": ["travel", "business", "productivity"],
+  "lang": "en-US",
   "dir": "ltr",
-  "categories": [
-    "travel",
-    "lifestyle",
-    "business"
-  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
   "screenshots": [
     {
-      "src": "screenshots/home.png",
+      "src": "/screenshots/dashboard.png",
       "type": "image/png",
-      "sizes": "1280x720"
+      "sizes": "540x720",
+      "label": "Dashboard view"
     },
     {
-      "src": "screenshots/search.png",
+      "src": "/screenshots/tours.png",
       "type": "image/png",
-      "sizes": "1280x720"
-    },
-    {
-      "src": "screenshots/booking.png",
-      "type": "image/png",
-      "sizes": "1280x720"
+      "sizes": "540x720",
+      "label": "Tours management"
     }
   ],
   "shortcuts": [
     {
-      "name": "Buscar Vuelos",
-      "short_name": "Vuelos",
-      "description": "Buscar y reservar vuelos",
-      "url": "/search?type=flights",
-      "icons": [
-        {
-          "src": "icons/flight.png",
-          "sizes": "96x96"
-        }
-      ]
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View dashboard and statistics",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/dashboard.png", "sizes": "192x192" }]
     },
     {
-      "name": "Buscar Hoteles",
-      "short_name": "Hoteles",
-      "description": "Buscar y reservar hoteles",
-      "url": "/search?type=hotels",
-      "icons": [
-        {
-          "src": "icons/hotel.png",
-          "sizes": "96x96"
-        }
-      ]
+      "name": "New Booking",
+      "short_name": "Book",
+      "description": "Create a new booking",
+      "url": "/bookings/new",
+      "icons": [{ "src": "/icons/booking.png", "sizes": "192x192" }]
     },
     {
-      "name": "Mis Reservas",
-      "short_name": "Reservas",
-      "description": "Ver tus reservas",
-      "url": "/my-bookings",
-      "icons": [
-        {
-          "src": "icons/bookings.png",
-          "sizes": "96x96"
-        }
-      ]
+      "name": "Tours",
+      "short_name": "Tours",
+      "description": "Browse available tours",
+      "url": "/tours",
+      "icons": [{ "src": "/icons/tour.png", "sizes": "192x192" }]
     }
   ],
-  "related_applications": [
-    {
-      "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.spirittours.app",
-      "id": "com.spirittours.app"
-    },
-    {
-      "platform": "itunes",
-      "url": "https://apps.apple.com/app/spirit-tours/id123456789"
-    }
-  ],
-  "prefer_related_applications": false,
   "share_target": {
     "action": "/share",
     "method": "POST",
@@ -110,11 +78,5 @@
       "text": "text",
       "url": "url"
     }
-  },
-  "protocol_handlers": [
-    {
-      "protocol": "web+spirittours",
-      "url": "/booking?ref=%s"
-    }
-  ]
+  }
 }

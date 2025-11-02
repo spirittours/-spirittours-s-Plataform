@@ -47,7 +47,23 @@ import {
   DragIndicator as DragIndicatorIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { toursService } from '../../services/toursService';
 import { TourImage } from '../../types/tour.types';
 
@@ -195,16 +211,24 @@ const TourImageGallery: React.FC<TourImageGalleryProps> = ({
     event.stopPropagation();
   };
 
+  // Setup sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Handle image reordering
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
 
-    const items = Array.from(images);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    if (!over || active.id === over.id) return;
 
-    // Update order values
-    const reorderedImages = items.map((img, index) => ({
+    const oldIndex = images.findIndex((img) => img.id === active.id);
+    const newIndex = images.findIndex((img) => img.id === over.id);
+
+    const reorderedImages = arrayMove(images, oldIndex, newIndex).map((img, index) => ({
       ...img,
       order: index,
     }));
@@ -437,125 +461,140 @@ const TourImageGallery: React.FC<TourImageGalleryProps> = ({
     </Paper>
   );
 
+  // Sortable Image Item Component
+  const SortableImageItem = ({ image, index }: { image: TourImage; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: image.id, disabled: !editable });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <ImageListItem
+        ref={setNodeRef}
+        style={style}
+        sx={{
+          position: 'relative',
+          cursor: editable ? 'move' : 'pointer',
+          border: selectedImages.includes(image.id) ? '3px solid' : 'none',
+          borderColor: 'primary.main',
+          borderRadius: 1,
+          overflow: 'hidden',
+        }}
+        onClick={() => !editable && handleOpenLightbox(index)}
+      >
+        <img
+          src={image.url}
+          alt={image.alt || `Tour image ${index + 1}`}
+          loading="lazy"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+        
+        {editable && (
+          <>
+            <Box
+              {...attributes}
+              {...listeners}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                borderRadius: 1,
+                p: 0.5,
+                cursor: 'grab',
+                '&:active': { cursor: 'grabbing' },
+              }}
+            >
+              <DragIndicatorIcon sx={{ color: 'white', fontSize: 20 }} />
+            </Box>
+            
+            <Checkbox
+              checked={selectedImages.includes(image.id)}
+              onChange={() => handleImageSelect(image.id)}
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
+              }}
+            />
+          </>
+        )}
+        
+        {image.isPrimary && (
+          <Chip
+            label="Primary"
+            size="small"
+            color="primary"
+            icon={<StarIcon />}
+            sx={{
+              position: 'absolute',
+              bottom: 48,
+              left: 8,
+            }}
+          />
+        )}
+        
+        <ImageListItemBar
+          title={image.caption || `Image ${index + 1}`}
+          subtitle={image.alt}
+          actionIcon={
+            editable ? (
+              <IconButton
+                sx={{ color: 'rgba(255, 255, 255, 0.9)' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMenuOpen(e, image.id);
+                }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+            ) : undefined
+          }
+        />
+      </ImageListItem>
+    );
+  };
+
   // Render image grid
   const renderImageGrid = () => (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId="images" direction="horizontal">
-        {(provided) => (
-          <ImageList
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            sx={{ width: '100%', height: 'auto' }}
-            cols={4}
-            rowHeight={200}
-            gap={16}
-          >
-            {images.map((image, index) => (
-              <Draggable
-                key={image.id}
-                draggableId={image.id}
-                index={index}
-                isDragDisabled={!editable}
-              >
-                {(provided, snapshot) => (
-                  <ImageListItem
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    sx={{
-                      position: 'relative',
-                      cursor: editable ? 'move' : 'pointer',
-                      opacity: snapshot.isDragging ? 0.5 : 1,
-                      border: selectedImages.includes(image.id) ? '3px solid' : 'none',
-                      borderColor: 'primary.main',
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                    }}
-                    onClick={() => !editable && handleOpenLightbox(index)}
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.alt || `Tour image ${index + 1}`}
-                      loading="lazy"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    
-                    {editable && (
-                      <>
-                        <Box
-                          {...provided.dragHandleProps}
-                          sx={{
-                            position: 'absolute',
-                            top: 8,
-                            left: 8,
-                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                            borderRadius: 1,
-                            p: 0.5,
-                            cursor: 'grab',
-                            '&:active': { cursor: 'grabbing' },
-                          }}
-                        >
-                          <DragIndicatorIcon sx={{ color: 'white', fontSize: 20 }} />
-                        </Box>
-                        
-                        <Checkbox
-                          checked={selectedImages.includes(image.id)}
-                          onChange={() => handleImageSelect(image.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          sx={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 1)' },
-                          }}
-                        />
-                      </>
-                    )}
-                    
-                    {image.isPrimary && (
-                      <Chip
-                        label="Primary"
-                        size="small"
-                        color="primary"
-                        icon={<StarIcon />}
-                        sx={{
-                          position: 'absolute',
-                          bottom: 48,
-                          left: 8,
-                        }}
-                      />
-                    )}
-                    
-                    <ImageListItemBar
-                      title={image.caption || `Image ${index + 1}`}
-                      subtitle={image.alt}
-                      actionIcon={
-                        editable ? (
-                          <IconButton
-                            sx={{ color: 'rgba(255, 255, 255, 0.9)' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMenuOpen(e, image.id);
-                            }}
-                          >
-                            <MoreVertIcon />
-                          </IconButton>
-                        ) : undefined
-                      }
-                    />
-                  </ImageListItem>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </ImageList>
-        )}
-      </Droppable>
-    </DragDropContext>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={images.map(img => img.id)}
+        strategy={rectSortingStrategy}
+      >
+        <ImageList
+          sx={{ width: '100%', height: 'auto' }}
+          cols={4}
+          rowHeight={200}
+          gap={16}
+        >
+          {images.map((image, index) => (
+            <SortableImageItem key={image.id} image={image} index={index} />
+          ))}
+        </ImageList>
+      </SortableContext>
+    </DndContext>
   );
 
   // Render lightbox

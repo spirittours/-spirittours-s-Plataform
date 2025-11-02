@@ -1,147 +1,147 @@
 /**
- * Custom WebSocket Hook
+ * useWebSocket Hook
  * 
- * Provides easy access to WebSocket functionality with automatic
- * event cleanup and subscription management.
- * 
- * Features:
- * - Auto-subscribe/unsubscribe on mount/unmount
- * - Type-safe event handling
- * - Automatic cleanup
- * - Connection status monitoring
- * 
- * Usage:
- * const { connected, emit, subscribe } = useWebSocketHook();
+ * React hook for WebSocket connection and notifications.
  */
 
-import { useEffect, useCallback, useRef } from 'react';
-import { useWebSocket as useWSContext } from '../contexts/WebSocketContext';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { getWebSocketService, NotificationData, resetWebSocketService } from '../services/websocket.service';
 
 interface UseWebSocketOptions {
-  autoJoinTrip?: string;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: string) => void;
+  autoConnect?: boolean;
+  onNotification?: (notification: NotificationData) => void;
+  onConnected?: () => void;
+  onDisconnected?: () => void;
+  onError?: (error: any) => void;
 }
 
 interface UseWebSocketReturn {
-  connected: boolean;
-  connecting: boolean;
-  error: string | null;
-  emit: (event: string, data: any) => void;
-  subscribe: (event: string, callback: (...args: any[]) => void) => void;
-  unsubscribe: (event: string, callback?: (...args: any[]) => void) => void;
-  joinTrip: (tripId: string) => void;
-  leaveTrip: (tripId: string) => void;
-  sendMessage: (tripId: string, message: string, type?: string) => void;
-  sendLocationUpdate: (tripId: string, latitude: number, longitude: number, speed?: number, heading?: number) => void;
+  isConnected: boolean;
+  notifications: NotificationData[];
+  connect: () => void;
+  disconnect: () => void;
+  subscribe: (room: string) => void;
+  unsubscribe: (room: string) => void;
+  clearNotifications: () => void;
+  markAsRead: (index: number) => void;
 }
 
-/**
- * Custom hook for WebSocket functionality
- */
-export const useWebSocketHook = (options: UseWebSocketOptions = {}): UseWebSocketReturn => {
+export function useWebSocket(
+  userId: string,
+  options: UseWebSocketOptions = {}
+): UseWebSocketReturn {
   const {
-    autoJoinTrip,
-    onConnect,
-    onDisconnect,
-    onError
+    autoConnect = true,
+    onNotification,
+    onConnected,
+    onDisconnected,
+    onError,
   } = options;
 
-  const {
-    socket,
-    connected,
-    connecting,
-    error,
-    emit,
-    on,
-    off,
-    joinTrip,
-    leaveTrip,
-    sendMessage,
-    sendLocationUpdate
-  } = useWSContext();
+  const [isConnected, setIsConnected] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const wsServiceRef = useRef<ReturnType<typeof getWebSocketService> | null>(null);
 
-  // Track subscribed events for cleanup
-  const subscribedEventsRef = useRef<Map<string, (...args: any[]) => void>>(new Map());
-
-  /**
-   * Subscribe to event with automatic cleanup
-   */
-  const subscribe = useCallback((event: string, callback: (...args: any[]) => void) => {
-    // Store callback reference for cleanup
-    subscribedEventsRef.current.set(event, callback);
-    
-    // Subscribe to event
-    on(event, callback);
-  }, [on]);
-
-  /**
-   * Unsubscribe from event
-   */
-  const unsubscribe = useCallback((event: string, callback?: (...args: any[]) => void) => {
-    const storedCallback = subscribedEventsRef.current.get(event);
-    
-    if (storedCallback || callback) {
-      off(event, callback || storedCallback);
-      subscribedEventsRef.current.delete(event);
-    }
-  }, [off]);
-
-  // Handle connection state changes
+  // Initialize WebSocket service
   useEffect(() => {
-    if (connected && onConnect) {
-      onConnect();
-    }
-  }, [connected, onConnect]);
+    if (!userId) return;
 
-  useEffect(() => {
-    if (!connected && !connecting && onDisconnect) {
-      onDisconnect();
-    }
-  }, [connected, connecting, onDisconnect]);
+    const baseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+    wsServiceRef.current = getWebSocketService(baseUrl, userId, 'desktop');
 
-  useEffect(() => {
-    if (error && onError) {
-      onError(error);
-    }
-  }, [error, onError]);
-
-  // Auto-join trip on mount
-  useEffect(() => {
-    if (connected && autoJoinTrip) {
-      console.log('🚗 Auto-joining trip:', autoJoinTrip);
-      joinTrip(autoJoinTrip);
-
-      return () => {
-        console.log('🚪 Auto-leaving trip:', autoJoinTrip);
-        leaveTrip(autoJoinTrip);
-      };
-    }
-  }, [connected, autoJoinTrip, joinTrip, leaveTrip]);
-
-  // Cleanup all subscriptions on unmount
-  useEffect(() => {
-    return () => {
-      subscribedEventsRef.current.forEach((callback, event) => {
-        off(event, callback);
-      });
-      subscribedEventsRef.current.clear();
+    // Set up event listeners
+    const handleConnected = () => {
+      setIsConnected(true);
+      onConnected?.();
     };
-  }, [off]);
+
+    const handleDisconnected = () => {
+      setIsConnected(false);
+      onDisconnected?.();
+    };
+
+    const handleNotification = (notification: NotificationData) => {
+      setNotifications(prev => [notification, ...prev]);
+      onNotification?.(notification);
+      
+      // Show browser notification if permitted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(notification.title, {
+          body: notification.message,
+          icon: '/logo.png',
+          badge: '/logo.png',
+          tag: notification.notification_type,
+        });
+      }
+    };
+
+    const handleError = (error: any) => {
+      console.error('WebSocket error:', error);
+      onError?.(error);
+    };
+
+    wsServiceRef.current.on('connected', handleConnected);
+    wsServiceRef.current.on('disconnected', handleDisconnected);
+    wsServiceRef.current.on('notification', handleNotification);
+    wsServiceRef.current.on('error', handleError);
+
+    // Auto-connect if enabled
+    if (autoConnect) {
+      wsServiceRef.current.connect();
+    }
+
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // Cleanup
+    return () => {
+      if (wsServiceRef.current) {
+        wsServiceRef.current.removeAllListeners();
+        wsServiceRef.current.disconnect();
+      }
+    };
+  }, [userId, autoConnect]);
+
+  const connect = useCallback(() => {
+    wsServiceRef.current?.connect();
+  }, []);
+
+  const disconnect = useCallback(() => {
+    wsServiceRef.current?.disconnect();
+  }, []);
+
+  const subscribe = useCallback((room: string) => {
+    wsServiceRef.current?.subscribe(room);
+  }, []);
+
+  const unsubscribe = useCallback((room: string) => {
+    wsServiceRef.current?.unsubscribe(room);
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  const markAsRead = useCallback((index: number) => {
+    setNotifications(prev => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], read: true };
+      }
+      return updated;
+    });
+  }, []);
 
   return {
-    connected,
-    connecting,
-    error,
-    emit,
+    isConnected,
+    notifications,
+    connect,
+    disconnect,
     subscribe,
     unsubscribe,
-    joinTrip,
-    leaveTrip,
-    sendMessage,
-    sendLocationUpdate
+    clearNotifications,
+    markAsRead,
   };
-};
-
-export default useWebSocketHook;
+}

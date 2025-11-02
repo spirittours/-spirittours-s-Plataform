@@ -1,197 +1,93 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Button, Typography, Paper, Container } from '@mui/material';
-import { Error as ErrorIcon, Refresh, Home } from '@mui/icons-material';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: ErrorInfo | null;
 }
 
-/**
- * Error Boundary Component
- * Catches JavaScript errors anywhere in the child component tree,
- * logs those errors, and displays a fallback UI
- */
 class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    };
-  }
-
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    // Update state so the next render will show the fallback UI
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
-
-    // Update state with error details
-    this.setState({
-      error,
-      errorInfo,
-    });
-
-    // Call custom error handler if provided
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo);
-    }
-
-    // Log to error tracking service (Sentry, etc.)
-    this.logErrorToService(error, errorInfo);
-  }
-
-  logErrorToService = (error: Error, errorInfo: ErrorInfo): void => {
-    // In production, send to error tracking service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: Sentry integration
-      // Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
-      
-      // For now, just log to console
-      console.error('Production Error:', {
-        message: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-      });
-    }
+  public state: State = {
+    hasError: false,
+    error: null,
   };
 
-  handleReset = (): void => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    });
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Uncaught error:', error, errorInfo);
+  }
+
+  private handleReset = () => {
+    this.setState({ hasError: false, error: null });
   };
 
-  handleGoHome = (): void => {
-    window.location.href = '/';
-  };
-
-  render(): ReactNode {
+  public render() {
     if (this.state.hasError) {
-      // Custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default fallback UI
       return (
-        <Container maxWidth="md">
-          <Box
-            sx={{
-              minHeight: '100vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              py: 4,
-            }}
-          >
-            <Paper
-              elevation={3}
-              sx={{
-                p: 4,
-                textAlign: 'center',
-                maxWidth: 600,
-                width: '100%',
-              }}
-            >
-              {/* Error Icon */}
-              <ErrorIcon
-                sx={{
-                  fontSize: 80,
-                  color: 'error.main',
-                  mb: 2,
-                }}
-              />
-
-              {/* Error Title */}
-              <Typography variant="h4" gutterBottom fontWeight={600}>
-                Oops! Something went wrong
-              </Typography>
-
-              {/* Error Description */}
-              <Typography variant="body1" color="text.secondary" paragraph>
-                We're sorry for the inconvenience. An unexpected error has occurred.
-              </Typography>
-
-              {/* Error Details (Development Only) */}
-              {process.env.NODE_ENV === 'development' && this.state.error && (
-                <Paper
-                  sx={{
-                    p: 2,
-                    mt: 2,
-                    mb: 3,
-                    bgcolor: '#f5f5f5',
-                    textAlign: 'left',
-                    overflow: 'auto',
-                    maxHeight: 300,
-                  }}
-                >
-                  <Typography variant="subtitle2" color="error" gutterBottom>
-                    Error Details (Development Mode):
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    component="pre"
-                    sx={{
-                      fontSize: '0.75rem',
-                      fontFamily: 'monospace',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {this.state.error.toString()}
-                    {'\n\n'}
-                    {this.state.errorInfo?.componentStack}
-                  </Typography>
-                </Paper>
-              )}
-
-              {/* Action Buttons */}
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 3 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<Refresh />}
-                  onClick={this.handleReset}
-                  size="large"
-                >
-                  Try Again
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Home />}
-                  onClick={this.handleGoHome}
-                  size="large"
-                >
-                  Go Home
-                </Button>
-              </Box>
-
-              {/* Help Text */}
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block' }}>
-                If the problem persists, please contact support at{' '}
-                <a href="mailto:support@spirittours.com" style={{ color: 'inherit' }}>
-                  support@spirittours.com
-                </a>
-              </Typography>
-            </Paper>
-          </Box>
-        </Container>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Oops! Something went wrong
+            </h2>
+            
+            <p className="text-gray-600 mb-6">
+              We're sorry, but something unexpected happened. Please try refreshing the page.
+            </p>
+            
+            {this.state.error && process.env.NODE_ENV === 'development' && (
+              <details className="text-left mb-6 p-4 bg-gray-100 rounded-lg">
+                <summary className="cursor-pointer font-semibold text-gray-800">
+                  Error Details
+                </summary>
+                <pre className="mt-2 text-xs text-gray-600 overflow-auto">
+                  {this.state.error.toString()}
+                </pre>
+              </details>
+            )}
+            
+            <div className="space-x-4">
+              <button
+                onClick={this.handleReset}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="border border-blue-600 text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50 transition"
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
       );
     }
 

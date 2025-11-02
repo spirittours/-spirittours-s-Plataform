@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>{% block title %}Spirit Tours{% endblock %}</title>
+    
+    <style>
+        /* Reset styles */
+        body {
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table, td {
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+        
+        /* Base styles */
+        body {
+            background-color: #f4f7f6;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background-color: #1976d2;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .content {
+            background-color: #ffffff;
+            padding: 40px 30px;
+        }
+        
+        .footer {
+            background-color: #f4f7f6;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #1976d2;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .button:hover {
+            background-color: #1565c0;
+        }
+        
+        .info-box {
+            background-color: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .warning-box {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .success-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .details-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .details-table .label {
+            font-weight: bold;
+            color: #666666;
+            width: 40%;
+        }
+        
+        .social-icons {
+            margin: 20px 0;
+        }
+        
+        .social-icons a {
+            display: inline-block;
+            margin: 0 10px;
+        }
+        
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+            }
+            
+            .content {
+                padding: 20px 15px !important;
+            }
+            
+            .header h1 {
+                font-size: 24px !important;
+            }
+            
+            .button {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f7f6;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" class="container" cellspacing="0" cellpadding="0" border="0" width="600">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td class="header">
+                            <h1>{% block header_title %}Spirit Tours{% endblock %}</h1>
+                            <p style="color: #ffffff; margin: 10px 0 0 0;">
+                                {% block header_subtitle %}Discover the World with Us{% endblock %}
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td class="content">
+                            {% block content %}
+                            <p>This is the base template content.</p>
+                            {% endblock %}
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td class="footer">
+                            <p style="margin: 0 0 10px 0;">
+                                <strong>Spirit Tours</strong><br>
+                                123 Travel Street, Adventure City, AC 12345<br>
+                                Phone: +1 (555) 123-4567 | Email: info@spirittours.com
+                            </p>
+                            
+                            <div class="social-icons">
+                                <a href="https://facebook.com/spirittours" style="color: #1976d2;">Facebook</a> |
+                                <a href="https://twitter.com/spirittours" style="color: #1976d2;">Twitter</a> |
+                                <a href="https://instagram.com/spirittours" style="color: #1976d2;">Instagram</a>
+                            </div>
+                            
+                            <p style="margin: 20px 0 0 0; font-size: 12px; color: #999999;">
+                                You are receiving this email because you have an account with Spirit Tours.<br>
+                                <a href="{{ unsubscribe_url }}" style="color: #1976d2;">Unsubscribe</a> from these emails.
+                            </p>
+                            
+                            <p style="margin: 10px 0 0 0; font-size: 12px; color: #999999;">
+                                © {{ current_year }} Spirit Tours. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -22,8 +22,44 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 try:
     from models.rbac_models import Base
+    # Import all models to ensure they're registered with Base.metadata
     from models.business_models import *
     from models.enhanced_audit_models import *
+    from models.access_control_models import *
+    from models.affiliate_models import *
+    from models.agencies_models import *
+    from models.contact_management_models import *
+    from models.contacts_models import *
+    from models.crm_models import *
+    from models.email_models import *
+    from models.marketplace_models import *
+    from models.guide_models import *
+    from models.raffle_models import *
+    from models.reports_models import *
+    from models.transport_models import *
+    from models.trips_models import *
+    from models.operations_models import *
+    from models.quotation import *
+    from models.package_quotation import *
+    
+    # Import accounting models if exists
+    try:
+        from accounting.models import *
+    except ImportError:
+        pass
+    
+    # Import provider management models if exists
+    try:
+        from provider_management.models import *
+    except ImportError:
+        pass
+    
+    # Import VIP tours models if exists
+    try:
+        from vip_tours.models import *
+    except ImportError:
+        pass
+    
     target_metadata = Base.metadata
 except ImportError as e:
     print(f"Import error: {e}")
