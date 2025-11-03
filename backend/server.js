@@ -44,13 +44,33 @@ app.get('/health', (req, res) => {
 // API Routes
 app.get('/api', (req, res) => {
   res.json({
-    message: 'Spirit Tours API',
+    message: 'Spirit Tours API & ERP Hub AI Accounting Agent',
     version: '1.0.0',
     endpoints: {
       nodemailer: '/api/nodemailer',
       emailConfig: '/api/admin/email-config',
       emailTemplates: '/api/admin/email-templates',
-      systemConfig: '/api/admin/system-config'
+      systemConfig: '/api/admin/system-config',
+      trips: '/api/trips',
+      smartNotifications: '/api/smart-notifications',
+      whatsapp: '/api/whatsapp',
+      aiAgent: '/api/ai-agent'
+    },
+    aiAgent: {
+      description: 'AI Accounting Agent with 9 integrated services',
+      totalEndpoints: 92,
+      services: {
+        core: '/api/ai-agent/core (10 endpoints)',
+        fraudDetection: '/api/ai-agent/fraud-detection (9 endpoints)',
+        reports: '/api/ai-agent/reports (12 endpoints)',
+        predictive: '/api/ai-agent/predictive (10 endpoints)',
+        usaCompliance: '/api/ai-agent/compliance/usa (9 endpoints)',
+        mexicoCompliance: '/api/ai-agent/compliance/mexico (12 endpoints)',
+        dualReview: '/api/ai-agent/dual-review (9 endpoints)',
+        checklists: '/api/ai-agent/checklists (10 endpoints)',
+        roi: '/api/ai-agent/roi (11 endpoints)'
+      },
+      documentation: 'GET /api/ai-agent for full details'
     }
   });
 });
@@ -91,6 +111,11 @@ try {
   const whatsappRoutes = require('./routes/whatsapp.routes');
   app.use('/api/whatsapp', whatsappRoutes);
   logger.info('✅ WhatsApp Business API routes registered');
+
+  // AI Accounting Agent routes (main router with 9 sub-routers, 92 endpoints)
+  const aiAgentRoutes = require('./routes/ai-agent.routes');
+  app.use('/api/ai-agent', aiAgentRoutes);
+  logger.info('✅ AI Accounting Agent routes registered (9 services, 92 endpoints)');
 
 } catch (error) {
   logger.error('Error registering routes:', error);
@@ -140,6 +165,7 @@ async function startServer() {
       logger.info(`🚗 Trips API: http://localhost:${PORT}/api/trips`);
       logger.info(`🔔 Notifications API: http://localhost:${PORT}/api/smart-notifications`);
       logger.info(`📱 WhatsApp API: http://localhost:${PORT}/api/whatsapp`);
+      logger.info(`🤖 AI Agent API: http://localhost:${PORT}/api/ai-agent (9 services, 92 endpoints)`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
