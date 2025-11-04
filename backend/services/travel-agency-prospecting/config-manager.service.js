@@ -17,8 +17,22 @@
 
 const multiServerManager = require('./multi-server-manager.service');
 const costOptimizer = require('./cost-optimizer.service');
-const aiEmailGenerator = require('./ai-email-generator.service');
+// const aiEmailGenerator = require('./ai-email-generator.service');
 const EventEmitter = require('events');
+
+// Simple logger utility
+const logger = {
+  info: (...args) => {
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(...args);
+    }
+  },
+  debug: (...args) => {
+    if (process.env.DEBUG === 'true') {
+      logger.info(...args);
+    }
+  }
+};
 
 class ConfigManagerService extends EventEmitter {
   constructor() {
@@ -239,7 +253,7 @@ class ConfigManagerService extends EventEmitter {
    */
   
   async startWizard() {
-    console.log('\n🧙 WIZARD DE CONFIGURACIÓN - SPIRIT TOURS EMAIL SYSTEM\n');
+    logger.info('\n🧙 WIZARD DE CONFIGURACIÓN - SPIRIT TOURS EMAIL SYSTEM\n');
     
     const wizard = {
       currentStep: 1,
@@ -330,7 +344,7 @@ class ConfigManagerService extends EventEmitter {
    * Procesar respuesta del wizard y generar configuración
    */
   async processWizardAnswers(answers) {
-    console.log('[Config Manager] Processing wizard answers...');
+    logger.info('[Config Manager] Processing wizard answers...');
     
     const config = {
       name: 'Wizard Generated Config',
@@ -342,8 +356,8 @@ class ConfigManagerService extends EventEmitter {
     // Analizar respuestas
     const volume = answers.volume;
     const budget = parseInt(answers.budget);
-    const priority = answers.priority;
-    const infrastructure = answers.infrastructure;
+    // const priority = answers.priority;
+    // const infrastructure = answers.infrastructure;
     const aiEnabled = answers.ai !== 'no';
     const aiAutomatic = answers.ai === 'yes-auto';
     
@@ -409,10 +423,10 @@ class ConfigManagerService extends EventEmitter {
       model: 'gpt-4-turbo-preview',
     };
     
-    console.log('[Config Manager] Wizard configuration generated:');
-    console.log(`   Template: ${config.recommended.template}`);
-    console.log(`   Cost: ${config.recommended.expectedCost}`);
-    console.log(`   Capacity: ${config.recommended.expectedCapacity}`);
+    logger.info('[Config Manager] Wizard configuration generated:');
+    logger.info(`   Template: ${config.recommended.template}`);
+    logger.info(`   Cost: ${config.recommended.expectedCost}`);
+    logger.info(`   Capacity: ${config.recommended.expectedCapacity}`);
     
     return config;
   }
@@ -421,7 +435,7 @@ class ConfigManagerService extends EventEmitter {
    * Aplicar configuración generada por wizard
    */
   async applyWizardConfig(config) {
-    console.log('[Config Manager] Applying wizard configuration...');
+    logger.info('[Config Manager] Applying wizard configuration...');
     
     const recommended = config.recommended;
     
@@ -453,7 +467,7 @@ class ConfigManagerService extends EventEmitter {
       changes: recommended,
     });
     
-    console.log('[Config Manager] Configuration applied successfully!');
+    logger.info('[Config Manager] Configuration applied successfully!');
     
     return {
       success: true,
@@ -632,7 +646,7 @@ class ConfigManagerService extends EventEmitter {
    * Aplicar configuración manual
    */
   async applyManualConfig(configData) {
-    console.log('[Config Manager] Applying manual configuration...');
+    logger.info('[Config Manager] Applying manual configuration...');
     
     // Validar configuración
     const validation = this.validateConfig(configData);
@@ -683,7 +697,7 @@ class ConfigManagerService extends EventEmitter {
       changes: configData,
     });
     
-    console.log('[Config Manager] Manual configuration applied successfully!');
+    logger.info('[Config Manager] Manual configuration applied successfully!');
     
     return {
       success: true,
@@ -734,7 +748,7 @@ class ConfigManagerService extends EventEmitter {
    */
   
   async testConfiguration() {
-    console.log('[Config Manager] Testing configuration...');
+    logger.info('[Config Manager] Testing configuration...');
     
     const results = {
       overall: 'pending',
@@ -815,7 +829,7 @@ class ConfigManagerService extends EventEmitter {
     
     this.config.profiles.push(profile);
     
-    console.log(`[Config Manager] Profile saved: ${name}`);
+    logger.info(`[Config Manager] Profile saved: ${name}`);
     
     return profile;
   }
@@ -829,7 +843,7 @@ class ConfigManagerService extends EventEmitter {
     
     this.config = JSON.parse(JSON.stringify(profile.config));
     
-    console.log(`[Config Manager] Profile loaded: ${profile.name}`);
+    logger.info(`[Config Manager] Profile loaded: ${profile.name}`);
     
     return profile;
   }
@@ -848,12 +862,12 @@ class ConfigManagerService extends EventEmitter {
   
   importConfig(importedData) {
     if (importedData.version !== this.config.global.version) {
-      console.warn(`[Config Manager] Version mismatch: ${importedData.version} vs ${this.config.global.version}`);
+      logger.info(`[Config Manager] Version mismatch: ${importedData.version} vs ${this.config.global.version}`);
     }
     
     this.config = importedData.config;
     
-    console.log('[Config Manager] Configuration imported');
+    logger.info('[Config Manager] Configuration imported');
     
     return this.config;
   }
@@ -878,7 +892,7 @@ class ConfigManagerService extends EventEmitter {
       // TODO: Implement actual rollback logic
     }
     
-    console.log(`[Config Manager] Rolled back ${steps} step(s)`);
+    logger.info(`[Config Manager] Rolled back ${steps} step(s)`);
   }
   
   /**

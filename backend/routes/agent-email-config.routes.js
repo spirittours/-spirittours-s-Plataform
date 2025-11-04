@@ -20,7 +20,7 @@ const router = express.Router();
 const configManager = require('../services/travel-agency-prospecting/config-manager.service');
 const multiServerManager = require('../services/travel-agency-prospecting/multi-server-manager.service');
 const costOptimizer = require('../services/travel-agency-prospecting/cost-optimizer.service');
-const aiEmailGenerator = require('../services/travel-agency-prospecting/ai-email-generator.service');
+// const aiEmailGenerator = require('../services/travel-agency-prospecting/ai-email-generator.service');
 
 // Middleware
 const { authenticate, authorize } = require('../middleware/auth');
@@ -512,7 +512,9 @@ router.post('/test', authenticate, authorize(['admin']), async (req, res) => {
  */
 router.post('/test/send-email', authenticate, authorize(['admin']), async (req, res) => {
   try {
-    const { to, subject = 'Test Email', body = 'This is a test email from Spirit Tours.' } = req.body;
+    const { to } = req.body;
+    // const subject = req.body.subject || 'Test Email';
+    // const body = req.body.body || 'This is a test email from Spirit Tours.';
     
     if (!to) {
       return res.status(400).json({
