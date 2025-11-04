@@ -12,6 +12,12 @@ import {
   LoginPage,
   CRMDashboard,
   UserManagement,
+  DealKanban,
+  ContactManager,
+  PipelineManager,
+  BoardView,
+  WorkspaceSettings,
+  CRMAdvancedDashboard,
   AIAgentsRouter,
   AnalyticsRouter,
   PortalsRouter,
@@ -212,6 +218,63 @@ const App: React.FC = () => {
                     <AdminGate fallback={<UnauthorizedAccess />}>
                       <SuspenseWrapper fallback="default">
                         <UserManagement isAdmin={isAdmin} />
+                      </SuspenseWrapper>
+                    </AdminGate>
+                  } 
+                />
+                
+                {/* Advanced CRM Routes */}
+                <Route 
+                  path="/crm/advanced" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <CRMAdvancedDashboard />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/deals" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <DealKanban workspaceId="" pipelineId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/contacts" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <ContactManager workspaceId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/pipelines" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <PipelineManager workspaceId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/boards" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <BoardView workspaceId="" boardId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/workspace-settings" 
+                  element={
+                    <AdminGate fallback={<UnauthorizedAccess />}>
+                      <SuspenseWrapper fallback="default">
+                        <WorkspaceSettings workspaceId="" />
                       </SuspenseWrapper>
                     </AdminGate>
                   } 

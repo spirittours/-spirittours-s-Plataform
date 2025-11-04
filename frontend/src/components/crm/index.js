@@ -10,3 +10,5 @@ export { default as ContactManager } from './ContactManager';
 export { default as PipelineManager } from './PipelineManager';
 export { default as BoardView } from './BoardView';
 export { default as WorkspaceSettings } from './WorkspaceSettings';
+export { default as DashboardStats } from './DashboardStats';
+export { default as PipelineCharts } from './PipelineCharts';
