@@ -1,8 +1,8 @@
 /**
  * WorkspaceSettings Component
  * 
- * Workspace administration and configuration interface.
- * Features: member management, integrations, security settings
+ * Comprehensive workspace administration interface.
+ * Manages members, permissions, integrations, security, and subscription.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -14,54 +14,50 @@ import {
   Typography,
   Button,
   TextField,
-  Grid,
-  Tabs,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Avatar,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Divider,
+  Tabs,
+  Tab,
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  IconButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Switch,
+  FormControlLabel,
+  Grid,
+  Chip,
+  Avatar,
+  Divider,
   Alert,
-  LinearProgress,
+  CircularProgress,
 } from '@mui/material';
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Add as AddIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
   Security as SecurityIcon,
-  Integration as IntegrationIcon,
   People as PeopleIcon,
   Settings as SettingsIcon,
+  IntegrationInstructions as IntegrationIcon,
+  CreditCard as BillingIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
 
 const WorkspaceSettings = ({ workspaceId }) => {
   const [workspace, setWorkspace] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tabValue, setTabValue] = useState(0);
-  const [memberDialogOpen, setMemberDialogOpen] = useState(false);
-  const [newMember, setNewMember] = useState({
-    email: '',
+  const [currentTab, setCurrentTab] = useState(0);
+  const [openMemberDialog, setOpenMemberDialog] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [memberFormData, setMemberFormData] = useState({
+    userEmail: '',
     role: 'member',
     permissions: {
       canManageBoards: false,
@@ -72,598 +68,656 @@ const WorkspaceSettings = ({ workspaceId }) => {
     },
   });
 
-  // Load workspace
   useEffect(() => {
-    loadWorkspace();
+    if (workspaceId) {
+      fetchWorkspace();
+    }
   }, [workspaceId]);
 
-  const loadWorkspace = async () => {
+  const fetchWorkspace = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/crm/workspaces/${workspaceId}`);
+      const response = await axios.get(`/api/crm/workspaces/${workspaceId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setWorkspace(response.data.data);
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading workspace:', error);
-    } finally {
+      console.error('Error fetching workspace:', error);
       setLoading(false);
     }
   };
 
-  // Handle update workspace
   const handleUpdateWorkspace = async (updates) => {
     try {
-      const response = await axios.put(`/api/crm/workspaces/${workspaceId}`, updates);
-      setWorkspace(response.data.data);
+      await axios.put(
+        `/api/crm/workspaces/${workspaceId}`,
+        updates,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchWorkspace();
     } catch (error) {
       console.error('Error updating workspace:', error);
     }
   };
 
-  // Handle add member
   const handleAddMember = async () => {
     try {
-      await axios.post(`/api/crm/workspaces/${workspaceId}/members`, newMember);
-      loadWorkspace();
-      setMemberDialogOpen(false);
-      setNewMember({
-        email: '',
-        role: 'member',
-        permissions: {
-          canManageBoards: false,
-          canManagePipelines: false,
-          canManageMembers: false,
-          canExportData: false,
-          canManageIntegrations: false,
-        },
-      });
+      await axios.post(
+        `/api/crm/workspaces/${workspaceId}/members`,
+        memberFormData,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchWorkspace();
+      setOpenMemberDialog(false);
+      resetMemberForm();
     } catch (error) {
       console.error('Error adding member:', error);
-      alert(error.response?.data?.error || 'Failed to add member');
+      alert(error.response?.data?.error || 'Error adding member');
     }
   };
 
-  // Handle remove member
-  const handleRemoveMember = async (memberId) => {
-    if (!window.confirm('Remove this member from workspace?')) return;
-
+  const handleUpdateMember = async () => {
     try {
-      await axios.delete(`/api/crm/workspaces/${workspaceId}/members/${memberId}`);
-      loadWorkspace();
-    } catch (error) {
-      console.error('Error removing member:', error);
-    }
-  };
-
-  // Handle update member role
-  const handleUpdateMemberRole = async (memberId, role) => {
-    try {
-      await axios.put(`/api/crm/workspaces/${workspaceId}/members/${memberId}`, { role });
-      loadWorkspace();
-    } catch (error) {
-      console.error('Error updating member role:', error);
-    }
-  };
-
-  // Handle update integrations
-  const handleUpdateIntegrations = async (integration, enabled) => {
-    try {
-      const integrations = {
-        ...workspace.integrations,
-        [integration]: {
-          ...workspace.integrations?.[integration],
-          enabled,
+      await axios.put(
+        `/api/crm/workspaces/${workspaceId}/members/${selectedMember._id}`,
+        {
+          role: memberFormData.role,
+          permissions: memberFormData.permissions,
         },
-      };
-
-      await axios.put(`/api/crm/workspaces/${workspaceId}/integrations`, integrations);
-      loadWorkspace();
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchWorkspace();
+      setOpenMemberDialog(false);
+      resetMemberForm();
     } catch (error) {
-      console.error('Error updating integration:', error);
+      console.error('Error updating member:', error);
     }
   };
 
-  // Handle update security settings
+  const handleRemoveMember = async (memberId) => {
+    if (window.confirm('Remove this member from the workspace?')) {
+      try {
+        await axios.delete(
+          `/api/crm/workspaces/${workspaceId}/members/${memberId}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        fetchWorkspace();
+      } catch (error) {
+        console.error('Error removing member:', error);
+      }
+    }
+  };
+
   const handleUpdateSecurity = async (settings) => {
     try {
-      await axios.put(`/api/crm/workspaces/${workspaceId}/security`, settings);
-      loadWorkspace();
+      await axios.put(
+        `/api/crm/workspaces/${workspaceId}/security`,
+        settings,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchWorkspace();
     } catch (error) {
       console.error('Error updating security:', error);
     }
   };
 
-  // Handle panic mode
-  const handlePanicMode = async (activate) => {
-    if (activate) {
-      if (!window.confirm('Activate PANIC MODE? This will lock ALL workspace data!')) {
-        return;
-      }
-    }
-
+  const handleTogglePanicMode = async () => {
     try {
-      if (activate) {
-        await axios.post(`/api/crm/workspaces/${workspaceId}/panic`);
+      if (workspace.isPanicMode) {
+        await axios.delete(
+          `/api/crm/workspaces/${workspaceId}/panic`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
       } else {
-        await axios.delete(`/api/crm/workspaces/${workspaceId}/panic`);
+        await axios.post(
+          `/api/crm/workspaces/${workspaceId}/panic`,
+          {},
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
       }
-      loadWorkspace();
+      fetchWorkspace();
     } catch (error) {
       console.error('Error toggling panic mode:', error);
     }
   };
 
-  // Get role color
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'owner':
-        return 'error';
-      case 'admin':
-        return 'warning';
-      case 'member':
-        return 'primary';
-      case 'viewer':
-        return 'default';
-      default:
-        return 'default';
-    }
+  const resetMemberForm = () => {
+    setMemberFormData({
+      userEmail: '',
+      role: 'member',
+      permissions: {
+        canManageBoards: false,
+        canManagePipelines: false,
+        canManageMembers: false,
+        canExportData: false,
+        canManageIntegrations: false,
+      },
+    });
+    setSelectedMember(null);
+  };
+
+  const openEditMemberDialog = (member) => {
+    setSelectedMember(member);
+    setMemberFormData({
+      userEmail: member.user.email,
+      role: member.role,
+      permissions: member.permissions,
+    });
+    setOpenMemberDialog(true);
+  };
+
+  const getRoleBadgeColor = (role) => {
+    const colors = {
+      owner: 'error',
+      admin: 'warning',
+      member: 'primary',
+      viewer: 'default',
+    };
+    return colors[role] || 'default';
   };
 
   if (loading) {
-    return <LinearProgress />;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!workspace) {
-    return <Typography>Workspace not found</Typography>;
+    return (
+      <Box p={3}>
+        <Typography variant="h6">Workspace not found</Typography>
+      </Box>
+    );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box p={3}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={600} gutterBottom>
-          Workspace Settings
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {workspace.name}
+      <Box mb={3}>
+        <Typography variant="h4">{workspace.name}</Typography>
+        <Typography variant="body2" color="textSecondary">
+          Workspace Settings & Administration
         </Typography>
       </Box>
 
       {/* Panic Mode Alert */}
       {workspace.isPanicMode && (
-        <Alert
-          severity="error"
-          sx={{ mb: 3 }}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => handlePanicMode(false)}
-            >
-              Deactivate
-            </Button>
-          }
-        >
-          <strong>PANIC MODE ACTIVATED</strong> - Workspace is locked
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <strong>Panic Mode Active!</strong> All access to this workspace is currently restricted.
         </Alert>
       )}
 
       {/* Tabs */}
-      <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }}>
-        <Tab icon={<SettingsIcon />} label="General" iconPosition="start" />
-        <Tab icon={<PeopleIcon />} label="Members" iconPosition="start" />
-        <Tab icon={<IntegrationIcon />} label="Integrations" iconPosition="start" />
-        <Tab icon={<SecurityIcon />} label="Security" iconPosition="start" />
-      </Tabs>
+      <Card>
+        <Tabs value={currentTab} onChange={(e, v) => setCurrentTab(v)}>
+          <Tab icon={<SettingsIcon />} label="General" iconPosition="start" />
+          <Tab icon={<PeopleIcon />} label="Members" iconPosition="start" />
+          <Tab icon={<SecurityIcon />} label="Security" iconPosition="start" />
+          <Tab icon={<IntegrationIcon />} label="Integrations" iconPosition="start" />
+          <Tab icon={<BillingIcon />} label="Subscription" iconPosition="start" />
+        </Tabs>
 
-      {/* General Settings */}
-      {tabValue === 0 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Workspace Information
-                </Typography>
-                <TextField
-                  label="Workspace Name"
-                  fullWidth
-                  value={workspace.name}
-                  onChange={(e) => handleUpdateWorkspace({ name: e.target.value })}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="Slug"
-                  fullWidth
-                  value={workspace.slug}
-                  disabled
-                  sx={{ mb: 2 }}
-                  helperText="URL-friendly identifier"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Subscription
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Current Plan
-                  </Typography>
-                  <Chip
-                    label={workspace.subscription?.plan?.toUpperCase() || 'FREE'}
-                    color="primary"
-                    sx={{ mt: 1 }}
+        <CardContent>
+          {/* General Tab */}
+          {currentTab === 0 && (
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Workspace Name"
+                    value={workspace.name}
+                    onChange={(e) => handleUpdateWorkspace({ name: e.target.value })}
+                    fullWidth
                   />
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Seats Used
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(workspace.subscription?.usedSeats / workspace.subscription?.seats) * 100}
-                    sx={{ mt: 1, height: 8, borderRadius: 1 }}
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Workspace Slug"
+                    value={workspace.slug}
+                    disabled
+                    fullWidth
+                    helperText="Unique identifier for your workspace"
                   />
-                  <Typography variant="caption" color="text.secondary">
-                    {workspace.subscription?.usedSeats} / {workspace.subscription?.seats} seats
-                  </Typography>
-                </Box>
-                <Button variant="outlined" fullWidth>
-                  Upgrade Plan
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Members Tab */}
-      {tabValue === 1 && (
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">
-                Team Members
-              </Typography>
-              <Button
-                startIcon={<AddIcon />}
-                variant="contained"
-                onClick={() => setMemberDialogOpen(true)}
-              >
-                Add Member
-              </Button>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Description"
+                    value={workspace.description || ''}
+                    onChange={(e) => handleUpdateWorkspace({ description: e.target.value })}
+                    fullWidth
+                    multiline
+                    rows={3}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+                <Grid item xs={12}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box>
+                      <Typography variant="h6" color="error">
+                        <WarningIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                        Panic Mode
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Immediately restrict all access to this workspace
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant={workspace.isPanicMode ? 'outlined' : 'contained'}
+                      color="error"
+                      onClick={handleTogglePanicMode}
+                    >
+                      {workspace.isPanicMode ? 'Deactivate' : 'Activate'} Panic Mode
+                    </Button>
+                  </Box>
+                </Grid>
+              </Grid>
             </Box>
+          )}
 
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Member</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Permissions</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {workspace.members?.map((member) => (
-                    <TableRow key={member._id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ width: 32, height: 32 }}>
-                            {member.user?.first_name?.charAt(0)}
-                          </Avatar>
-                          <Typography variant="body2">
-                            {member.user?.first_name} {member.user?.last_name}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {member.user?.email}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                          <Select
-                            value={member.role}
-                            onChange={(e) => handleUpdateMemberRole(member._id, e.target.value)}
-                            disabled={member.role === 'owner'}
-                          >
-                            <MenuItem value="owner">Owner</MenuItem>
-                            <MenuItem value="admin">Admin</MenuItem>
-                            <MenuItem value="member">Member</MenuItem>
-                            <MenuItem value="viewer">Viewer</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {member.permissions?.canManageBoards && (
-                            <Chip label="Boards" size="small" />
-                          )}
-                          {member.permissions?.canManagePipelines && (
-                            <Chip label="Pipelines" size="small" />
-                          )}
-                          {member.permissions?.canManageMembers && (
-                            <Chip label="Members" size="small" />
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveMember(member._id)}
-                          disabled={member.role === 'owner'}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Integrations Tab */}
-      {tabValue === 2 && (
-        <Grid container spacing={3}>
-          {/* Gmail Integration */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">Gmail</Typography>
-                  <Switch
-                    checked={workspace.integrations?.gmail?.enabled || false}
-                    onChange={(e) => handleUpdateIntegrations('gmail', e.target.checked)}
-                  />
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Connect your Gmail account for two-way email sync
+          {/* Members Tab */}
+          {currentTab === 1 && (
+            <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h6">
+                  Team Members ({workspace.members.length})
                 </Typography>
-                {workspace.integrations?.gmail?.enabled && (
-                  <Button variant="outlined" size="small" sx={{ mt: 2 }}>
-                    Configure
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={() => setOpenMemberDialog(true)}
+                >
+                  Add Member
+                </Button>
+              </Box>
 
-          {/* Outlook Integration */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">Outlook</Typography>
-                  <Switch
-                    checked={workspace.integrations?.outlook?.enabled || false}
-                    onChange={(e) => handleUpdateIntegrations('outlook', e.target.checked)}
-                  />
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Connect Microsoft Outlook for email and calendar sync
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* DocuSign Integration */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">DocuSign</Typography>
-                  <Switch
-                    checked={workspace.integrations?.docusign?.enabled || false}
-                    onChange={(e) => handleUpdateIntegrations('docusign', e.target.checked)}
-                  />
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Send and track documents for e-signature
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Zoom Integration */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">Zoom</Typography>
-                  <Switch
-                    checked={workspace.integrations?.zoom?.enabled || false}
-                    onChange={(e) => handleUpdateIntegrations('zoom', e.target.checked)}
-                  />
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Create and manage video meetings
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Security Tab */}
-      {tabValue === 3 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Security Settings
-                </Typography>
-                
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={workspace.security?.twoFactorRequired || false}
-                      onChange={(e) => handleUpdateSecurity({
-                        ...workspace.security,
-                        twoFactorRequired: e.target.checked,
-                      })}
-                    />
-                  }
-                  label="Require Two-Factor Authentication for all members"
-                  sx={{ mb: 2 }}
-                />
-
-                <Divider sx={{ my: 2 }} />
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={workspace.security?.ssoEnabled || false}
-                      onChange={(e) => handleUpdateSecurity({
-                        ...workspace.security,
-                        ssoEnabled: e.target.checked,
-                      })}
-                    />
-                  }
-                  label="Enable Single Sign-On (SSO)"
-                  sx={{ mb: 2 }}
-                />
-
-                <Divider sx={{ my: 2 }} />
-
-                <Typography variant="subtitle1" gutterBottom>
-                  IP Whitelist
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Restrict access to specific IP addresses
-                </Typography>
-                <List>
-                  {workspace.security?.ipWhitelist?.map((ip, index) => (
-                    <ListItem key={index}>
-                      <ListItemText primary={ip} />
+              <List>
+                {workspace.members.map((member) => (
+                  <React.Fragment key={member._id}>
+                    <ListItem>
+                      <Avatar sx={{ mr: 2 }}>
+                        {member.user.first_name?.[0] || member.user.email[0].toUpperCase()}
+                      </Avatar>
+                      <ListItemText
+                        primary={
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Typography>
+                              {member.user.first_name} {member.user.last_name || member.user.email}
+                            </Typography>
+                            <Chip
+                              label={member.role}
+                              size="small"
+                              color={getRoleBadgeColor(member.role)}
+                            />
+                          </Box>
+                        }
+                        secondary={
+                          <Box mt={1}>
+                            <Typography variant="caption" color="textSecondary">
+                              {member.user.email}
+                            </Typography>
+                            <Box display="flex" gap={1} mt={0.5}>
+                              {member.permissions.canManageBoards && (
+                                <Chip label="Boards" size="small" variant="outlined" />
+                              )}
+                              {member.permissions.canManagePipelines && (
+                                <Chip label="Pipelines" size="small" variant="outlined" />
+                              )}
+                              {member.permissions.canManageMembers && (
+                                <Chip label="Members" size="small" variant="outlined" />
+                              )}
+                              {member.permissions.canExportData && (
+                                <Chip label="Export" size="small" variant="outlined" />
+                              )}
+                              {member.permissions.canManageIntegrations && (
+                                <Chip label="Integrations" size="small" variant="outlined" />
+                              )}
+                            </Box>
+                          </Box>
+                        }
+                      />
                       <ListItemSecondaryAction>
-                        <IconButton size="small">
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        {member.role !== 'owner' && (
+                          <>
+                            <IconButton
+                              edge="end"
+                              onClick={() => openEditMemberDialog(member)}
+                              sx={{ mr: 1 }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleRemoveMember(member._id)}
+                              color="error"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </>
+                        )}
                       </ListItemSecondaryAction>
                     </ListItem>
-                  ))}
-                </List>
-                <Button variant="outlined" size="small">
-                  Add IP Address
-                </Button>
+                    <Divider />
+                  </React.Fragment>
+                ))}
+              </List>
+            </Box>
+          )}
 
-                <Divider sx={{ my: 3 }} />
-
-                <Alert severity="warning" icon={<WarningIcon />}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Emergency Panic Mode
+          {/* Security Tab */}
+          {currentTab === 2 && (
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={workspace.security.twoFactorRequired}
+                        onChange={(e) => handleUpdateSecurity({
+                          twoFactorRequired: e.target.checked,
+                        })}
+                      />
+                    }
+                    label="Require Two-Factor Authentication"
+                  />
+                  <Typography variant="caption" color="textSecondary" display="block">
+                    All members must enable 2FA to access the workspace
                   </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    Immediately locks all workspace data in case of security breach
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={workspace.security.ssoEnabled}
+                        onChange={(e) => handleUpdateSecurity({
+                          ssoEnabled: e.target.checked,
+                        })}
+                      />
+                    }
+                    label="Enable Single Sign-On (SSO)"
+                  />
+                  <Typography variant="caption" color="textSecondary" display="block">
+                    Allow authentication via SSO providers
                   </Typography>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={() => handlePanicMode(!workspace.isPanicMode)}
-                    sx={{ mt: 1 }}
-                  >
-                    {workspace.isPanicMode ? 'Deactivate' : 'Activate'} Panic Mode
-                  </Button>
-                </Alert>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
+                </Grid>
 
-      {/* Add Member Dialog */}
-      <Dialog
-        open={memberDialogOpen}
-        onClose={() => setMemberDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add Team Member</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Email"
-                type="email"
-                fullWidth
-                required
-                value={newMember.email}
-                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={newMember.role}
-                  onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                  label="Role"
-                >
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="member">Member</MenuItem>
-                  <MenuItem value="viewer">Viewer</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom>
-                Permissions
+                <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    IP Whitelist
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Restrict workspace access to specific IP addresses
+                  </Typography>
+                  <TextField
+                    label="Allowed IPs (comma-separated)"
+                    value={workspace.security.ipWhitelist?.join(', ') || ''}
+                    onChange={(e) => handleUpdateSecurity({
+                      ipWhitelist: e.target.value.split(',').map(ip => ip.trim()).filter(Boolean),
+                    })}
+                    fullWidth
+                    multiline
+                    rows={2}
+                    placeholder="192.168.1.1, 10.0.0.1"
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Integrations Tab */}
+          {currentTab === 3 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Connected Integrations
               </Typography>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={newMember.permissions.canManageBoards}
-                    onChange={(e) => setNewMember({
-                      ...newMember,
-                      permissions: { ...newMember.permissions, canManageBoards: e.target.checked },
-                    })}
+              
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="Gmail"
+                    secondary={workspace.integrations?.gmail?.enabled ? 'Connected' : 'Not connected'}
                   />
-                }
-                label="Manage Boards"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={newMember.permissions.canManagePipelines}
-                    onChange={(e) => setNewMember({
-                      ...newMember,
-                      permissions: { ...newMember.permissions, canManagePipelines: e.target.checked },
-                    })}
+                  <ListItemSecondaryAction>
+                    <Switch
+                      checked={workspace.integrations?.gmail?.enabled || false}
+                      disabled
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                
+                <ListItem>
+                  <ListItemText
+                    primary="Outlook"
+                    secondary={workspace.integrations?.outlook?.enabled ? 'Connected' : 'Not connected'}
                   />
-                }
-                label="Manage Pipelines"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={newMember.permissions.canExportData}
-                    onChange={(e) => setNewMember({
-                      ...newMember,
-                      permissions: { ...newMember.permissions, canExportData: e.target.checked },
-                    })}
+                  <ListItemSecondaryAction>
+                    <Switch
+                      checked={workspace.integrations?.outlook?.enabled || false}
+                      disabled
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                
+                <ListItem>
+                  <ListItemText
+                    primary="DocuSign"
+                    secondary={workspace.integrations?.docusign?.enabled ? 'Connected' : 'Not connected'}
                   />
-                }
-                label="Export Data"
-              />
-            </Grid>
-          </Grid>
+                  <ListItemSecondaryAction>
+                    <Switch
+                      checked={workspace.integrations?.docusign?.enabled || false}
+                      disabled
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                
+                <ListItem>
+                  <ListItemText
+                    primary="Zoom"
+                    secondary={workspace.integrations?.zoom?.enabled ? 'Connected' : 'Not connected'}
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      checked={workspace.integrations?.zoom?.enabled || false}
+                      disabled
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
+            </Box>
+          )}
+
+          {/* Subscription Tab */}
+          {currentTab === 4 && (
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h5" gutterBottom>
+                        {workspace.subscription.plan.toUpperCase()}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary" gutterBottom>
+                        Current Plan
+                      </Typography>
+                      <Box mt={2}>
+                        <Typography variant="body2">
+                          Seats: {workspace.subscription.usedSeats} / {workspace.subscription.seats}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    Available Plans
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {['free', 'basic', 'professional', 'enterprise'].map(plan => (
+                      <Grid item xs={12} sm={6} md={3} key={plan}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h6">
+                              {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                            </Typography>
+                            <Button
+                              variant={workspace.subscription.plan === plan ? 'contained' : 'outlined'}
+                              size="small"
+                              fullWidth
+                              sx={{ mt: 2 }}
+                              disabled={workspace.subscription.plan === plan}
+                            >
+                              {workspace.subscription.plan === plan ? 'Current' : 'Upgrade'}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Member Dialog */}
+      <Dialog open={openMemberDialog} onClose={() => setOpenMemberDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {selectedMember ? 'Edit Member' : 'Add New Member'}
+        </DialogTitle>
+        <DialogContent>
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              label="Email Address"
+              type="email"
+              value={memberFormData.userEmail}
+              onChange={(e) => setMemberFormData({ ...memberFormData, userEmail: e.target.value })}
+              fullWidth
+              required
+              disabled={!!selectedMember}
+            />
+            
+            <FormControl fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={memberFormData.role}
+                onChange={(e) => setMemberFormData({ ...memberFormData, role: e.target.value })}
+                label="Role"
+              >
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="member">Member</MenuItem>
+                <MenuItem value="viewer">Viewer</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Divider />
+
+            <Typography variant="subtitle2">Permissions</Typography>
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={memberFormData.permissions.canManageBoards}
+                  onChange={(e) => setMemberFormData({
+                    ...memberFormData,
+                    permissions: {
+                      ...memberFormData.permissions,
+                      canManageBoards: e.target.checked,
+                    },
+                  })}
+                />
+              }
+              label="Manage Boards"
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={memberFormData.permissions.canManagePipelines}
+                  onChange={(e) => setMemberFormData({
+                    ...memberFormData,
+                    permissions: {
+                      ...memberFormData.permissions,
+                      canManagePipelines: e.target.checked,
+                    },
+                  })}
+                />
+              }
+              label="Manage Pipelines"
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={memberFormData.permissions.canManageMembers}
+                  onChange={(e) => setMemberFormData({
+                    ...memberFormData,
+                    permissions: {
+                      ...memberFormData.permissions,
+                      canManageMembers: e.target.checked,
+                    },
+                  })}
+                />
+              }
+              label="Manage Members"
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={memberFormData.permissions.canExportData}
+                  onChange={(e) => setMemberFormData({
+                    ...memberFormData,
+                    permissions: {
+                      ...memberFormData.permissions,
+                      canExportData: e.target.checked,
+                    },
+                  })}
+                />
+              }
+              label="Export Data"
+            />
+            
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={memberFormData.permissions.canManageIntegrations}
+                  onChange={(e) => setMemberFormData({
+                    ...memberFormData,
+                    permissions: {
+                      ...memberFormData.permissions,
+                      canManageIntegrations: e.target.checked,
+                    },
+                  })}
+                />
+              }
+              label="Manage Integrations"
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setMemberDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddMember} variant="contained">
-            Add Member
+          <Button onClick={() => setOpenMemberDialog(false)}>Cancel</Button>
+          <Button
+            onClick={selectedMember ? handleUpdateMember : handleAddMember}
+            variant="contained"
+            color="primary"
+          >
+            {selectedMember ? 'Update' : 'Add'} Member
           </Button>
         </DialogActions>
       </Dialog>

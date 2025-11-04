@@ -1,20 +1,35 @@
 /**
  * DealKanban Component
  * 
- * Drag-and-drop Kanban board for managing deals through pipeline stages.
- * Features: drag-drop, stage management, deal cards, quick actions
+ * Drag-and-drop kanban board for deal management.
+ * Displays deals organized by pipeline stages with visual progress tracking.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import React, { useState, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import axios from 'axios';
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Avatar,
   Chip,
+  Avatar,
   IconButton,
   Button,
   Dialog,
@@ -28,418 +43,408 @@ import {
   InputLabel,
   Grid,
   Tooltip,
-  LinearProgress,
-  Menu,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  MoreVert as MoreIcon,
-  Person as PersonIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
   AttachMoney as MoneyIcon,
-  CalendarToday as CalendarIcon,
-  TrendingUp as TrendingIcon,
+  TrendingUp as TrendingUpIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
+  VideoCall as VideoIcon,
   WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 
 const DealKanban = ({ workspaceId, pipelineId }) => {
-  const [stages, setStages] = useState([]);
+  const [pipeline, setPipeline] = useState(null);
   const [deals, setDeals] = useState({});
   const [loading, setLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState(null);
-  const [dealDialogOpen, setDealDialogOpen] = useState(false);
-  const [newDeal, setNewDeal] = useState({
+  const [formData, setFormData] = useState({
     title: '',
-    value: 0,
+    value: '',
     contact: '',
     expectedCloseDate: '',
+    priority: 'medium',
   });
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [currentStage, setCurrentStage] = useState(null);
 
-  // Load pipeline and deals
   useEffect(() => {
-    loadPipelineAndDeals();
+    if (pipelineId) {
+      fetchPipelineAndDeals();
+    }
   }, [pipelineId]);
 
-  const loadPipelineAndDeals = async () => {
+  const fetchPipelineAndDeals = async () => {
     try {
       setLoading(true);
       
-      // Load pipeline with stages
-      const pipelineRes = await axios.get(`/api/crm/pipelines/${pipelineId}`);
-      const pipelineData = pipelineRes.data.data;
-      setStages(pipelineData.stages);
-
-      // Load deals for this pipeline
-      const dealsRes = await axios.get(`/api/crm/deals`, {
-        params: { workspace: workspaceId, pipeline: pipelineId },
+      // Fetch pipeline details
+      const pipelineRes = await axios.get(`/api/crm/pipelines/${pipelineId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      
+      setPipeline(pipelineRes.data.data);
+
+      // Fetch deals for this pipeline
+      const dealsRes = await axios.get(`/api/crm/deals?workspace=${workspaceId}&pipeline=${pipelineId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+
       // Group deals by stage
       const dealsByStage = {};
-      pipelineData.stages.forEach(stage => {
-        dealsByStage[stage.id] = [];
+      pipelineRes.data.data.stages.forEach(stage => {
+        dealsByStage[stage.id] = dealsRes.data.data.filter(deal => deal.stage === stage.id);
       });
-      
-      dealsRes.data.data.forEach(deal => {
-        if (dealsByStage[deal.stage]) {
-          dealsByStage[deal.stage].push(deal);
-        }
-      });
-      
       setDeals(dealsByStage);
+      
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading pipeline and deals:', error);
-    } finally {
+      console.error('Error fetching pipeline and deals:', error);
       setLoading(false);
     }
   };
 
-  // Handle drag end
-  const onDragEnd = useCallback(async (result) => {
-    const { source, destination, draggableId } = result;
+  // Configure drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-    // Dropped outside the list
-    if (!destination) return;
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
 
-    // No change in position
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      return;
+    if (!over) return;
+
+    // Extract deal ID and stage IDs
+    const dealId = active.id;
+    const newStageId = over.id;
+
+    // Find the source stage
+    let sourceStageId = null;
+    for (const [stageId, stageDeals] of Object.entries(deals)) {
+      if (stageDeals.some(deal => deal._id === dealId)) {
+        sourceStageId = stageId;
+        break;
+      }
     }
 
-    const sourceStageId = source.droppableId;
-    const destStageId = destination.droppableId;
+    if (!sourceStageId || sourceStageId === newStageId) return;
 
-    // Create new deals object
-    const newDeals = { ...deals };
-    const sourceDealsList = Array.from(newDeals[sourceStageId]);
-    const destDealsList =
-      sourceStageId === destStageId
-        ? sourceDealsList
-        : Array.from(newDeals[destStageId]);
-
-    // Remove from source
-    const [movedDeal] = sourceDealsList.splice(source.index, 1);
-
-    // Add to destination
-    destDealsList.splice(destination.index, 0, movedDeal);
-
-    // Update state optimistically
-    newDeals[sourceStageId] = sourceDealsList;
-    newDeals[destStageId] = destDealsList;
-    setDeals(newDeals);
-
-    // Update on server
     try {
-      await axios.put(`/api/crm/deals/${draggableId}/stage`, {
-        stage: destStageId,
-        note: `Moved from ${sourceStageId} to ${destStageId}`,
-      });
-    } catch (error) {
-      console.error('Error updating deal stage:', error);
-      // Revert on error
-      loadPipelineAndDeals();
-    }
-  }, [deals]);
+      await axios.put(
+        `/api/crm/deals/${dealId}/stage`,
+        { stage: newStageId },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
 
-  // Handle create deal
+      // Update local state
+      const newDeals = { ...deals };
+      const dealIndex = newDeals[sourceStageId].findIndex(d => d._id === dealId);
+      const [movedDeal] = newDeals[sourceStageId].splice(dealIndex, 1);
+      newDeals[newStageId] = [...(newDeals[newStageId] || []), { ...movedDeal, stage: newStageId }];
+      setDeals(newDeals);
+    } catch (error) {
+      console.error('Error moving deal:', error);
+      fetchPipelineAndDeals();
+    }
+  };
+
   const handleCreateDeal = async () => {
     try {
-      const response = await axios.post('/api/crm/deals', {
-        ...newDeal,
-        workspace: workspaceId,
-        pipeline: pipelineId,
-        stage: currentStage,
+      const response = await axios.post(
+        '/api/crm/deals',
+        {
+          ...formData,
+          workspace: workspaceId,
+          pipeline: pipelineId,
+          stage: pipeline.stages[0].id,
+        },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+
+      // Add to first stage
+      const firstStageId = pipeline.stages[0].id;
+      setDeals({
+        ...deals,
+        [firstStageId]: [...(deals[firstStageId] || []), response.data.data],
       });
 
-      // Add to deals list
-      const newDeals = { ...deals };
-      newDeals[currentStage].unshift(response.data.data);
-      setDeals(newDeals);
-
-      // Reset form
-      setNewDeal({
-        title: '',
-        value: 0,
-        contact: '',
-        expectedCloseDate: '',
-      });
-      setDealDialogOpen(false);
+      setOpenDialog(false);
+      resetForm();
     } catch (error) {
       console.error('Error creating deal:', error);
     }
   };
 
-  // Format currency
+  const handleRecordActivity = async (dealId, type) => {
+    try {
+      await axios.post(
+        `/api/crm/deals/${dealId}/activity`,
+        { type },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchPipelineAndDeals(); // Refresh to show updated engagement
+    } catch (error) {
+      console.error('Error recording activity:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      value: '',
+      contact: '',
+      expectedCloseDate: '',
+      priority: 'medium',
+    });
+    setSelectedDeal(null);
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(value || 0);
+    }).format(value);
   };
 
-  // Get stage color
-  const getStageColor = (stage) => {
-    return stage.color || '#3B82F6';
+  const getPriorityColor = (priority) => {
+    const colors = {
+      low: 'default',
+      medium: 'primary',
+      high: 'warning',
+      urgent: 'error',
+    };
+    return colors[priority] || 'default';
   };
-
-  // Calculate stage total
-  const getStageTotal = (stageId) => {
-    const stageDeals = deals[stageId] || [];
-    return stageDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
-  };
-
-  // Render deal card
-  const renderDealCard = (deal, index) => (
-    <Draggable key={deal._id} draggableId={deal._id} index={index}>
-      {(provided, snapshot) => (
-        <Card
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          sx={{
-            mb: 2,
-            cursor: 'grab',
-            opacity: snapshot.isDragging ? 0.8 : 1,
-            transform: snapshot.isDragging ? 'rotate(2deg)' : 'none',
-            '&:hover': {
-              boxShadow: 3,
-            },
-          }}
-          onClick={() => setSelectedDeal(deal)}
-        >
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
-                {deal.title}
-              </Typography>
-              <IconButton size="small">
-                <MoreIcon fontSize="small" />
-              </IconButton>
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <MoneyIcon sx={{ fontSize: 18, mr: 0.5, color: 'success.main' }} />
-              <Typography variant="body2" fontWeight={600}>
-                {formatCurrency(deal.value)}
-              </Typography>
-            </Box>
-
-            {deal.contact && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PersonIcon sx={{ fontSize: 18, mr: 0.5, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {deal.contact.first_name} {deal.contact.last_name}
-                </Typography>
-              </Box>
-            )}
-
-            {deal.expectedCloseDate && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <CalendarIcon sx={{ fontSize: 18, mr: 0.5, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {new Date(deal.expectedCloseDate).toLocaleDateString()}
-                </Typography>
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
-              <Chip
-                label={`${deal.probability}%`}
-                size="small"
-                color={deal.probability > 70 ? 'success' : deal.probability > 40 ? 'warning' : 'default'}
-              />
-              
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {deal.owner && (
-                  <Tooltip title={`${deal.owner.first_name} ${deal.owner.last_name}`}>
-                    <Avatar
-                      sx={{ width: 24, height: 24, fontSize: '0.75rem' }}
-                    >
-                      {deal.owner.first_name?.charAt(0)}
-                    </Avatar>
-                  </Tooltip>
-                )}
-              </Box>
-            </Box>
-
-            {/* Quick actions */}
-            <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
-              <Tooltip title="Call">
-                <IconButton size="small" color="primary">
-                  <PhoneIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Email">
-                <IconButton size="small" color="primary">
-                  <EmailIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="WhatsApp">
-                <IconButton size="small" color="success">
-                  <WhatsAppIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
-    </Draggable>
-  );
 
   if (loading) {
-    return <LinearProgress />;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!pipeline) {
+    return (
+      <Box p={3}>
+        <Typography variant="h6">No pipeline selected</Typography>
+      </Box>
+    );
   }
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', p: 2 }}>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Box sx={{ display: 'flex', gap: 2, minHeight: '80vh' }}>
-          {stages.map((stage) => (
-            <Box
-              key={stage.id}
-              sx={{
-                minWidth: 300,
-                maxWidth: 300,
-                bgcolor: 'grey.50',
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              {/* Stage Header */}
-              <Box sx={{ mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        bgcolor: getStageColor(stage),
-                      }}
-                    />
-                    <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
-                      {stage.name}
-                    </Typography>
-                    <Chip
-                      label={deals[stage.id]?.length || 0}
-                      size="small"
-                      sx={{ height: 20 }}
-                    />
-                  </Box>
-                  <IconButton
+    <Box p={3}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4">{pipeline.name}</Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenDialog(true)}
+        >
+          New Deal
+        </Button>
+      </Box>
+
+      {/* Kanban Board - Simplified without drag & drop for now */}
+      <Grid container spacing={2}>
+        {pipeline.stages.map((stage) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={stage.id}>
+            <Card>
+              <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6" style={{ color: stage.color }}>
+                    {stage.name}
+                  </Typography>
+                  <Chip
+                    label={`${deals[stage.id]?.length || 0}`}
                     size="small"
-                    onClick={(e) => {
-                      setAnchorEl(e.currentTarget);
-                      setCurrentStage(stage.id);
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                  </IconButton>
+                    color="primary"
+                  />
                 </Box>
 
-                <Typography variant="body2" color="text.secondary">
-                  {formatCurrency(getStageTotal(stage.id))}
+                <Typography variant="caption" color="textSecondary" display="block" mb={2}>
+                  {stage.probability}% probability
                 </Typography>
-              </Box>
 
-              {/* Deals List */}
-              <Droppable droppableId={stage.id}>
-                {(provided, snapshot) => (
-                  <Box
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    sx={{
-                      minHeight: 200,
-                      bgcolor: snapshot.isDraggingOver ? 'action.hover' : 'transparent',
-                      borderRadius: 1,
-                      transition: 'background-color 0.2s',
-                    }}
-                  >
-                    {deals[stage.id]?.map((deal, index) =>
-                      renderDealCard(deal, index)
-                    )}
-                    {provided.placeholder}
-                  </Box>
-                )}
-              </Droppable>
-            </Box>
-          ))}
-        </Box>
-      </DragDropContext>
+                <Box
+                  style={{
+                    minHeight: '500px',
+                    padding: '8px',
+                  }}
+                >
+                  {deals[stage.id]?.map((deal) => (
+                    <Card
+                      key={deal._id}
+                      style={{
+                        marginBottom: '12px',
+                        cursor: 'pointer',
+                      }}
+                      elevation={2}
+                      onClick={() => {
+                        setSelectedDeal(deal);
+                        setFormData({
+                          title: deal.title,
+                          value: deal.value,
+                          contact: deal.contact?._id || '',
+                          expectedCloseDate: deal.expectedCloseDate || '',
+                          priority: deal.priority || 'medium',
+                        });
+                        setOpenDialog(true);
+                      }}
+                    >
+                                <CardContent>
+                                  <Typography variant="subtitle1" gutterBottom>
+                                    {deal.title}
+                                  </Typography>
 
-      {/* Add Deal Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
-        <MenuItem
-          onClick={() => {
-            setAnchorEl(null);
-            setDealDialogOpen(true);
-          }}
-        >
-          Create New Deal
-        </MenuItem>
-      </Menu>
+                                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                    <MoneyIcon fontSize="small" color="action" />
+                                    <Typography variant="h6" color="primary">
+                                      {formatCurrency(deal.value)}
+                                    </Typography>
+                                  </Box>
+
+                                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                    <TrendingUpIcon fontSize="small" color="action" />
+                                    <Typography variant="body2" color="textSecondary">
+                                      Expected: {formatCurrency(deal.expectedValue)}
+                                    </Typography>
+                                  </Box>
+
+                                  {deal.contact && (
+                                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                      <Avatar sx={{ width: 24, height: 24 }}>
+                                        {deal.contact.first_name?.[0]}
+                                      </Avatar>
+                                      <Typography variant="body2">
+                                        {deal.contact.first_name} {deal.contact.last_name}
+                                      </Typography>
+                                    </Box>
+                                  )}
+
+                                  <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+                                    <Chip
+                                      label={deal.priority}
+                                      size="small"
+                                      color={getPriorityColor(deal.priority)}
+                                    />
+
+                                    <Box display="flex" gap={0.5}>
+                                      <Tooltip title="Log Call">
+                                        <IconButton
+                                          size="small"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRecordActivity(deal._id, 'call');
+                                          }}
+                                        >
+                                          <PhoneIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Log Email">
+                                        <IconButton
+                                          size="small"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRecordActivity(deal._id, 'email');
+                                          }}
+                                        >
+                                          <EmailIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Log Meeting">
+                                        <IconButton
+                                          size="small"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRecordActivity(deal._id, 'meeting');
+                                          }}
+                                        >
+                                          <VideoIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Log WhatsApp">
+                                        <IconButton
+                                          size="small"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRecordActivity(deal._id, 'whatsapp');
+                                          }}
+                                        >
+                                          <WhatsAppIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Box>
+                                  </Box>
+
+                                  {deal.expectedCloseDate && (
+                                    <Typography variant="caption" color="textSecondary" display="block" mt={1}>
+                                      Expected: {new Date(deal.expectedCloseDate).toLocaleDateString()}
+                                    </Typography>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
 
       {/* Create Deal Dialog */}
-      <Dialog
-        open={dealDialogOpen}
-        onClose={() => setDealDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Deal</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Deal Title"
-                fullWidth
-                value={newDeal.title}
-                onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Value"
-                type="number"
-                fullWidth
-                value={newDeal.value}
-                onChange={(e) => setNewDeal({ ...newDeal, value: parseFloat(e.target.value) })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Expected Close Date"
-                type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={newDeal.expectedCloseDate}
-                onChange={(e) => setNewDeal({ ...newDeal, expectedCloseDate: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Contact ID"
-                fullWidth
-                value={newDeal.contact}
-                onChange={(e) => setNewDeal({ ...newDeal, contact: e.target.value })}
-                helperText="Enter contact ID or leave empty"
-              />
-            </Grid>
-          </Grid>
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              label="Deal Title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Value"
+              type="number"
+              value={formData.value}
+              onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+              fullWidth
+              InputProps={{ startAdornment: '$' }}
+            />
+            <TextField
+              label="Expected Close Date"
+              type="date"
+              value={formData.expectedCloseDate}
+              onChange={(e) => setFormData({ ...formData, expectedCloseDate: e.target.value })}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Priority</InputLabel>
+              <Select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                label="Priority"
+              >
+                <MenuItem value="low">Low</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="high">High</MenuItem>
+                <MenuItem value="urgent">Urgent</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDealDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreateDeal} variant="contained">
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateDeal} variant="contained" color="primary">
             Create Deal
           </Button>
         </DialogActions>

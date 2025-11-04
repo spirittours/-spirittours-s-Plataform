@@ -1,8 +1,8 @@
 /**
  * CRMDashboard Component
  * 
- * Main dashboard integrating all CRM components.
- * Provides unified navigation and workspace management.
+ * Main CRM dashboard integrating all modules.
+ * Provides navigation and unified interface for all CRM functionality.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -17,26 +17,31 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  ListItemButton,
   IconButton,
-  Avatar,
-  Menu,
-  MenuItem,
   Divider,
-  Badge,
+  Card,
+  CardContent,
+  Grid,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Avatar,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   ViewKanban as KanbanIcon,
-  People as PeopleIcon,
-  Timeline as TimelineIcon,
-  ViewModule as BoardIcon,
+  Contacts as ContactsIcon,
+  AccountTree as PipelineIcon,
+  TableChart as BoardIcon,
   Settings as SettingsIcon,
-  Notifications as NotificationsIcon,
-  AccountCircle as AccountIcon,
-  Business as WorkspaceIcon,
+  Timeline as ActivityIcon,
+  TrendingUp as TrendingUpIcon,
+  AttachMoney as MoneyIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 
 // Import CRM components
@@ -50,30 +55,73 @@ const drawerWidth = 240;
 
 const CRMDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('overview');
   const [workspaces, setWorkspaces] = useState([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
   const [selectedPipeline, setSelectedPipeline] = useState(null);
   const [selectedBoard, setSelectedBoard] = useState(null);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [workspaceMenuAnchor, setWorkspaceMenuAnchor] = useState(null);
+  const [pipelines, setPipelines] = useState([]);
+  const [boards, setBoards] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load workspaces on mount
   useEffect(() => {
-    loadWorkspaces();
+    fetchWorkspaces();
   }, []);
 
-  const loadWorkspaces = async () => {
+  useEffect(() => {
+    if (selectedWorkspace) {
+      fetchWorkspaceData();
+    }
+  }, [selectedWorkspace]);
+
+  const fetchWorkspaces = async () => {
     try {
-      const response = await axios.get('/api/crm/workspaces');
-      const workspacesList = response.data.data;
-      setWorkspaces(workspacesList);
-      
-      if (workspacesList.length > 0 && !selectedWorkspace) {
-        setSelectedWorkspace(workspacesList[0]);
+      const response = await axios.get('/api/crm/workspaces', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setWorkspaces(response.data.data);
+      if (response.data.data.length > 0) {
+        setSelectedWorkspace(response.data.data[0]);
       }
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading workspaces:', error);
+      console.error('Error fetching workspaces:', error);
+      setLoading(false);
+    }
+  };
+
+  const fetchWorkspaceData = async () => {
+    if (!selectedWorkspace) return;
+
+    try {
+      // Fetch pipelines
+      const pipelinesRes = await axios.get('/api/crm/pipelines', {
+        params: { workspace: selectedWorkspace._id },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setPipelines(pipelinesRes.data.data);
+      if (pipelinesRes.data.data.length > 0 && !selectedPipeline) {
+        setSelectedPipeline(pipelinesRes.data.data[0]);
+      }
+
+      // Fetch boards
+      const boardsRes = await axios.get('/api/crm/boards', {
+        params: { workspace: selectedWorkspace._id },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setBoards(boardsRes.data.data);
+      if (boardsRes.data.data.length > 0 && !selectedBoard) {
+        setSelectedBoard(boardsRes.data.data[0]);
+      }
+
+      // Fetch stats
+      const statsRes = await axios.get(`/api/crm/workspaces/${selectedWorkspace._id}/stats`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setStats(statsRes.data.data);
+    } catch (error) {
+      console.error('Error fetching workspace data:', error);
     }
   };
 
@@ -81,166 +129,202 @@ const CRMDashboard = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleViewChange = (view, payload = {}) => {
-    setCurrentView(view);
-    if (payload.pipeline) setSelectedPipeline(payload.pipeline);
-    if (payload.board) setSelectedBoard(payload.board);
-  };
+  const renderOverview = () => (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        CRM Overview
+      </Typography>
+      
+      {stats && (
+        <Grid container spacing={3} mb={4}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    <KanbanIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h4">{stats.totalDeals || 0}</Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Total Deals
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-  const handleWorkspaceChange = (workspace) => {
-    setSelectedWorkspace(workspace);
-    setWorkspaceMenuAnchor(null);
-    setCurrentView('dashboard');
-  };
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: 'success.main' }}>
+                    <MoneyIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h4">
+                      ${(stats.totalValue || 0).toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Pipeline Value
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-  // Navigation items
-  const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-    { id: 'deals', label: 'Deals', icon: <KanbanIcon /> },
-    { id: 'contacts', label: 'Contacts', icon: <PeopleIcon /> },
-    { id: 'pipelines', label: 'Pipelines', icon: <TimelineIcon /> },
-    { id: 'boards', label: 'Boards', icon: <BoardIcon /> },
-    { id: 'settings', label: 'Settings', icon: <SettingsIcon /> },
-  ];
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: 'info.main' }}>
+                    <PeopleIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h4">{stats.totalContacts || 0}</Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Contacts
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-  // Drawer content
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                    <TrendingUpIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h4">
+                      {stats.conversionRate ? `${stats.conversionRate.toFixed(1)}%` : '0%'}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Win Rate
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Recent Activity
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Activity feed coming soon...
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Quick Actions
+              </Typography>
+              <List>
+                <ListItem button onClick={() => setCurrentView('deals')}>
+                  <ListItemIcon>
+                    <KanbanIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="View Deals" />
+                </ListItem>
+                <ListItem button onClick={() => setCurrentView('contacts')}>
+                  <ListItemIcon>
+                    <ContactsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Manage Contacts" />
+                </ListItem>
+                <ListItem button onClick={() => setCurrentView('pipelines')}>
+                  <ListItemIcon>
+                    <PipelineIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Configure Pipelines" />
+                </ListItem>
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
   const drawer = (
     <Box>
       <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Spirit Tours CRM
+        <Typography variant="h6" noWrap>
+          CRM
         </Typography>
       </Toolbar>
       <Divider />
-      
-      {/* Workspace Selector */}
-      <Box sx={{ p: 2 }}>
-        <ListItemButton
-          onClick={(e) => setWorkspaceMenuAnchor(e.currentTarget)}
-          sx={{
-            bgcolor: 'action.hover',
-            borderRadius: 1,
-          }}
-        >
-          <ListItemIcon>
-            <WorkspaceIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary={selectedWorkspace?.name || 'Select Workspace'}
-            secondary={selectedWorkspace?.slug}
-          />
-        </ListItemButton>
-      </Box>
-
-      <Divider />
-
-      {/* Navigation */}
       <List>
-        {navigationItems.map((item) => (
-          <ListItem key={item.id} disablePadding>
-            <ListItemButton
-              selected={currentView === item.id}
-              onClick={() => handleViewChange(item.id)}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        <ListItem button selected={currentView === 'overview'} onClick={() => setCurrentView('overview')}>
+          <ListItemIcon>
+            <DashboardIcon />
+          </ListItemIcon>
+          <ListItemText primary="Overview" />
+        </ListItem>
+        <ListItem button selected={currentView === 'deals'} onClick={() => setCurrentView('deals')}>
+          <ListItemIcon>
+            <KanbanIcon />
+          </ListItemIcon>
+          <ListItemText primary="Deals" />
+        </ListItem>
+        <ListItem button selected={currentView === 'contacts'} onClick={() => setCurrentView('contacts')}>
+          <ListItemIcon>
+            <ContactsIcon />
+          </ListItemIcon>
+          <ListItemText primary="Contacts" />
+        </ListItem>
+        <ListItem button selected={currentView === 'pipelines'} onClick={() => setCurrentView('pipelines')}>
+          <ListItemIcon>
+            <PipelineIcon />
+          </ListItemIcon>
+          <ListItemText primary="Pipelines" />
+        </ListItem>
+        <ListItem button selected={currentView === 'boards'} onClick={() => setCurrentView('boards')}>
+          <ListItemIcon>
+            <BoardIcon />
+          </ListItemIcon>
+          <ListItemText primary="Boards" />
+        </ListItem>
+      </List>
+      <Divider />
+      <List>
+        <ListItem button selected={currentView === 'settings'} onClick={() => setCurrentView('settings')}>
+          <ListItemIcon>
+            <SettingsIcon />
+          </ListItemIcon>
+          <ListItemText primary="Settings" />
+        </ListItem>
       </List>
     </Box>
   );
 
-  // Render current view
-  const renderView = () => {
-    if (!selectedWorkspace) {
-      return (
-        <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h5" color="text.secondary">
-            Please select a workspace to continue
-          </Typography>
-        </Box>
-      );
-    }
-
-    switch (currentView) {
-      case 'dashboard':
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>
-              Dashboard
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Welcome to Spirit Tours CRM! Select an option from the sidebar to get started.
-            </Typography>
-            
-            {/* Quick Stats */}
-            <Box sx={{ mt: 4, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
-              <Box sx={{ p: 3, bgcolor: 'primary.light', borderRadius: 2 }}>
-                <Typography variant="h3">0</Typography>
-                <Typography variant="body2">Active Deals</Typography>
-              </Box>
-              <Box sx={{ p: 3, bgcolor: 'success.light', borderRadius: 2 }}>
-                <Typography variant="h3">0</Typography>
-                <Typography variant="body2">Contacts</Typography>
-              </Box>
-              <Box sx={{ p: 3, bgcolor: 'warning.light', borderRadius: 2 }}>
-                <Typography variant="h3">$0</Typography>
-                <Typography variant="body2">Pipeline Value</Typography>
-              </Box>
-              <Box sx={{ p: 3, bgcolor: 'info.light', borderRadius: 2 }}>
-                <Typography variant="h3">0%</Typography>
-                <Typography variant="body2">Win Rate</Typography>
-              </Box>
-            </Box>
-          </Box>
-        );
-
-      case 'deals':
-        return selectedPipeline ? (
-          <DealKanban
-            workspaceId={selectedWorkspace._id}
-            pipelineId={selectedPipeline}
-          />
-        ) : (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h5" color="text.secondary">
-              Please select a pipeline from Pipeline Manager
-            </Typography>
-          </Box>
-        );
-
-      case 'contacts':
-        return <ContactManager workspaceId={selectedWorkspace._id} />;
-
-      case 'pipelines':
-        return <PipelineManager workspaceId={selectedWorkspace._id} />;
-
-      case 'boards':
-        return selectedBoard ? (
-          <BoardView
-            workspaceId={selectedWorkspace._id}
-            boardId={selectedBoard}
-          />
-        ) : (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h5" color="text.secondary">
-              Please select a board
-            </Typography>
-          </Box>
-        );
-
-      case 'settings':
-        return <WorkspaceSettings workspaceId={selectedWorkspace._id} />;
-
-      default:
-        return <Typography>View not found</Typography>;
-    }
-  };
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      {/* App Bar */}
+    <Box sx={{ display: 'flex' }}>
+      {/* AppBar */}
       <AppBar
         position="fixed"
         sx={{
@@ -257,37 +341,73 @@ const CRMDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-
+          
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {navigationItems.find(i => i.id === currentView)?.label || 'CRM'}
+            {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
           </Typography>
 
-          {/* Notifications */}
-          <IconButton color="inherit" sx={{ mr: 1 }}>
-            <Badge badgeContent={0} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
+          {workspaces.length > 0 && (
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 200, mr: 2 }}>
+              <InputLabel sx={{ color: 'white' }}>Workspace</InputLabel>
+              <Select
+                value={selectedWorkspace?._id || ''}
+                onChange={(e) => {
+                  const workspace = workspaces.find(w => w._id === e.target.value);
+                  setSelectedWorkspace(workspace);
+                }}
+                label="Workspace"
+                sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' } }}
+              >
+                {workspaces.map(workspace => (
+                  <MenuItem key={workspace._id} value={workspace._id}>
+                    {workspace.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
-          {/* User Menu */}
-          <IconButton
-            color="inherit"
-            onClick={(e) => setAnchorEl(e.currentTarget)}
-          >
-            <Avatar sx={{ width: 32, height: 32 }}>
-              <AccountIcon />
-            </Avatar>
-          </IconButton>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={() => setAnchorEl(null)}
-          >
-            <MenuItem onClick={() => setAnchorEl(null)}>Profile</MenuItem>
-            <MenuItem onClick={() => setAnchorEl(null)}>My Account</MenuItem>
-            <Divider />
-            <MenuItem onClick={() => setAnchorEl(null)}>Logout</MenuItem>
-          </Menu>
+          {currentView === 'deals' && pipelines.length > 0 && (
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+              <InputLabel sx={{ color: 'white' }}>Pipeline</InputLabel>
+              <Select
+                value={selectedPipeline?._id || ''}
+                onChange={(e) => {
+                  const pipeline = pipelines.find(p => p._id === e.target.value);
+                  setSelectedPipeline(pipeline);
+                }}
+                label="Pipeline"
+                sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' } }}
+              >
+                {pipelines.map(pipeline => (
+                  <MenuItem key={pipeline._id} value={pipeline._id}>
+                    {pipeline.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {currentView === 'boards' && boards.length > 0 && (
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+              <InputLabel sx={{ color: 'white' }}>Board</InputLabel>
+              <Select
+                value={selectedBoard?._id || ''}
+                onChange={(e) => {
+                  const board = boards.find(b => b._id === e.target.value);
+                  setSelectedBoard(board);
+                }}
+                label="Board"
+                sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' } }}
+              >
+                {boards.map(board => (
+                  <MenuItem key={board._id} value={board._id}>
+                    {board.icon} {board.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </Toolbar>
       </AppBar>
 
@@ -296,7 +416,6 @@ const CRMDashboard = () => {
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
-        {/* Mobile drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -309,8 +428,6 @@ const CRMDashboard = () => {
         >
           {drawer}
         </Drawer>
-
-        {/* Desktop drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -328,49 +445,47 @@ const CRMDashboard = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 0,
+          p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
-          height: 'calc(100vh - 64px)',
-          overflow: 'auto',
         }}
       >
-        {renderView()}
-      </Box>
-
-      {/* Workspace Selector Menu */}
-      <Menu
-        anchorEl={workspaceMenuAnchor}
-        open={Boolean(workspaceMenuAnchor)}
-        onClose={() => setWorkspaceMenuAnchor(null)}
-      >
-        {workspaces.map((workspace) => (
-          <MenuItem
-            key={workspace._id}
-            onClick={() => handleWorkspaceChange(workspace)}
-            selected={selectedWorkspace?._id === workspace._id}
-          >
-            <ListItemIcon>
-              <WorkspaceIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary={workspace.name}
-              secondary={workspace.slug}
-            />
-            {workspace.subscription && (
-              <Chip
-                label={workspace.subscription.plan}
-                size="small"
-                sx={{ ml: 1 }}
+        <Toolbar />
+        
+        {!selectedWorkspace ? (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="textSecondary">
+                No workspace available. Create a workspace to get started.
+              </Typography>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {currentView === 'overview' && renderOverview()}
+            {currentView === 'deals' && selectedPipeline && (
+              <DealKanban
+                workspaceId={selectedWorkspace._id}
+                pipelineId={selectedPipeline._id}
               />
             )}
-          </MenuItem>
-        ))}
-        <Divider />
-        <MenuItem onClick={() => setWorkspaceMenuAnchor(null)}>
-          <ListItemText primary="Create New Workspace" />
-        </MenuItem>
-      </Menu>
+            {currentView === 'contacts' && (
+              <ContactManager workspaceId={selectedWorkspace._id} />
+            )}
+            {currentView === 'pipelines' && (
+              <PipelineManager workspaceId={selectedWorkspace._id} />
+            )}
+            {currentView === 'boards' && selectedBoard && (
+              <BoardView
+                workspaceId={selectedWorkspace._id}
+                boardId={selectedBoard._id}
+              />
+            )}
+            {currentView === 'settings' && (
+              <WorkspaceSettings workspaceId={selectedWorkspace._id} />
+            )}
+          </>
+        )}
+      </Box>
     </Box>
   );
 };

@@ -1,8 +1,8 @@
 /**
  * PipelineManager Component
  * 
- * Pipeline configuration and management interface.
- * Features: stage management, analytics, pipeline templates
+ * Configure and manage sales pipelines with stages.
+ * Includes analytics, velocity tracking, and conversion funnel.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,277 +13,259 @@ import {
   CardContent,
   Typography,
   Button,
-  TextField,
-  Grid,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
+  Grid,
+  IconButton,
+  Chip,
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Chip,
-  LinearProgress,
-  Divider,
+  Slider,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
+  Divider,
+  CircularProgress,
+  Tab,
+  Tabs,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   DragIndicator as DragIcon,
-  TrendingUp as TrendingIcon,
+  TrendingUp as TrendingUpIcon,
   Timeline as TimelineIcon,
-  Analytics as AnalyticsIcon,
-  Palette as ColorIcon,
+  Insights as InsightsIcon,
 } from '@mui/icons-material';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { SketchPicker } from 'react-color';
+// Drag and drop temporarily disabled for React 19 compatibility
+// Will be re-enabled with @dnd-kit in Phase 4
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 const PipelineManager = ({ workspaceId }) => {
   const [pipelines, setPipelines] = useState([]);
   const [selectedPipeline, setSelectedPipeline] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [stageDialogOpen, setStageDialogOpen] = useState(false);
-  const [currentStage, setCurrentStage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [openStageDialog, setOpenStageDialog] = useState(false);
+  const [selectedStage, setSelectedStage] = useState(null);
+  const [currentTab, setCurrentTab] = useState(0);
   const [analytics, setAnalytics] = useState(null);
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
-
-  // New pipeline form
-  const [newPipeline, setNewPipeline] = useState({
+  const [velocity, setVelocity] = useState(null);
+  const [conversion, setConversion] = useState(null);
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
   });
-
-  // New stage form
-  const [newStage, setNewStage] = useState({
+  const [stageData, setStageData] = useState({
     name: '',
     probability: 50,
     color: '#3B82F6',
     rottenDays: 30,
   });
 
-  // Load pipelines
   useEffect(() => {
-    loadPipelines();
+    fetchPipelines();
   }, [workspaceId]);
 
-  // Load analytics when pipeline selected
   useEffect(() => {
     if (selectedPipeline) {
-      loadAnalytics();
+      fetchAnalytics();
     }
   }, [selectedPipeline]);
 
-  const loadPipelines = async () => {
+  const fetchPipelines = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/crm/pipelines', {
         params: { workspace: workspaceId },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setPipelines(response.data.data);
-      
       if (response.data.data.length > 0 && !selectedPipeline) {
         setSelectedPipeline(response.data.data[0]);
       }
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading pipelines:', error);
-    } finally {
+      console.error('Error fetching pipelines:', error);
       setLoading(false);
     }
   };
 
-  const loadAnalytics = async () => {
-    try {
-      const [statsRes, velocityRes, conversionRes] = await Promise.all([
-        axios.get(`/api/crm/pipelines/${selectedPipeline._id}/stats`),
-        axios.get(`/api/crm/pipelines/${selectedPipeline._id}/velocity`),
-        axios.get(`/api/crm/pipelines/${selectedPipeline._id}/conversion`),
-      ]);
+  const fetchAnalytics = async () => {
+    if (!selectedPipeline) return;
 
-      setAnalytics({
-        stats: statsRes.data.data,
-        velocity: velocityRes.data.data,
-        conversion: conversionRes.data.data,
+    try {
+      // Fetch statistics
+      const statsRes = await axios.get(`/api/crm/pipelines/${selectedPipeline._id}/stats`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
+      setAnalytics(statsRes.data.data);
+
+      // Fetch velocity
+      const velocityRes = await axios.get(`/api/crm/pipelines/${selectedPipeline._id}/velocity`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setVelocity(velocityRes.data.data);
+
+      // Fetch conversion
+      const conversionRes = await axios.get(`/api/crm/pipelines/${selectedPipeline._id}/conversion`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setConversion(conversionRes.data.data);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      console.error('Error fetching analytics:', error);
     }
   };
 
-  // Handle create pipeline
   const handleCreatePipeline = async () => {
     try {
-      const response = await axios.post('/api/crm/pipelines', {
-        ...newPipeline,
-        workspace: workspaceId,
-      });
-
-      setPipelines([...pipelines, response.data.data]);
-      setSelectedPipeline(response.data.data);
-      setDialogOpen(false);
-      setNewPipeline({ name: '', description: '' });
+      await axios.post(
+        '/api/crm/pipelines',
+        { ...formData, workspace: workspaceId },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchPipelines();
+      setOpenDialog(false);
+      resetForm();
     } catch (error) {
       console.error('Error creating pipeline:', error);
     }
   };
 
-  // Handle delete pipeline
-  const handleDeletePipeline = async (pipelineId) => {
-    if (!window.confirm('Are you sure? This will affect all associated deals.')) {
-      return;
-    }
-
-    try {
-      await axios.delete(`/api/crm/pipelines/${pipelineId}`);
-      setPipelines(pipelines.filter(p => p._id !== pipelineId));
-      
-      if (selectedPipeline?._id === pipelineId) {
-        setSelectedPipeline(pipelines[0] || null);
-      }
-    } catch (error) {
-      console.error('Error deleting pipeline:', error);
-      alert(error.response?.data?.error || 'Cannot delete pipeline with active deals');
-    }
-  };
-
-  // Handle add stage
   const handleAddStage = async () => {
     try {
-      await axios.post(`/api/crm/pipelines/${selectedPipeline._id}/stages`, newStage);
-      
-      loadPipelines();
-      setStageDialogOpen(false);
-      setCurrentStage(null);
-      setNewStage({
-        name: '',
-        probability: 50,
-        color: '#3B82F6',
-        rottenDays: 30,
-      });
+      await axios.post(
+        `/api/crm/pipelines/${selectedPipeline._id}/stages`,
+        stageData,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      fetchPipelines();
+      setOpenStageDialog(false);
+      resetStageForm();
     } catch (error) {
       console.error('Error adding stage:', error);
     }
   };
 
-  // Handle update stage
   const handleUpdateStage = async () => {
     try {
       await axios.put(
-        `/api/crm/pipelines/${selectedPipeline._id}/stages/${currentStage.id}`,
-        newStage
+        `/api/crm/pipelines/${selectedPipeline._id}/stages/${selectedStage.id}`,
+        stageData,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
-      
-      loadPipelines();
-      setStageDialogOpen(false);
-      setCurrentStage(null);
-      setNewStage({
-        name: '',
-        probability: 50,
-        color: '#3B82F6',
-        rottenDays: 30,
-      });
+      fetchPipelines();
+      setOpenStageDialog(false);
+      resetStageForm();
     } catch (error) {
       console.error('Error updating stage:', error);
     }
   };
 
-  // Handle delete stage
   const handleDeleteStage = async (stageId) => {
-    if (!window.confirm('Delete this stage? Deals in this stage will need to be moved.')) {
-      return;
-    }
-
-    try {
-      await axios.delete(`/api/crm/pipelines/${selectedPipeline._id}/stages/${stageId}`);
-      loadPipelines();
-    } catch (error) {
-      console.error('Error deleting stage:', error);
-      alert(error.response?.data?.error || 'Cannot delete stage with deals');
+    if (window.confirm('Are you sure? Deals in this stage will need to be moved.')) {
+      try {
+        await axios.delete(
+          `/api/crm/pipelines/${selectedPipeline._id}/stages/${stageId}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        fetchPipelines();
+      } catch (error) {
+        console.error('Error deleting stage:', error);
+        alert(error.response?.data?.error || 'Cannot delete stage');
+      }
     }
   };
 
-  // Handle drag end for stage reordering
-  const handleDragEnd = async (result) => {
+  const handleReorderStages = async (result) => {
     if (!result.destination) return;
 
-    const stages = Array.from(selectedPipeline.stages);
-    const [reorderedStage] = stages.splice(result.source.index, 1);
-    stages.splice(result.destination.index, 0, reorderedStage);
-
-    const stageOrder = stages.map(s => s.id);
+    const newStages = Array.from(selectedPipeline.stages);
+    const [removed] = newStages.splice(result.source.index, 1);
+    newStages.splice(result.destination.index, 0, removed);
 
     try {
-      await axios.put(`/api/crm/pipelines/${selectedPipeline._id}/stages/reorder`, {
-        stageOrder,
-      });
+      await axios.put(
+        `/api/crm/pipelines/${selectedPipeline._id}/stages/reorder`,
+        { stageOrder: newStages.map(s => s.id) },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
       
-      loadPipelines();
+      // Update local state
+      setSelectedPipeline({ ...selectedPipeline, stages: newStages });
     } catch (error) {
       console.error('Error reordering stages:', error);
+      fetchPipelines();
     }
   };
 
-  // Open stage dialog
-  const openStageDialog = (stage = null) => {
-    if (stage) {
-      setCurrentStage(stage);
-      setNewStage({
-        name: stage.name,
-        probability: stage.probability,
-        color: stage.color || '#3B82F6',
-        rottenDays: stage.rottenDays || 30,
-      });
-    } else {
-      setCurrentStage(null);
-      setNewStage({
-        name: '',
-        probability: 50,
-        color: '#3B82F6',
-        rottenDays: 30,
-      });
-    }
-    setStageDialogOpen(true);
+  const resetForm = () => {
+    setFormData({ name: '', description: '' });
   };
 
-  // Format number
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-US').format(num || 0);
+  const resetStageForm = () => {
+    setStageData({
+      name: '',
+      probability: 50,
+      color: '#3B82F6',
+      rottenDays: 30,
+    });
+    setSelectedStage(null);
   };
 
-  // Format currency
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value || 0);
+  const openEditStageDialog = (stage) => {
+    setSelectedStage(stage);
+    setStageData({
+      name: stage.name,
+      probability: stage.probability,
+      color: stage.color,
+      rottenDays: stage.rottenDays || 30,
+    });
+    setOpenStageDialog(true);
   };
 
   if (loading) {
-    return <LinearProgress />;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box p={3}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={600}>
-          Pipeline Manager
-        </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4">Pipeline Manager</Typography>
         <Button
-          startIcon={<AddIcon />}
           variant="contained"
-          onClick={() => setDialogOpen(true)}
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenDialog(true)}
         >
           New Pipeline
         </Button>
@@ -304,30 +286,11 @@ const PipelineManager = ({ workspaceId }) => {
                     button
                     selected={selectedPipeline?._id === pipeline._id}
                     onClick={() => setSelectedPipeline(pipeline)}
-                    sx={{
-                      borderRadius: 1,
-                      mb: 1,
-                      '&.Mui-selected': {
-                        bgcolor: 'primary.light',
-                      },
-                    }}
                   >
                     <ListItemText
                       primary={pipeline.name}
-                      secondary={`${pipeline.stages.length} stages`}
+                      secondary={`${pipeline.stages?.length || 0} stages`}
                     />
-                    <ListItemSecondaryAction>
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePipeline(pipeline._id);
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </ListItemSecondaryAction>
                   </ListItem>
                 ))}
               </List>
@@ -338,216 +301,275 @@ const PipelineManager = ({ workspaceId }) => {
         {/* Pipeline Details */}
         <Grid item xs={12} md={9}>
           {selectedPipeline ? (
-            <>
-              {/* Stages Management */}
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">
-                      {selectedPipeline.name} - Stages
-                    </Typography>
-                    <Button
-                      startIcon={<AddIcon />}
-                      size="small"
-                      variant="outlined"
-                      onClick={() => openStageDialog()}
-                    >
-                      Add Stage
-                    </Button>
-                  </Box>
+            <Card>
+              <CardContent>
+                <Tabs value={currentTab} onChange={(e, v) => setCurrentTab(v)}>
+                  <Tab label="Stages" />
+                  <Tab label="Analytics" />
+                  <Tab label="Velocity" />
+                </Tabs>
 
-                  <DragDropContext onDragEnd={handleDragEnd}>
-                    <Droppable droppableId="stages">
-                      {(provided) => (
-                        <List {...provided.droppableProps} ref={provided.innerRef}>
-                          {selectedPipeline.stages.map((stage, index) => (
-                            <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                              {(provided, snapshot) => (
-                                <ListItem
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  sx={{
-                                    mb: 1,
-                                    bgcolor: snapshot.isDragging ? 'action.hover' : 'background.paper',
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    borderRadius: 1,
-                                  }}
-                                >
-                                  <Box {...provided.dragHandleProps} sx={{ mr: 1 }}>
-                                    <DragIcon color="action" />
-                                  </Box>
-                                  <Box
-                                    sx={{
-                                      width: 16,
-                                      height: 16,
-                                      borderRadius: '50%',
-                                      bgcolor: stage.color || '#3B82F6',
-                                      mr: 2,
-                                    }}
-                                  />
-                                  <ListItemText
-                                    primary={stage.name}
-                                    secondary={
-                                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                                        <Chip label={`${stage.probability}%`} size="small" />
-                                        {stage.rottenDays && (
-                                          <Chip label={`${stage.rottenDays} days`} size="small" variant="outlined" />
-                                        )}
+                {/* Stages Tab */}
+                {currentTab === 0 && (
+                  <Box mt={3}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">{selectedPipeline.name}</Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => setOpenStageDialog(true)}
+                      >
+                        Add Stage
+                      </Button>
+                    </Box>
+
+                    <DragDropContext onDragEnd={handleReorderStages}>
+                      <Droppable droppableId="stages">
+                        {(provided) => (
+                          <List
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                          >
+                            {selectedPipeline.stages?.map((stage, index) => (
+                              <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                                {(provided) => (
+                                  <Paper
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    sx={{ mb: 2, p: 2 }}
+                                  >
+                                    <Box display="flex" alignItems="center" gap={2}>
+                                      <Box {...provided.dragHandleProps}>
+                                        <DragIcon />
                                       </Box>
-                                    }
-                                  />
-                                  <ListItemSecondaryAction>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => openStageDialog(stage)}
-                                    >
-                                      <EditIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleDeleteStage(stage.id)}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </ListItemSecondaryAction>
-                                </ListItem>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </List>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                </CardContent>
-              </Card>
-
-              {/* Analytics */}
-              {analytics && (
-                <>
-                  {/* Stats Cards */}
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Total Deals
-                          </Typography>
-                          <Typography variant="h4">
-                            {formatNumber(analytics.stats.totalDeals)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Won Deals
-                          </Typography>
-                          <Typography variant="h4" color="success.main">
-                            {formatNumber(analytics.stats.wonDeals)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Win Rate
-                          </Typography>
-                          <Typography variant="h4">
-                            {analytics.stats.conversionRate?.toFixed(1)}%
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Avg. Duration
-                          </Typography>
-                          <Typography variant="h4">
-                            {analytics.stats.averageDealDuration?.toFixed(0)} days
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  </Grid>
-
-                  {/* Velocity Chart */}
-                  <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        <TimelineIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                        Pipeline Velocity
-                      </Typography>
-                      <TableContainer>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Stage</TableCell>
-                              <TableCell align="right">Avg. Duration</TableCell>
-                              <TableCell align="right">Deal Count</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {Object.entries(analytics.velocity).map(([stageId, data]) => (
-                              <TableRow key={stageId}>
-                                <TableCell>
-                                  {selectedPipeline.stages.find(s => s.id === stageId)?.name || stageId}
-                                </TableCell>
-                                <TableCell align="right">
-                                  {data.avgDuration?.toFixed(1)} days
-                                </TableCell>
-                                <TableCell align="right">
-                                  {data.count}
-                                </TableCell>
-                              </TableRow>
+                                      <Box
+                                        sx={{
+                                          width: 20,
+                                          height: 20,
+                                          borderRadius: '50%',
+                                          backgroundColor: stage.color,
+                                        }}
+                                      />
+                                      <Box flex={1}>
+                                        <Typography variant="subtitle1">
+                                          {stage.name}
+                                        </Typography>
+                                        <Typography variant="caption" color="textSecondary">
+                                          Probability: {stage.probability}% | 
+                                          Rotten after: {stage.rottenDays || 30} days
+                                        </Typography>
+                                      </Box>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => openEditStageDialog(stage)}
+                                      >
+                                        <EditIcon />
+                                      </IconButton>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleDeleteStage(stage.id)}
+                                      >
+                                        <DeleteIcon />
+                                      </IconButton>
+                                    </Box>
+                                  </Paper>
+                                )}
+                              </Draggable>
                             ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </CardContent>
-                  </Card>
+                            {provided.placeholder}
+                          </List>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+                  </Box>
+                )}
 
-                  {/* Conversion Funnel */}
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        <TrendingIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                        Conversion Funnel
-                      </Typography>
-                      {analytics.conversion.map((stage, index) => (
-                        <Box key={stage.stageId} sx={{ mb: 2 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                            <Typography variant="body2">
-                              {stage.stageName}
+                {/* Analytics Tab */}
+                {currentTab === 1 && analytics && (
+                  <Box mt={3}>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} md={3}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h4" color="primary">
+                              {analytics.totalDeals || 0}
                             </Typography>
-                            <Typography variant="body2" fontWeight={600}>
-                              {stage.count} deals ({stage.conversionRate?.toFixed(1)}%)
+                            <Typography variant="body2" color="textSecondary">
+                              Total Deals
                             </Typography>
-                          </Box>
-                          <LinearProgress
-                            variant="determinate"
-                            value={stage.conversionRate || 0}
-                            sx={{ height: 8, borderRadius: 1 }}
-                          />
-                        </Box>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-            </>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={12} md={3}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h4" color="success.main">
+                              {analytics.wonDeals || 0}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              Won Deals
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={12} md={3}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h4" color="error.main">
+                              {analytics.lostDeals || 0}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              Lost Deals
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={12} md={3}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h4" color="secondary.main">
+                              {analytics.conversionRate?.toFixed(1) || 0}%
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              Win Rate
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                              Pipeline Distribution
+                            </Typography>
+                            {analytics.stageDistribution && (
+                              <Doughnut
+                                data={{
+                                  labels: Object.keys(analytics.stageDistribution),
+                                  datasets: [{
+                                    data: Object.values(analytics.stageDistribution),
+                                    backgroundColor: selectedPipeline.stages.map(s => s.color),
+                                  }],
+                                }}
+                              />
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                              Average Deal Duration
+                            </Typography>
+                            <Typography variant="h3" color="primary">
+                              {analytics.averageDealDuration || 0}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              days
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* Velocity Tab */}
+                {currentTab === 2 && velocity && (
+                  <Box mt={3}>
+                    <Typography variant="h6" gutterBottom>
+                      Stage Velocity (Average Time per Stage)
+                    </Typography>
+                    <Bar
+                      data={{
+                        labels: Object.keys(velocity),
+                        datasets: [{
+                          label: 'Days in Stage',
+                          data: Object.values(velocity).map(v => v.avgDuration / 24), // Convert hours to days
+                          backgroundColor: '#3B82F6',
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        plugins: {
+                          legend: { display: false },
+                          title: {
+                            display: true,
+                            text: 'Average Days Spent in Each Stage',
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Days' },
+                          },
+                        },
+                      }}
+                    />
+
+                    {conversion && (
+                      <Box mt={4}>
+                        <Typography variant="h6" gutterBottom>
+                          Conversion Funnel
+                        </Typography>
+                        <List>
+                          {conversion.map((stage, index) => (
+                            <ListItem key={stage.stage}>
+                              <ListItemText
+                                primary={
+                                  <Box display="flex" alignItems="center" gap={2}>
+                                    <Typography>{stage.stage}</Typography>
+                                    <Chip
+                                      label={`${stage.deals} deals`}
+                                      size="small"
+                                      color="primary"
+                                    />
+                                  </Box>
+                                }
+                                secondary={
+                                  <Box mt={1}>
+                                    <Box display="flex" justifyContent="space-between" mb={0.5}>
+                                      <Typography variant="caption">
+                                        {stage.conversionRate?.toFixed(1)}% conversion
+                                      </Typography>
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        width: '100%',
+                                        height: 30,
+                                        backgroundColor: '#e0e0e0',
+                                        position: 'relative',
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          width: `${stage.conversionRate || 0}%`,
+                                          height: '100%',
+                                          backgroundColor: '#3B82F6',
+                                        }}
+                                      />
+                                    </Box>
+                                  </Box>
+                                }
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent>
-                <Typography variant="h6" color="text.secondary" textAlign="center">
-                  Select a pipeline or create a new one
+                <Typography variant="body1" color="textSecondary">
+                  Select a pipeline to view details
                 </Typography>
               </CardContent>
             </Card>
@@ -556,95 +578,85 @@ const PipelineManager = ({ workspaceId }) => {
       </Grid>
 
       {/* Create Pipeline Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Pipeline</DialogTitle>
         <DialogContent>
-          <TextField
-            label="Pipeline Name"
-            fullWidth
-            required
-            value={newPipeline.name}
-            onChange={(e) => setNewPipeline({ ...newPipeline, name: e.target.value })}
-            sx={{ mt: 2, mb: 2 }}
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={newPipeline.description}
-            onChange={(e) => setNewPipeline({ ...newPipeline, description: e.target.value })}
-          />
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              label="Pipeline Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              fullWidth
+              multiline
+              rows={3}
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreatePipeline} variant="contained">
-            Create
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreatePipeline} variant="contained" color="primary">
+            Create Pipeline
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add/Edit Stage Dialog */}
-      <Dialog open={stageDialogOpen} onClose={() => setStageDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{currentStage ? 'Edit Stage' : 'Add Stage'}</DialogTitle>
+      <Dialog open={openStageDialog} onClose={() => setOpenStageDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedStage ? 'Edit Stage' : 'Add New Stage'}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Stage Name"
-                fullWidth
-                required
-                value={newStage.name}
-                onChange={(e) => setNewStage({ ...newStage, name: e.target.value })}
+          <Box display="flex" flexDirection="column" gap={3} mt={1}>
+            <TextField
+              label="Stage Name"
+              value={stageData.name}
+              onChange={(e) => setStageData({ ...stageData, name: e.target.value })}
+              fullWidth
+              required
+            />
+            
+            <Box>
+              <Typography gutterBottom>Probability: {stageData.probability}%</Typography>
+              <Slider
+                value={stageData.probability}
+                onChange={(e, value) => setStageData({ ...stageData, probability: value })}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Probability (%)"
-                type="number"
-                fullWidth
-                value={newStage.probability}
-                onChange={(e) => setNewStage({ ...newStage, probability: parseInt(e.target.value) })}
-                inputProps={{ min: 0, max: 100 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Rotten Days"
-                type="number"
-                fullWidth
-                value={newStage.rottenDays}
-                onChange={(e) => setNewStage({ ...newStage, rottenDays: parseInt(e.target.value) })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button
-                startIcon={<ColorIcon />}
-                variant="outlined"
-                onClick={() => setColorPickerOpen(!colorPickerOpen)}
-                fullWidth
-                sx={{ bgcolor: newStage.color, color: 'white', '&:hover': { bgcolor: newStage.color } }}
-              >
-                Choose Color
-              </Button>
-              {colorPickerOpen && (
-                <Box sx={{ mt: 2 }}>
-                  <SketchPicker
-                    color={newStage.color}
-                    onChange={(color) => setNewStage({ ...newStage, color: color.hex })}
-                  />
-                </Box>
-              )}
-            </Grid>
-          </Grid>
+            </Box>
+
+            <TextField
+              label="Stage Color"
+              type="color"
+              value={stageData.color}
+              onChange={(e) => setStageData({ ...stageData, color: e.target.value })}
+              fullWidth
+            />
+
+            <TextField
+              label="Rotten Days"
+              type="number"
+              value={stageData.rottenDays}
+              onChange={(e) => setStageData({ ...stageData, rottenDays: parseInt(e.target.value) })}
+              fullWidth
+              helperText="Number of days before a deal becomes 'rotten' in this stage"
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setStageDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setOpenStageDialog(false)}>Cancel</Button>
           <Button
-            onClick={currentStage ? handleUpdateStage : handleAddStage}
+            onClick={selectedStage ? handleUpdateStage : handleAddStage}
             variant="contained"
+            color="primary"
           >
-            {currentStage ? 'Update' : 'Add'}
+            {selectedStage ? 'Update' : 'Add'} Stage
           </Button>
         </DialogActions>
       </Dialog>
