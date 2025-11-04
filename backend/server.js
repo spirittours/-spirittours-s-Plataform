@@ -51,6 +51,7 @@ app.get('/api', (req, res) => {
       emailConfig: '/api/admin/email-config',
       emailTemplates: '/api/admin/email-templates',
       systemConfig: '/api/admin/system-config',
+      systemConfigDashboard: '/api/system-config',
       trips: '/api/trips',
       smartNotifications: '/api/smart-notifications',
       whatsapp: '/api/whatsapp',
@@ -117,6 +118,11 @@ try {
   app.use('/api/ai-agent', aiAgentRoutes);
   logger.info('✅ AI Accounting Agent routes registered (9 services, 92 endpoints)');
 
+  // System Configuration Dashboard routes (API keys, credentials management)
+  const systemConfigDashboardRoutes = require('./routes/system-config.routes');
+  app.use('/api/system-config', systemConfigDashboardRoutes);
+  logger.info('✅ System Configuration Dashboard routes registered');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
@@ -166,6 +172,7 @@ async function startServer() {
       logger.info(`🔔 Notifications API: http://localhost:${PORT}/api/smart-notifications`);
       logger.info(`📱 WhatsApp API: http://localhost:${PORT}/api/whatsapp`);
       logger.info(`🤖 AI Agent API: http://localhost:${PORT}/api/ai-agent (9 services, 92 endpoints)`);
+      logger.info(`⚙️ System Config Dashboard: http://localhost:${PORT}/api/system-config`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
