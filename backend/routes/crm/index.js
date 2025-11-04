@@ -22,6 +22,7 @@ const googleCalendarRoutes = require('./google-calendar.routes');
 const outlookCalendarRoutes = require('./outlook-calendar.routes');
 const docusignRoutes = require('./docusign.routes');
 const zoomRoutes = require('./zoom.routes');
+const twoFactorAuthRoutes = require('./two-factor-auth.routes');
 const statisticsRoutes = require('./statistics.routes');
 
 // Mount routes
@@ -38,6 +39,7 @@ router.use('/google-calendar', googleCalendarRoutes);
 router.use('/outlook-calendar', outlookCalendarRoutes);
 router.use('/docusign', docusignRoutes);
 router.use('/zoom', zoomRoutes);
+router.use('/2fa', twoFactorAuthRoutes);
 router.use('/statistics', statisticsRoutes);
 
 // Health check endpoint
@@ -60,6 +62,7 @@ router.get('/health', (req, res) => {
       'outlook-calendar',
       'docusign',
       'zoom',
+      '2fa',
       'statistics',
     ],
   });
