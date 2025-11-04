@@ -18,6 +18,9 @@
 // Main Dashboard Component
 export { default as CRMDashboard } from './CRMDashboard';
 
+// Dashboard Widgets Component
+export { default as DashboardWidgets } from './DashboardWidgets';
+
 // Deal Management Components
 export { default as DealKanban } from './DealKanban';
 
@@ -36,6 +39,7 @@ export { default as WorkspaceSettings } from './WorkspaceSettings';
 // Re-export all components as a named object for convenience
 export default {
   CRMDashboard,
+  DashboardWidgets,
   DealKanban,
   ContactManager,
   PipelineManager,

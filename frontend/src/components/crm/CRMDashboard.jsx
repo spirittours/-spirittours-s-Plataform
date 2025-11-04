@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import DashboardWidgets from './DashboardWidgets';
 import {
   Box,
   Drawer,
@@ -129,138 +130,19 @@ const CRMDashboard = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const renderOverview = () => (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        CRM Overview
-      </Typography>
-      
-      {stats && (
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
-                    <KanbanIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h4">{stats.totalDeals || 0}</Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Total Deals
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+  const renderOverview = () => {
+    if (!selectedWorkspace) {
+      return (
+        <Box p={3}>
+          <Typography variant="h6" color="textSecondary">
+            Please select a workspace to view dashboard
+          </Typography>
+        </Box>
+      );
+    }
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar sx={{ bgcolor: 'success.main' }}>
-                    <MoneyIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h4">
-                      ${(stats.totalValue || 0).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Pipeline Value
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar sx={{ bgcolor: 'info.main' }}>
-                    <PeopleIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h4">{stats.totalContacts || 0}</Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Contacts
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar sx={{ bgcolor: 'secondary.main' }}>
-                    <TrendingUpIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h4">
-                      {stats.conversionRate ? `${stats.conversionRate.toFixed(1)}%` : '0%'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Win Rate
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Activity
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Activity feed coming soon...
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
-              <List>
-                <ListItem button onClick={() => setCurrentView('deals')}>
-                  <ListItemIcon>
-                    <KanbanIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="View Deals" />
-                </ListItem>
-                <ListItem button onClick={() => setCurrentView('contacts')}>
-                  <ListItemIcon>
-                    <ContactsIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Manage Contacts" />
-                </ListItem>
-                <ListItem button onClick={() => setCurrentView('pipelines')}>
-                  <ListItemIcon>
-                    <PipelineIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Configure Pipelines" />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
-  );
+    return <DashboardWidgets workspaceId={selectedWorkspace._id} />;
+  };
 
   const drawer = (
     <Box>
