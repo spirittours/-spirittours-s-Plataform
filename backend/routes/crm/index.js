@@ -16,6 +16,7 @@ const dealRoutes = require('./deal.routes');
 const contactRoutes = require('./contact.routes');
 const itemRoutes = require('./item.routes');
 const activityRoutes = require('./activity.routes');
+const gmailRoutes = require('./gmail.routes');
 
 // Mount routes
 router.use('/workspaces', workspaceRoutes);
@@ -25,6 +26,7 @@ router.use('/deals', dealRoutes);
 router.use('/contacts', contactRoutes);
 router.use('/items', itemRoutes);
 router.use('/activities', activityRoutes);
+router.use('/integrations/gmail', gmailRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -40,6 +42,7 @@ router.get('/health', (req, res) => {
       'contacts',
       'items',
       'activities',
+      'integrations/gmail',
     ],
   });
 });
@@ -159,6 +162,28 @@ router.get('/docs', (req, res) => {
           'GET /api/crm/activities/stats',
           'GET /api/crm/activities/recent',
         ],
+      },
+      integrations: {
+        gmail: {
+          description: 'Gmail API integration with OAuth 2.0 and two-way sync',
+          routes: [
+            'GET /api/crm/integrations/gmail/auth',
+            'GET /api/crm/integrations/gmail/callback',
+            'POST /api/crm/integrations/gmail/send',
+            'GET /api/crm/integrations/gmail/emails',
+            'GET /api/crm/integrations/gmail/emails/:id',
+            'POST /api/crm/integrations/gmail/sync-contacts',
+            'POST /api/crm/integrations/gmail/disconnect',
+          ],
+          features: [
+            'OAuth 2.0 authentication',
+            'Send emails via Gmail API',
+            'List and retrieve emails',
+            'Two-way contact sync',
+            'Thread management',
+            'Label management',
+          ],
+        },
       },
     },
     authentication: {
