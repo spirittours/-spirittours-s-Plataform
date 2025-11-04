@@ -17,6 +17,7 @@ const contactRoutes = require('./contact.routes');
 const itemRoutes = require('./item.routes');
 const activityRoutes = require('./activity.routes');
 const gmailRoutes = require('./gmail.routes');
+const outlookRoutes = require('./outlook.routes');
 const statisticsRoutes = require('./statistics.routes');
 
 // Mount routes
@@ -28,6 +29,7 @@ router.use('/contacts', contactRoutes);
 router.use('/items', itemRoutes);
 router.use('/activities', activityRoutes);
 router.use('/integrations/gmail', gmailRoutes);
+router.use('/integrations/outlook', outlookRoutes);
 router.use('/statistics', statisticsRoutes);
 
 // Health check endpoint
@@ -45,6 +47,7 @@ router.get('/health', (req, res) => {
       'items',
       'activities',
       'integrations/gmail',
+      'integrations/outlook',
       'statistics',
     ],
   });
