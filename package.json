@@ -100,7 +100,11 @@
     "release:dry": "semantic-release --dry-run"
   },
   "dependencies": {
-    "axios": "^1.6.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
+    "axios": "^1.13.1",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -115,6 +119,8 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^6.9.0",
     "pg": "^8.11.3",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-color": "^2.19.3",
     "redis": "^4.6.0",
     "winston": "^3.11.0",
     "ws": "^8.14.0"
