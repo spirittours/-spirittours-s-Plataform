@@ -216,6 +216,42 @@ const workspaceSchema = new mongoose.Schema({
     },
   },
   
+  // SSO Configuration
+  sso: {
+    saml: {
+      enabled: Boolean,
+      entryPoint: String,
+      issuer: String,
+      certificate: String,
+      configuredAt: Date,
+      configuredBy: mongoose.Schema.Types.ObjectId,
+    },
+    azureAD: {
+      enabled: Boolean,
+      tenantId: String,
+      clientId: String,
+      clientSecret: String,
+      configuredAt: Date,
+      configuredBy: mongoose.Schema.Types.ObjectId,
+    },
+    google: {
+      enabled: Boolean,
+      clientId: String,
+      clientSecret: String,
+      allowedDomains: [String],
+      configuredAt: Date,
+      configuredBy: mongoose.Schema.Types.ObjectId,
+    },
+    okta: {
+      enabled: Boolean,
+      entryPoint: String,
+      issuer: String,
+      certificate: String,
+      configuredAt: Date,
+      configuredBy: mongoose.Schema.Types.ObjectId,
+    },
+  },
+  
   // Security
   security: {
     twoFactorRequired: {
@@ -226,7 +262,7 @@ const workspaceSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
-    ssoProvider: String, // 'okta', 'azure-ad', 'google'
+    ssoProvider: String, // 'okta', 'azure-ad', 'google', 'saml'
     ipWhitelist: [String],
     sessionTimeout: {
       type: Number, // in minutes
