@@ -26,6 +26,7 @@ const twoFactorAuthRoutes = require('./two-factor-auth.routes');
 const ssoRoutes = require('./sso.routes');
 const rolesRoutes = require('./roles.routes');
 const auditRoutes = require('./audit.routes');
+const ipRestrictionsRoutes = require('./ip-restrictions.routes');
 const statisticsRoutes = require('./statistics.routes');
 
 // Mount routes
@@ -46,6 +47,7 @@ router.use('/2fa', twoFactorAuthRoutes);
 router.use('/sso', ssoRoutes);
 router.use('/roles', rolesRoutes);
 router.use('/audit', auditRoutes);
+router.use('/ip-restrictions', ipRestrictionsRoutes);
 router.use('/statistics', statisticsRoutes);
 
 // Health check endpoint

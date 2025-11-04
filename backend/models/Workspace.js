@@ -268,6 +268,29 @@ const workspaceSchema = new mongoose.Schema({
       type: Number, // in minutes
       default: 480, // 8 hours
     },
+    ipRestrictions: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      whitelist: [{
+        pattern: String, // IP, CIDR, range, or wildcard
+        description: String,
+        addedBy: mongoose.Schema.Types.ObjectId,
+        addedAt: Date,
+      }],
+      blacklist: [{
+        pattern: String,
+        description: String,
+        reason: String,
+        addedBy: mongoose.Schema.Types.ObjectId,
+        addedAt: Date,
+      }],
+      allowedCountries: [String], // ISO 3166-1 alpha-2 codes (e.g., 'US', 'MX', 'CA')
+      blockedCountries: [String],
+      enabledAt: Date,
+      enabledBy: mongoose.Schema.Types.ObjectId,
+    },
   },
   
   // Status
