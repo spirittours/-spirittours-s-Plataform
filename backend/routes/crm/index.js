@@ -18,6 +18,10 @@ const itemRoutes = require('./item.routes');
 const activityRoutes = require('./activity.routes');
 const gmailRoutes = require('./gmail.routes');
 const outlookRoutes = require('./outlook.routes');
+const googleCalendarRoutes = require('./google-calendar.routes');
+const outlookCalendarRoutes = require('./outlook-calendar.routes');
+const docusignRoutes = require('./docusign.routes');
+const zoomRoutes = require('./zoom.routes');
 const statisticsRoutes = require('./statistics.routes');
 
 // Mount routes
@@ -30,6 +34,10 @@ router.use('/items', itemRoutes);
 router.use('/activities', activityRoutes);
 router.use('/integrations/gmail', gmailRoutes);
 router.use('/integrations/outlook', outlookRoutes);
+router.use('/google-calendar', googleCalendarRoutes);
+router.use('/outlook-calendar', outlookCalendarRoutes);
+router.use('/docusign', docusignRoutes);
+router.use('/zoom', zoomRoutes);
 router.use('/statistics', statisticsRoutes);
 
 // Health check endpoint
@@ -48,6 +56,10 @@ router.get('/health', (req, res) => {
       'activities',
       'integrations/gmail',
       'integrations/outlook',
+      'google-calendar',
+      'outlook-calendar',
+      'docusign',
+      'zoom',
       'statistics',
     ],
   });
@@ -181,13 +193,66 @@ router.get('/docs', (req, res) => {
             'POST /api/crm/integrations/gmail/sync-contacts',
             'POST /api/crm/integrations/gmail/disconnect',
           ],
-          features: [
-            'OAuth 2.0 authentication',
-            'Send emails via Gmail API',
-            'List and retrieve emails',
-            'Two-way contact sync',
-            'Thread management',
-            'Label management',
+        },
+        outlook: {
+          description: 'Outlook/Exchange integration with Microsoft Graph API',
+          routes: [
+            'GET /api/crm/integrations/outlook/auth',
+            'GET /api/crm/integrations/outlook/callback',
+            'POST /api/crm/integrations/outlook/send',
+            'GET /api/crm/integrations/outlook/emails',
+            'POST /api/crm/integrations/outlook/disconnect',
+          ],
+        },
+        googleCalendar: {
+          description: 'Google Calendar integration for event management',
+          routes: [
+            'GET /api/crm/google-calendar/auth/:workspaceId',
+            'GET /api/crm/google-calendar/callback',
+            'POST /api/crm/google-calendar/create-event',
+            'GET /api/crm/google-calendar/events/:workspaceId',
+            'GET /api/crm/google-calendar/free-busy/:workspaceId',
+            'PUT /api/crm/google-calendar/sync-settings/:workspaceId',
+            'DELETE /api/crm/google-calendar/disconnect/:workspaceId',
+          ],
+        },
+        outlookCalendar: {
+          description: 'Outlook Calendar integration with Microsoft Graph',
+          routes: [
+            'GET /api/crm/outlook-calendar/auth/:workspaceId',
+            'GET /api/crm/outlook-calendar/callback',
+            'POST /api/crm/outlook-calendar/create-event',
+            'GET /api/crm/outlook-calendar/events/:workspaceId',
+            'GET /api/crm/outlook-calendar/free-busy/:workspaceId',
+            'PUT /api/crm/outlook-calendar/sync-settings/:workspaceId',
+            'DELETE /api/crm/outlook-calendar/disconnect/:workspaceId',
+          ],
+        },
+        docusign: {
+          description: 'DocuSign e-signature integration for contracts',
+          routes: [
+            'GET /api/crm/docusign/auth/:workspaceId',
+            'GET /api/crm/docusign/callback',
+            'POST /api/crm/docusign/send-envelope',
+            'GET /api/crm/docusign/envelope-status/:workspaceId/:envelopeId',
+            'GET /api/crm/docusign/list-envelopes/:workspaceId',
+            'GET /api/crm/docusign/download-document/:workspaceId/:envelopeId/:documentId',
+            'POST /api/crm/docusign/webhook',
+            'DELETE /api/crm/docusign/disconnect/:workspaceId',
+          ],
+        },
+        zoom: {
+          description: 'Zoom video conferencing integration',
+          routes: [
+            'GET /api/crm/zoom/auth/:workspaceId',
+            'GET /api/crm/zoom/callback',
+            'POST /api/crm/zoom/create-meeting',
+            'GET /api/crm/zoom/meeting/:workspaceId/:meetingId',
+            'GET /api/crm/zoom/meetings/:workspaceId',
+            'GET /api/crm/zoom/recordings/:workspaceId/:meetingId',
+            'POST /api/crm/zoom/webhook',
+            'DELETE /api/crm/zoom/meeting/:workspaceId/:meetingId',
+            'DELETE /api/crm/zoom/disconnect/:workspaceId',
           ],
         },
       },
