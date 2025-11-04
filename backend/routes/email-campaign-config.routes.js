@@ -106,7 +106,6 @@ router.post('/email-config/wizard/complete', authenticate, authorize(['admin']),
     const {
       multiServerPreset,
       costStrategy,
-      emailVolume,
       budget,
       autoScaling,
     } = req.body;
@@ -711,7 +710,8 @@ function analyzeUserProfileAndRecommend(userProfile) {
 
 function getPresetCost(presetId) {
   const presets = multiServerManager.getPresets();
-  return presets[presetId]?.cost || { monthly: 0, setup: 0 };
+  const preset = presets[presetId];
+  return preset?.cost || { monthly: 0, setup: 0 };
 }
 
 module.exports = router;
