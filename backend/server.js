@@ -55,7 +55,8 @@ app.get('/api', (req, res) => {
       trips: '/api/trips',
       smartNotifications: '/api/smart-notifications',
       whatsapp: '/api/whatsapp',
-      aiAgent: '/api/ai-agent'
+      aiAgent: '/api/ai-agent',
+      crm: '/api/crm'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -72,6 +73,28 @@ app.get('/api', (req, res) => {
         roi: '/api/ai-agent/roi (11 endpoints)'
       },
       documentation: 'GET /api/ai-agent for full details'
+    },
+    crmSystem: {
+      description: 'Complete CRM system with multi-tenancy and Monday.com-like features',
+      totalModules: 7,
+      modules: {
+        workspaces: '/api/crm/workspaces (Multi-tenant workspaces)',
+        pipelines: '/api/crm/pipelines (Sales pipeline management)',
+        boards: '/api/crm/boards (Customizable boards)',
+        deals: '/api/crm/deals (Deal management)',
+        contacts: '/api/crm/contacts (Contact & lead management)',
+        items: '/api/crm/items (Board items)',
+        activities: '/api/crm/activities (Activity logging & timeline)'
+      },
+      features: {
+        multiTenancy: 'Workspace-based isolation',
+        rbac: 'Role-based access control',
+        dynamicSchema: '20+ column types',
+        automation: 'Workflow automation',
+        analytics: 'Pipeline velocity & conversion',
+        activityTracking: 'Complete audit trail'
+      },
+      documentation: 'GET /api/crm/docs for full API documentation'
     }
   });
 });
@@ -122,6 +145,11 @@ try {
   const systemConfigDashboardRoutes = require('./routes/system-config.routes');
   app.use('/api/system-config', systemConfigDashboardRoutes);
   logger.info('✅ System Configuration Dashboard routes registered');
+
+  // CRM routes (Complete CRM system with 7 modules)
+  const crmRoutes = require('./routes/crm/index');
+  app.use('/api/crm', crmRoutes);
+  logger.info('✅ CRM routes registered (7 modules: workspaces, pipelines, boards, deals, contacts, items, activities)');
 
 } catch (error) {
   logger.error('Error registering routes:', error);

@@ -36,7 +36,7 @@ const authorize = (roles) => {
 };
 
 // Simulación de base de datos (en producción usar MongoDB/PostgreSQL)
-let systemConfig = {
+const systemConfig = {
   // WhatsApp Business API
   whatsapp: {
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
@@ -100,6 +100,7 @@ let systemConfig = {
 /**
  * Encriptar valores sensibles
  */
+// eslint-disable-next-line no-unused-vars
 function encrypt(text) {
   const algorithm = 'aes-256-cbc';
   const key = process.env.ENCRYPTION_KEY || 'default-encryption-key-change-in-prod';
@@ -115,6 +116,7 @@ function encrypt(text) {
 /**
  * Desencriptar valores sensibles
  */
+// eslint-disable-next-line no-unused-vars
 function decrypt(text) {
   if (!text || text === '') return '';
   
@@ -131,6 +133,8 @@ function decrypt(text) {
     
     return decrypted.toString();
   } catch (error) {
+    // eslint-disable-next-line no-console
+    // eslint-disable-next-line no-console
     console.error('Error decrypting:', error);
     return text; // Return as-is if decryption fails
   }
@@ -195,6 +199,7 @@ router.get('/system-config/all', authenticate, authorize(['admin']), (req, res) 
       config: maskedConfig
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error getting config:', error);
     res.status(500).json({ error: 'Error al obtener configuración' });
   }
@@ -243,6 +248,7 @@ router.put('/system-config/whatsapp', authenticate, authorize(['admin']), async 
         whatsappAgent.config.whatsappConfig.webhookVerifyToken = webhookVerifyToken;
       }
     } catch (error) {
+    // eslint-disable-next-line no-console
       console.log('WhatsApp service not loaded yet');
     }
     
@@ -256,6 +262,7 @@ router.put('/system-config/whatsapp', authenticate, authorize(['admin']), async 
       }
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating WhatsApp config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración de WhatsApp' });
   }
@@ -297,6 +304,7 @@ router.post('/system-config/whatsapp/test', authenticate, authorize(['admin']), 
       });
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error testing WhatsApp:', error);
     res.status(500).json({ 
       success: false,
@@ -338,6 +346,7 @@ router.put('/system-config/openai', authenticate, authorize(['admin']), async (r
       }
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating OpenAI config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración de OpenAI' });
   }
@@ -405,6 +414,7 @@ router.put('/system-config/sendgrid', authenticate, authorize(['admin']), (req, 
       message: 'Configuración de SendGrid actualizada'
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating SendGrid config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración' });
   }
@@ -434,6 +444,7 @@ router.put('/system-config/facebook', authenticate, authorize(['admin']), (req, 
       message: 'Configuración de Facebook actualizada'
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating Facebook config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración' });
   }
@@ -461,6 +472,7 @@ router.put('/system-config/linkedin', authenticate, authorize(['admin']), (req, 
       message: 'Configuración de LinkedIn actualizada'
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating LinkedIn config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración' });
   }
@@ -490,6 +502,7 @@ router.put('/system-config/twilio', authenticate, authorize(['admin']), (req, re
       message: 'Configuración de Twilio actualizada'
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating Twilio config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración' });
   }
@@ -518,6 +531,7 @@ router.put('/system-config/general', authenticate, authorize(['admin']), (req, r
       config: systemConfig.general
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating general config:', error);
     res.status(500).json({ error: 'Error al actualizar configuración' });
   }
@@ -567,6 +581,7 @@ router.get('/system-config/status', authenticate, authorize(['admin']), (req, re
       status
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error getting status:', error);
     res.status(500).json({ error: 'Error al obtener status' });
   }
