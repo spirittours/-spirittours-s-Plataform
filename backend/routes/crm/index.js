@@ -24,6 +24,7 @@ const docusignRoutes = require('./docusign.routes');
 const zoomRoutes = require('./zoom.routes');
 const twoFactorAuthRoutes = require('./two-factor-auth.routes');
 const ssoRoutes = require('./sso.routes');
+const rolesRoutes = require('./roles.routes');
 const statisticsRoutes = require('./statistics.routes');
 
 // Mount routes
@@ -42,6 +43,7 @@ router.use('/docusign', docusignRoutes);
 router.use('/zoom', zoomRoutes);
 router.use('/2fa', twoFactorAuthRoutes);
 router.use('/sso', ssoRoutes);
+router.use('/roles', rolesRoutes);
 router.use('/statistics', statisticsRoutes);
 
 // Health check endpoint
