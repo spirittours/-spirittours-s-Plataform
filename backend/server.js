@@ -64,6 +64,7 @@ app.get('/api', (req, res) => {
       notifications: '/api/notifications',
       analytics: '/api/analytics',
       aiInsights: '/api/ai/insights',
+      aiProviders: '/api/ai/providers',
       search: '/api/search'
     },
     aiAgent: {
@@ -202,6 +203,11 @@ try {
   app.use('/api/search', advancedSearchRoutes);
   logger.info('✅ Advanced Search & Filtering routes registered (Sprint 7)');
 
+  // Sprint 8: Multi-AI Provider System routes
+  const aiProvidersRoutes = require('./routes/ai/providers.routes');
+  app.use('/api/ai/providers', aiProvidersRoutes);
+  logger.info('✅ Multi-AI Provider System routes registered (Sprint 8)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
@@ -263,6 +269,7 @@ async function startServer() {
       logger.info(`📊 Analytics Dashboard: http://localhost:${PORT}/api/analytics`);
       logger.info(`🤖 AI Insights Engine: http://localhost:${PORT}/api/ai/insights`);
       logger.info(`🔍 Advanced Search: http://localhost:${PORT}/api/search`);
+      logger.info(`🤖 AI Providers (10+): http://localhost:${PORT}/api/ai/providers`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
