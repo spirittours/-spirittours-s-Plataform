@@ -160,6 +160,10 @@ try {
   app.use('/api/integration/email-to-crm', emailCRMIntegrationRoutes);
   logger.info('✅ Email to CRM Integration routes registered (Sprint 1.2)');
 
+  const bookingProjectIntegrationRoutes = require('./routes/integration/booking-project.routes');
+  app.use('/api/integration/booking-to-project', bookingProjectIntegrationRoutes);
+  logger.info('✅ Booking to Project Integration routes registered (Sprint 1.3)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
