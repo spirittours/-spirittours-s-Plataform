@@ -164,6 +164,11 @@ try {
   app.use('/api/integration/booking-to-project', bookingProjectIntegrationRoutes);
   logger.info('✅ Booking to Project Integration routes registered (Sprint 1.3)');
 
+  // Sprint 3.1: Workflow Automation routes
+  const workflowRoutes = require('./routes/automation/workflow.routes');
+  app.use('/api/automation/workflows', workflowRoutes);
+  logger.info('✅ Workflow Automation routes registered (Sprint 3.1)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
