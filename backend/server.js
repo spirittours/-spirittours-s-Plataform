@@ -151,6 +151,11 @@ try {
   app.use('/api/crm', crmRoutes);
   logger.info('✅ CRM routes registered (7 modules: workspaces, pipelines, boards, deals, contacts, items, activities)');
 
+  // Integration routes - Spirit Phase 1 (AI to CRM Bridge)
+  const aiCRMIntegrationRoutes = require('./routes/integration/ai-crm.routes');
+  app.use('/api/integration/ai-to-crm', aiCRMIntegrationRoutes);
+  logger.info('✅ AI to CRM Integration routes registered (Spirit Phase 1.1)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
