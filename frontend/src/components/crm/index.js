@@ -13,6 +13,10 @@
  * - BoardView: Multi-view board display supporting different visualization modes
  * - WorkspaceSettings: Comprehensive workspace administration interface
  * - CRMDashboard: Main dashboard integrating all CRM modules with navigation
+ * - ProjectManager: Project management with tasks, milestones, and team collaboration
+ * - DocumentLibrary: Document management with versioning and permissions
+ * - TimeTracker: Time tracking with timer, manual entries, and reports
+ * - CommentThread: Universal commenting system with @mentions and reactions
  */
 
 // Main Dashboard Component
@@ -36,6 +40,12 @@ export { default as BoardView } from './BoardView';
 // Workspace Management Components
 export { default as WorkspaceSettings } from './WorkspaceSettings';
 
+// Phase 5: Post-Sales & Collaboration Components
+export { default as ProjectManager } from './ProjectManager';
+export { default as DocumentLibrary } from './DocumentLibrary';
+export { default as TimeTracker } from './TimeTracker';
+export { default as CommentThread } from './CommentThread';
+
 // Re-export all components as a named object for convenience
 export default {
   CRMDashboard,
@@ -45,4 +55,8 @@ export default {
   PipelineManager,
   BoardView,
   WorkspaceSettings,
+  ProjectManager,
+  DocumentLibrary,
+  TimeTracker,
+  CommentThread,
 };
