@@ -1,148 +1,127 @@
-# ============================================
-# Spirit Tours - Docker Compose Configuration
-# ============================================
-# Production-ready multi-container setup
-# ============================================
-
 version: '3.8'
 
 services:
-  # ==========================================
-  # Frontend Service
-  # ==========================================
-  frontend:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: spirittours-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-spirittours}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - spirittours-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: spirittours-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - spirittours-network
+
+  # Backend API
+  backend:
     build:
-      context: ./frontend
+      context: .
       dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${API_URL:-http://localhost:8000/api}
-        VITE_WS_URL: ${WS_URL:-ws://localhost:8000/ws}
-        VITE_ENVIRONMENT: ${ENVIRONMENT:-production}
-    container_name: spirit-tours-frontend
+    container_name: spirittours-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      
+      # Database
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-changeme}@mongodb:27017/${MONGO_DATABASE:-spirittours}?authSource=admin
+      
+      # Redis
+      REDIS_ENABLED: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+      
+      # OpenAI (required)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # Optional: Fine-tuning
+      TOGETHER_AI_API_KEY: ${TOGETHER_AI_API_KEY:-}
+      REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN:-}
+      
+      # Optional: Vector Database
+      VECTOR_DB_BACKEND: ${VECTOR_DB_BACKEND:-local}
+      PINECONE_API_KEY: ${PINECONE_API_KEY:-}
+      
+      # Optional: Local Inference
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      VLLM_URL: ${VLLM_URL:-}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - spirittours-network
+
+  # Ollama (Optional - Local AI)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: spirittours-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - spirittours-network
+    # Uncomment if you have GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: spirittours-nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      - NODE_ENV=production
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
     networks:
-      - spirit-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 40s
-    labels:
-      - "com.spirit-tours.service=frontend"
-      - "com.spirit-tours.version=2.0.0"
+      - spirittours-network
 
-  # ==========================================
-  # Backend Service (Placeholder)
-  # ==========================================
-  backend:
-    image: spirit-tours-backend:latest
-    container_name: spirit-tours-backend
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - ENVIRONMENT=${ENVIRONMENT:-production}
-    networks:
-      - spirit-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    labels:
-      - "com.spirit-tours.service=backend"
-
-  # ==========================================
-  # Database Service (PostgreSQL)
-  # ==========================================
-  database:
-    image: postgres:15-alpine
-    container_name: spirit-tours-database
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=${DB_NAME:-spirittours}
-      - POSTGRES_USER=${DB_USER:-spirittours}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - spirit-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-spirittours}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    labels:
-      - "com.spirit-tours.service=database"
-
-  # ==========================================
-  # Redis Cache
-  # ==========================================
-  redis:
-    image: redis:7-alpine
-    container_name: spirit-tours-redis
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis-data:/data
-    networks:
-      - spirit-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    labels:
-      - "com.spirit-tours.service=redis"
-
-  # ==========================================
-  # Nginx Load Balancer (Optional)
-  # ==========================================
-  nginx-lb:
-    image: nginx:alpine
-    container_name: spirit-tours-nginx-lb
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx-lb.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - spirit-network
-    restart: unless-stopped
-    labels:
-      - "com.spirit-tours.service=load-balancer"
-
-# ==========================================
-# Networks
-# ==========================================
-networks:
-  spirit-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
-
-# ==========================================
-# Volumes
-# ==========================================
 volumes:
-  postgres-data:
-    driver: local
-  redis-data:
-    driver: local
+  mongodb_data:
+  mongodb_config:
+  redis_data:
+  ollama_data:
+
+networks:
+  spirittours-network:
+    driver: bridge
