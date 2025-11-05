@@ -65,7 +65,10 @@ app.get('/api', (req, res) => {
       analytics: '/api/analytics',
       aiInsights: '/api/ai/insights',
       aiProviders: '/api/ai/providers',
-      search: '/api/search'
+      search: '/api/search',
+      fineTuning: '/api/ai/fine-tuning',
+      vector: '/api/vector',
+      agents: '/api/agents'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -207,6 +210,21 @@ try {
   const aiProvidersRoutes = require('./routes/ai/providers.routes');
   app.use('/api/ai/providers', aiProvidersRoutes);
   logger.info('✅ Multi-AI Provider System routes registered (Sprint 8)');
+
+  // Sprint 9: Fine-tuning Pipeline routes (Fase 2.1)
+  const fineTuningRoutes = require('./routes/ai/fine-tuning.routes');
+  app.use('/api/ai/fine-tuning', fineTuningRoutes);
+  logger.info('✅ Fine-tuning Pipeline routes registered (Sprint 9 - Fase 2.1)');
+
+  // Sprint 10: Vector Database routes (Fase 2.2)
+  const vectorRoutes = require('./routes/vector/vector.routes');
+  app.use('/api/vector', vectorRoutes);
+  logger.info('✅ Vector Database routes registered (Sprint 10 - Fase 2.2)');
+
+  // Sprint 12: Multi-Agent Systems routes (Fase 2.4)
+  const agentsRoutes = require('./routes/agents/agents.routes');
+  app.use('/api/agents', agentsRoutes);
+  logger.info('✅ Multi-Agent Systems routes registered (Sprint 12 - Fase 2.4)');
 
 } catch (error) {
   logger.error('Error registering routes:', error);
