@@ -62,6 +62,7 @@ import {
 } from '@mui/icons-material';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import axios from 'axios';
+import AIAssistantButton from '../shared/AIAssistantButton';
 
 interface DashboardMetrics {
   revenue: {
@@ -1124,6 +1125,34 @@ const UnifiedDashboard: React.FC = () => {
           </Card>
         </TabPanel>
       </Card>
+
+      {/* AI Assistant Button - SPRINT 2.3 */}
+      <AIAssistantButton
+        module="analytics"
+        entityType="dashboard"
+        contextData={{
+          revenue: {
+            today: metrics?.revenue?.today,
+            month: metrics?.revenue?.month,
+            growth: metrics?.revenue?.growth,
+          },
+          bookings: {
+            active: metrics?.bookings?.active,
+            total: metrics?.bookings?.total,
+          },
+          automation: {
+            autoCreationsToday: metrics?.automation_stats?.total_auto_creations,
+            timeSavedHours: metrics?.automation_stats?.time_saved_hours,
+            successRate: metrics?.automation_stats?.success_rate,
+          },
+          integrations: {
+            aiToCrm: metrics?.crm_integrations?.ai_to_crm,
+            emailToCrm: metrics?.crm_integrations?.email_to_crm,
+            bookingToProject: metrics?.crm_integrations?.booking_to_project,
+          },
+        }}
+        color="primary"
+      />
     </Box>
   );
 };

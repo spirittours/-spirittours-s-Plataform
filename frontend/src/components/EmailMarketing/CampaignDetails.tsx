@@ -52,6 +52,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import CommentThread from '../crm/CommentThread';
+import AIAssistantButton from '../shared/AIAssistantButton';
 
 interface Campaign {
   _id: string;
@@ -434,6 +435,26 @@ const CampaignDetails: React.FC = () => {
           </TabPanel>
         </CardContent>
       </Card>
+
+      {/* AI Assistant Button - SPRINT 2.3 */}
+      <AIAssistantButton
+        module="campaign"
+        entityType="email-campaign"
+        entityId={id}
+        contextData={{
+          campaignName: campaign.name,
+          subject: campaign.subject,
+          status: campaign.status,
+          totalRecipients: campaign.totalRecipients,
+          performance: {
+            openRate: campaign.openRate,
+            clickRate: campaign.clickRate,
+            deliveryRate: campaign.deliveryRate,
+          },
+          sentAt: campaign.sentAt,
+        }}
+        color="secondary"
+      />
     </Box>
   );
 };
