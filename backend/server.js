@@ -19,8 +19,8 @@ const http = require('http');
 const server = http.createServer(app);
 const PORT = process.env.NODE_PORT || 5001;
 
-// Initialize WebSocket server
-const websocketServer = require('./services/websocket_server');
+// Initialize WebSocket server (Sprint 4.1)
+const WebSocketService = require('./services/realtime/WebSocketService');
 
 // Middleware
 app.use(cors({
@@ -207,9 +207,9 @@ async function startServer() {
     await configManager.initialize();
     logger.info('✅ Configuration manager initialized');
 
-    // Initialize WebSocket server
+    // Initialize WebSocket server (Sprint 4.1)
     logger.info('Initializing WebSocket server...');
-    websocketServer.initialize(server);
+    WebSocketService.initialize(server);
     logger.info('✅ WebSocket server initialized');
 
     // Start HTTP server
