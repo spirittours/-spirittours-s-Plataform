@@ -31,6 +31,7 @@ class WebSocketServer {
     this.connectedUsers = new Map(); // user_id -> socket_id
     this.tripRooms = new Map(); // trip_id -> Set of socket_ids
     this.typingUsers = new Map(); // trip_id -> Set of user_ids
+    this.workspaceRooms = new Map(); // workspace_id -> Set of socket_ids
   }
 
   /**
@@ -100,6 +101,16 @@ class WebSocketServer {
    * Setup event handlers for socket
    */
   setupEventHandlers(socket) {
+    // Join workspace room
+    socket.on('join_workspace', async (data) => {
+      await this.handleJoinWorkspace(socket, data);
+    });
+
+    // Leave workspace room
+    socket.on('leave_workspace', async (data) => {
+      await this.handleLeaveWorkspace(socket, data);
+    });
+
     // Join trip room
     socket.on('join_trip', async (data) => {
       await this.handleJoinTrip(socket, data);
@@ -144,6 +155,59 @@ class WebSocketServer {
     socket.on('disconnect', () => {
       this.handleDisconnect(socket);
     });
+  }
+
+  /**
+   * Handle join workspace room
+   */
+  async handleJoinWorkspace(socket, data) {
+    try {
+      const { workspaceId } = data;
+
+      // Join workspace room for notifications
+      socket.join(`workspace_${workspaceId}`);
+      socket.join(`user_${socket.userId}`); // Personal room for user-specific notifications
+
+      // Track room membership
+      if (!this.workspaceRooms.has(workspaceId)) {
+        this.workspaceRooms.set(workspaceId, new Set());
+      }
+      this.workspaceRooms.get(workspaceId).add(socket.id);
+
+      console.log(`🏢 User ${socket.userId} joined workspace ${workspaceId}`);
+
+      // Send confirmation
+      socket.emit('joined_workspace', {
+        workspaceId,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error joining workspace:', error);
+      socket.emit('error', { message: 'Failed to join workspace room' });
+    }
+  }
+
+  /**
+   * Handle leave workspace room
+   */
+  async handleLeaveWorkspace(socket, data) {
+    try {
+      const { workspaceId } = data;
+
+      socket.leave(`workspace_${workspaceId}`);
+
+      // Remove from room tracking
+      if (this.workspaceRooms.has(workspaceId)) {
+        this.workspaceRooms.get(workspaceId).delete(socket.id);
+        if (this.workspaceRooms.get(workspaceId).size === 0) {
+          this.workspaceRooms.delete(workspaceId);
+        }
+      }
+
+      console.log(`🏢 User ${socket.userId} left workspace ${workspaceId}`);
+    } catch (error) {
+      console.error('Error leaving workspace:', error);
+    }
   }
 
   /**
@@ -491,6 +555,24 @@ class WebSocketServer {
   }
 
   /**
+   * Send notification to user's personal room
+   */
+  sendNotificationToUserRoom(userId, notification) {
+    if (this.io) {
+      this.io.to(`user_${userId}`).emit('notification', notification);
+    }
+  }
+
+  /**
+   * Send notification to workspace room
+   */
+  sendNotificationToWorkspace(workspaceId, notification) {
+    if (this.io) {
+      this.io.to(`workspace_${workspaceId}`).emit('workspace_notification', notification);
+    }
+  }
+
+  /**
    * Broadcast trip status update
    */
   broadcastTripUpdate(tripId, update) {
@@ -522,6 +604,7 @@ class WebSocketServer {
     return {
       connected_users: this.connectedUsers.size,
       active_trip_rooms: this.tripRooms.size,
+      active_workspace_rooms: this.workspaceRooms.size,
       total_connections: this.io ? this.io.engine.clientsCount : 0,
       timestamp: new Date().toISOString()
     };

@@ -56,7 +56,15 @@ app.get('/api', (req, res) => {
       smartNotifications: '/api/smart-notifications',
       whatsapp: '/api/whatsapp',
       aiAgent: '/api/ai-agent',
-      crm: '/api/crm'
+      crm: '/api/crm',
+      automation: {
+        workflows: '/api/automation/workflows',
+        leadScoring: '/api/automation/lead-scoring'
+      },
+      notifications: '/api/notifications',
+      analytics: '/api/analytics',
+      aiInsights: '/api/ai/insights',
+      search: '/api/search'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -174,10 +182,25 @@ try {
   app.use('/api/automation/lead-scoring', leadScoringRoutes);
   logger.info('✅ AI Lead Scoring routes registered (Sprint 3.2)');
 
-  // Sprint 3.2: AI Lead Scoring routes
-  const leadScoringRoutes = require('./routes/automation/lead-scoring.routes');
-  app.use('/api/automation/lead-scoring', leadScoringRoutes);
-  logger.info('✅ AI Lead Scoring routes registered (Sprint 3.2)');
+  // Sprint 4: Real-time Notifications routes
+  const notificationRoutes = require('./routes/notifications.routes');
+  app.use('/api/notifications', notificationRoutes);
+  logger.info('✅ Real-time Notifications routes registered (Sprint 4)');
+
+  // Sprint 5: Unified Analytics Dashboard routes
+  const analyticsDashboardRoutes = require('./routes/analytics/dashboard.routes');
+  app.use('/api/analytics', analyticsDashboardRoutes);
+  logger.info('✅ Unified Analytics Dashboard routes registered (Sprint 5)');
+
+  // Sprint 6: AI Insights Engine routes
+  const aiInsightsRoutes = require('./routes/ai/insights.routes');
+  app.use('/api/ai/insights', aiInsightsRoutes);
+  logger.info('✅ AI Insights Engine routes registered (Sprint 6)');
+
+  // Sprint 7: Advanced Search & Filtering routes
+  const advancedSearchRoutes = require('./routes/search/advanced.routes');
+  app.use('/api/search', advancedSearchRoutes);
+  logger.info('✅ Advanced Search & Filtering routes registered (Sprint 7)');
 
 } catch (error) {
   logger.error('Error registering routes:', error);
@@ -217,6 +240,11 @@ async function startServer() {
     WebSocketService.initialize(server);
     logger.info('✅ WebSocket server initialized');
 
+    // Initialize NotificationService with WebSocket (Sprint 4.2)
+    const NotificationService = require('./services/NotificationService');
+    global.notificationService = new NotificationService(WebSocketService);
+    logger.info('✅ NotificationService initialized with WebSocket integration');
+
     // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`🚀 Spirit Tours Backend Server running on port ${PORT}`);
@@ -229,12 +257,18 @@ async function startServer() {
       logger.info(`📱 WhatsApp API: http://localhost:${PORT}/api/whatsapp`);
       logger.info(`🤖 AI Agent API: http://localhost:${PORT}/api/ai-agent (9 services, 92 endpoints)`);
       logger.info(`⚙️ System Config Dashboard: http://localhost:${PORT}/api/system-config`);
+      logger.info(`🔔 Notifications API: http://localhost:${PORT}/api/notifications`);
+      logger.info(`🤖 Workflow Automation: http://localhost:${PORT}/api/automation/workflows`);
+      logger.info(`🎯 AI Lead Scoring: http://localhost:${PORT}/api/automation/lead-scoring`);
+      logger.info(`📊 Analytics Dashboard: http://localhost:${PORT}/api/analytics`);
+      logger.info(`🤖 AI Insights Engine: http://localhost:${PORT}/api/ai/insights`);
+      logger.info(`🔍 Advanced Search: http://localhost:${PORT}/api/search`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
       // Log WebSocket stats
-      const stats = websocketServer.getStats();
-      logger.info(`WebSocket Status: ${stats.connected_users} users, ${stats.active_trip_rooms} active rooms`);
+      const stats = WebSocketService.getStats();
+      logger.info(`WebSocket Status: ${stats.connected_users} users, ${stats.active_trip_rooms} trips, ${stats.active_workspace_rooms} workspaces`);
     });
 
     // Handle graceful shutdown
