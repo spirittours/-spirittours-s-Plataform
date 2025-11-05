@@ -72,7 +72,11 @@ app.get('/api', (req, res) => {
       voice: '/api/voice',
       vision: '/api/vision',
       rag: '/api/rag',
-      inference: '/api/inference'
+      inference: '/api/inference',
+      marketplace: '/api/marketplace',
+      streaming: '/api/streaming',
+      orchestration: '/api/orchestration',
+      monitoring: '/api/monitoring'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -249,6 +253,26 @@ try {
   const inferenceRoutes = require('./routes/inference/inference.routes');
   app.use('/api/inference', inferenceRoutes);
   logger.info('✅ Custom Inference Engine routes registered (Sprint 16 - Fase 3.4)');
+
+  // Sprint 17: Model Marketplace routes (Fase 4.1)
+  const marketplaceRoutes = require('./routes/marketplace/marketplace.routes');
+  app.use('/api/marketplace', marketplaceRoutes);
+  logger.info('✅ Model Marketplace routes registered (Sprint 17 - Fase 4.1)');
+
+  // Sprint 18: Real-time Streaming routes (Fase 4.2)
+  const streamingRoutes = require('./routes/streaming/streaming.routes');
+  app.use('/api/streaming', streamingRoutes);
+  logger.info('✅ Real-time Streaming routes registered (Sprint 18 - Fase 4.2)');
+
+  // Sprint 19: Agent Orchestration Advanced routes (Fase 4.3)
+  const orchestrationRoutes = require('./routes/orchestration/orchestration.routes');
+  app.use('/api/orchestration', orchestrationRoutes);
+  logger.info('✅ Advanced Agent Orchestration routes registered (Sprint 19 - Fase 4.3)');
+
+  // Sprint 20: Observability routes (Fase 4.4)
+  const monitoringRoutes = require('./routes/monitoring/monitoring.routes');
+  app.use('/api/monitoring', monitoringRoutes);
+  logger.info('✅ Observability & Monitoring routes registered (Sprint 20 - Fase 4.4)');
 
 } catch (error) {
   logger.error('Error registering routes:', error);
