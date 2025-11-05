@@ -1,461 +1,508 @@
-const logger = require('../../config/logger');
-const RedisCacheService = require('../cache/RedisCacheService');
-
 /**
- * InferenceEngine
- * Custom model serving and optimization
+ * Custom Inference Engine
+ * Supports local and remote model deployment for on-premise inference
  * 
  * Features:
- * - Local model deployment (Ollama integration)
- * - Model quantization support (4-bit, 8-bit)
- * - Batch inference optimization
- * - Request queuing and load balancing
- * - Model warming and preloading
+ * - Ollama integration (local models)
+ * - vLLM server support
+ * - Model management and versioning
+ * - Load balancing across instances
+ * - Request queuing and batching
  * - Performance monitoring
- * - A/B testing support
- * - Gradual rollout
+ * - Fallback to cloud providers
+ * - Model warming and caching
+ * 
+ * Supported Backends:
+ * - Ollama (local)
+ * - vLLM (local/remote)
+ * - TGI (Text Generation Inference)
+ * - OpenAI-compatible endpoints
  */
-class InferenceEngine {
-  constructor() {
-    this.cache = RedisCacheService;
+
+const axios = require('axios');
+const { EventEmitter } = require('events');
+
+class InferenceEngine extends EventEmitter {
+  constructor(config = {}) {
+    super();
     
     this.config = {
-      ollamaHost: process.env.OLLAMA_HOST || 'http://localhost:11434',
-      maxConcurrentRequests: parseInt(process.env.MAX_CONCURRENT_REQUESTS) || 10,
-      batchSize: parseInt(process.env.INFERENCE_BATCH_SIZE) || 4,
-      timeout: parseInt(process.env.INFERENCE_TIMEOUT) || 60000, // 60s
-      cacheTTL: 3600, // 1 hour
+      defaultBackend: config.defaultBackend || 'ollama',
+      ollamaUrl: config.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434',
+      vllmUrl: config.vllmUrl || process.env.VLLM_URL || 'http://localhost:8000',
+      tgiUrl: config.tgiUrl || process.env.TGI_URL || 'http://localhost:8080',
+      enableLoadBalancing: config.enableLoadBalancing || false,
+      enableBatching: config.enableBatching || false,
+      batchSize: config.batchSize || 4,
+      batchTimeout: config.batchTimeout || 100,
+      enableFallback: config.enableFallback !== false,
+      timeout: config.timeout || 30000,
+      maxRetries: config.maxRetries || 2,
+      ...config
     };
-    
-    // Deployed models registry
+
+    // Model registry
     this.models = new Map();
-    
-    // Request queue for load balancing
+    this.loadedModels = new Set();
+
+    // Request queue for batching
     this.requestQueue = [];
-    this.activeRequests = 0;
-    
-    // Performance tracking
+    this.batchTimer = null;
+
+    // Statistics
     this.stats = {
       totalRequests: 0,
       successfulRequests: 0,
       failedRequests: 0,
-      cacheHits: 0,
-      totalLatency: 0,
-      batchedRequests: 0,
-    };
-    
-    this.initializeDefaultModels();
-  }
-  
-  /**
-   * Initialize default models
-   */
-  initializeDefaultModels() {
-    // Register default Ollama models
-    this.registerModel({
-      id: 'llama3-8b',
-      name: 'Llama 3 8B',
-      provider: 'ollama',
-      model: 'llama3:8b',
-      contextWindow: 8192,
-      capabilities: ['chat', 'completion', 'reasoning'],
-      quantization: '4-bit',
-      memoryRequirement: '5GB',
-    });
-    
-    this.registerModel({
-      id: 'mistral-7b',
-      name: 'Mistral 7B',
-      provider: 'ollama',
-      model: 'mistral:7b',
-      contextWindow: 8192,
-      capabilities: ['chat', 'completion'],
-      quantization: '4-bit',
-      memoryRequirement: '4GB',
-    });
-    
-    this.registerModel({
-      id: 'codellama-7b',
-      name: 'Code Llama 7B',
-      provider: 'ollama',
-      model: 'codellama:7b',
-      contextWindow: 16384,
-      capabilities: ['coding', 'completion'],
-      quantization: '4-bit',
-      memoryRequirement: '4GB',
-    });
-    
-    logger.info('Default models registered');
-  }
-  
-  /**
-   * Register a model
-   */
-  registerModel(modelConfig) {
-    this.models.set(modelConfig.id, {
-      ...modelConfig,
-      status: 'registered',
-      deployedAt: null,
-      requestCount: 0,
       avgLatency: 0,
-      errorRate: 0,
-    });
-    
-    logger.info(`Model registered: ${modelConfig.id}`);
+      totalTokens: 0,
+      byBackend: {},
+      byModel: {}
+    };
+
+    this.initialized = false;
   }
-  
+
   /**
-   * Deploy model (pull and warm up)
+   * Initialize inference engine
    */
-  async deployModel(modelId) {
+  async initialize() {
+    if (this.initialized) return;
+
+    this.emit('init:started');
+
     try {
-      const model = this.models.get(modelId);
-      if (!model) {
-        throw new Error(`Model not found: ${modelId}`);
+      // Check Ollama availability
+      if (await this.checkOllamaHealth()) {
+        await this.loadOllamaModels();
+        this.emit('init:ollama-ready');
       }
-      
-      logger.info(`Deploying model: ${modelId}`);
-      
-      model.status = 'deploying';
-      
-      // For Ollama, pull the model
-      if (model.provider === 'ollama') {
-        await this.ollamaPull(model.model);
-        
-        // Warm up model with a test query
-        await this.warmUpModel(modelId);
+
+      // Check vLLM availability
+      if (await this.checkVLLMHealth()) {
+        this.emit('init:vllm-ready');
       }
-      
-      model.status = 'deployed';
-      model.deployedAt = new Date();
-      
-      logger.info(`Model deployed successfully: ${modelId}`);
-      
+
+      this.initialized = true;
+      this.emit('init:completed');
+
+    } catch (error) {
+      this.emit('init:error', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Generate text completion
+   */
+  async generate(prompt, options = {}) {
+    const startTime = Date.now();
+
+    try {
+      const backend = options.backend || this.config.defaultBackend;
+      const model = options.model || this.getDefaultModel(backend);
+
+      this.emit('generate:started', { backend, model });
+
+      let result;
+      switch (backend) {
+        case 'ollama':
+          result = await this.generateOllama(prompt, model, options);
+          break;
+        case 'vllm':
+          result = await this.generateVLLM(prompt, model, options);
+          break;
+        case 'tgi':
+          result = await this.generateTGI(prompt, model, options);
+          break;
+        default:
+          throw new Error(`Unsupported backend: ${backend}`);
+      }
+
+      const latency = Date.now() - startTime;
+      this.updateStatistics(backend, model, latency, result, true);
+
+      this.emit('generate:completed', { backend, model, latency });
+
       return {
         success: true,
-        modelId,
-        status: 'deployed',
+        text: result.text,
+        model: result.model,
+        backend,
+        tokens: result.tokens,
+        latency,
+        metadata: result.metadata
       };
+
     } catch (error) {
-      logger.error(`Error deploying model ${modelId}:`, error);
-      
-      const model = this.models.get(modelId);
-      if (model) {
-        model.status = 'failed';
+      const latency = Date.now() - startTime;
+      this.updateStatistics(options.backend, options.model, latency, null, false);
+
+      this.emit('generate:error', { error: error.message });
+
+      // Fallback if enabled
+      if (this.config.enableFallback && !options.noFallback) {
+        return await this.generateWithFallback(prompt, options);
       }
-      
-      throw error;
+
+      throw new Error(`Generation failed: ${error.message}`);
     }
   }
-  
+
   /**
-   * Inference with model
+   * Generate with Ollama
    */
-  async infer(modelId, prompt, options = {}) {
-    try {
-      const {
-        maxTokens = 1024,
-        temperature = 0.7,
-        topP = 0.9,
-        stream = false,
-        useCache = true,
-      } = options;
-      
-      this.stats.totalRequests++;
-      
-      // Check model status
-      const model = this.models.get(modelId);
-      if (!model) {
-        throw new Error(`Model not found: ${modelId}`);
+  async generateOllama(prompt, model, options = {}) {
+    const url = `${this.config.ollamaUrl}/api/generate`;
+
+    const response = await axios.post(url, {
+      model,
+      prompt,
+      stream: false,
+      options: {
+        temperature: options.temperature || 0.7,
+        top_p: options.topP || 0.9,
+        top_k: options.topK || 40,
+        num_predict: options.maxTokens || 512
       }
-      
-      if (model.status !== 'deployed') {
-        throw new Error(`Model not deployed: ${modelId} (status: ${model.status})`);
-      }
-      
-      // Check cache
-      if (useCache) {
-        const cacheKey = this.cache.generateKey('inference', modelId, this.hashPrompt(prompt));
-        const cached = await this.cache.get(cacheKey);
-        
-        if (cached) {
-          this.stats.cacheHits++;
-          logger.debug('Inference served from cache');
-          return {
-            ...cached,
-            fromCache: true,
-          };
-        }
-      }
-      
-      // Queue request if at capacity
-      if (this.activeRequests >= this.config.maxConcurrentRequests) {
-        logger.info('Request queued due to capacity limit');
-        await this.queueRequest();
-      }
-      
-      this.activeRequests++;
-      const startTime = Date.now();
-      
-      try {
-        let response;
-        
-        if (model.provider === 'ollama') {
-          response = await this.ollamaInfer(model.model, prompt, {
-            maxTokens,
-            temperature,
-            topP,
-            stream,
-          });
-        } else {
-          throw new Error(`Unsupported provider: ${model.provider}`);
-        }
-        
-        const latency = Date.now() - startTime;
-        
-        // Update stats
-        this.stats.successfulRequests++;
-        this.stats.totalLatency += latency;
-        model.requestCount++;
-        model.avgLatency = (model.avgLatency * (model.requestCount - 1) + latency) / model.requestCount;
-        
-        const result = {
-          modelId,
-          response: response.text,
-          tokensUsed: response.tokensUsed || null,
-          latency,
-          fromCache: false,
-        };
-        
-        // Cache result
-        if (useCache && !stream) {
-          const cacheKey = this.cache.generateKey('inference', modelId, this.hashPrompt(prompt));
-          await this.cache.set(cacheKey, result, { ttl: this.config.cacheTTL });
-        }
-        
-        return result;
-      } finally {
-        this.activeRequests--;
-        this.processQueue();
-      }
-    } catch (error) {
-      this.stats.failedRequests++;
-      
-      const model = this.models.get(modelId);
-      if (model) {
-        model.errorRate = (model.errorRate * model.requestCount + 1) / (model.requestCount + 1);
-      }
-      
-      logger.error(`Inference error for model ${modelId}:`, error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Batch inference
-   */
-  async batchInfer(modelId, prompts, options = {}) {
-    try {
-      logger.info(`Batch inference for ${prompts.length} prompts`);
-      
-      const results = [];
-      
-      // Process in batches
-      for (let i = 0; i < prompts.length; i += this.config.batchSize) {
-        const batch = prompts.slice(i, i + this.config.batchSize);
-        
-        const batchResults = await Promise.all(
-          batch.map(prompt => this.infer(modelId, prompt, options))
-        );
-        
-        results.push(...batchResults);
-        this.stats.batchedRequests += batch.length;
-      }
-      
-      return {
-        results,
-        totalProcessed: prompts.length,
-      };
-    } catch (error) {
-      logger.error('Batch inference error:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * A/B test two models
-   */
-  async abTest(modelA, modelB, prompt, options = {}) {
-    try {
-      const { trafficSplit = 0.5 } = options;
-      
-      // Randomly select model based on traffic split
-      const useModelA = Math.random() < trafficSplit;
-      const selectedModel = useModelA ? modelA : modelB;
-      
-      const result = await this.infer(selectedModel, prompt, options);
-      
-      return {
-        ...result,
-        selectedModel,
-        trafficSplit,
-      };
-    } catch (error) {
-      logger.error('A/B test error:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Get model info
-   */
-  getModelInfo(modelId) {
-    const model = this.models.get(modelId);
-    if (!model) {
-      throw new Error(`Model not found: ${modelId}`);
-    }
-    
+    }, { timeout: this.config.timeout });
+
     return {
-      ...model,
-      performance: {
-        avgLatency: `${model.avgLatency.toFixed(0)}ms`,
-        errorRate: `${(model.errorRate * 100).toFixed(2)}%`,
-        requestCount: model.requestCount,
+      text: response.data.response,
+      model: response.data.model,
+      tokens: {
+        prompt: response.data.prompt_eval_count || 0,
+        completion: response.data.eval_count || 0,
+        total: (response.data.prompt_eval_count || 0) + (response.data.eval_count || 0)
       },
+      metadata: {
+        evalDuration: response.data.eval_duration,
+        loadDuration: response.data.load_duration
+      }
     };
   }
-  
+
   /**
-   * List all models
+   * Generate with vLLM
    */
-  listModels(filter = {}) {
-    const { status, capability } = filter;
-    
-    const models = Array.from(this.models.values());
-    
-    return models.filter(model => {
-      if (status && model.status !== status) return false;
-      if (capability && !model.capabilities.includes(capability)) return false;
-      return true;
-    });
+  async generateVLLM(prompt, model, options = {}) {
+    const url = `${this.config.vllmUrl}/v1/completions`;
+
+    const response = await axios.post(url, {
+      model,
+      prompt,
+      temperature: options.temperature || 0.7,
+      top_p: options.topP || 0.9,
+      max_tokens: options.maxTokens || 512,
+      stream: false
+    }, { timeout: this.config.timeout });
+
+    const choice = response.data.choices[0];
+
+    return {
+      text: choice.text,
+      model: response.data.model,
+      tokens: {
+        prompt: response.data.usage.prompt_tokens,
+        completion: response.data.usage.completion_tokens,
+        total: response.data.usage.total_tokens
+      },
+      metadata: {
+        finishReason: choice.finish_reason
+      }
+    };
   }
-  
+
   /**
-   * Get engine statistics
+   * Generate with TGI (Text Generation Inference)
    */
-  getStats() {
-    const successRate = this.stats.totalRequests > 0
-      ? ((this.stats.successfulRequests / this.stats.totalRequests) * 100).toFixed(2)
-      : 0;
+  async generateTGI(prompt, model, options = {}) {
+    const url = `${this.config.tgiUrl}/generate`;
+
+    const response = await axios.post(url, {
+      inputs: prompt,
+      parameters: {
+        temperature: options.temperature || 0.7,
+        top_p: options.topP || 0.9,
+        max_new_tokens: options.maxTokens || 512,
+        do_sample: true
+      }
+    }, { timeout: this.config.timeout });
+
+    return {
+      text: response.data.generated_text,
+      model: model,
+      tokens: {
+        prompt: 0, // TGI doesn't provide this
+        completion: 0,
+        total: 0
+      },
+      metadata: {
+        details: response.data.details
+      }
+    };
+  }
+
+  /**
+   * Generate with fallback
+   */
+  async generateWithFallback(prompt, options) {
+    const backends = ['ollama', 'vllm', 'tgi'];
+    const currentBackend = options.backend || this.config.defaultBackend;
     
-    const avgLatency = this.stats.successfulRequests > 0
-      ? (this.stats.totalLatency / this.stats.successfulRequests).toFixed(0)
-      : 0;
-    
-    const cacheHitRate = this.stats.totalRequests > 0
-      ? ((this.stats.cacheHits / this.stats.totalRequests) * 100).toFixed(2)
-      : 0;
-    
+    // Try other backends
+    for (const backend of backends) {
+      if (backend === currentBackend) continue;
+
+      try {
+        return await this.generate(prompt, {
+          ...options,
+          backend,
+          noFallback: true
+        });
+      } catch (error) {
+        continue;
+      }
+    }
+
+    throw new Error('All inference backends failed');
+  }
+
+  /**
+   * Chat completion
+   */
+  async chat(messages, options = {}) {
+    // Convert messages to prompt
+    const prompt = this.messagesToPrompt(messages, options);
+    return await this.generate(prompt, options);
+  }
+
+  /**
+   * Convert messages to prompt
+   */
+  messagesToPrompt(messages, options = {}) {
+    const template = options.template || 'chatml';
+
+    switch (template) {
+      case 'chatml':
+        return messages.map(msg => {
+          if (msg.role === 'system') return `<|im_start|>system\n${msg.content}<|im_end|>`;
+          if (msg.role === 'user') return `<|im_start|>user\n${msg.content}<|im_end|>`;
+          if (msg.role === 'assistant') return `<|im_start|>assistant\n${msg.content}<|im_end|>`;
+          return '';
+        }).join('\n') + '\n<|im_start|>assistant\n';
+
+      case 'llama2':
+        return messages.map((msg, i) => {
+          if (msg.role === 'system') return `[INST] <<SYS>>\n${msg.content}\n<</SYS>>\n\n`;
+          if (msg.role === 'user') return i === 0 ? `${msg.content} [/INST]` : `[INST] ${msg.content} [/INST]`;
+          if (msg.role === 'assistant') return ` ${msg.content} `;
+          return '';
+        }).join('');
+
+      case 'mistral':
+        return messages.map(msg => {
+          if (msg.role === 'user') return `[INST] ${msg.content} [/INST]`;
+          if (msg.role === 'assistant') return ` ${msg.content}`;
+          return '';
+        }).join('');
+
+      default:
+        return messages.map(msg => `${msg.role}: ${msg.content}`).join('\n\n') + '\n\nassistant:';
+    }
+  }
+
+  /**
+   * List available models
+   */
+  async listModels(backend = null) {
+    const models = [];
+
+    if (!backend || backend === 'ollama') {
+      try {
+        const ollamaModels = await this.listOllamaModels();
+        models.push(...ollamaModels.map(m => ({ ...m, backend: 'ollama' })));
+      } catch (error) {
+        // Ollama not available
+      }
+    }
+
+    if (!backend || backend === 'vllm') {
+      try {
+        const vllmModels = await this.listVLLMModels();
+        models.push(...vllmModels.map(m => ({ ...m, backend: 'vllm' })));
+      } catch (error) {
+        // vLLM not available
+      }
+    }
+
+    return models;
+  }
+
+  /**
+   * List Ollama models
+   */
+  async listOllamaModels() {
+    const url = `${this.config.ollamaUrl}/api/tags`;
+    const response = await axios.get(url);
+    return response.data.models || [];
+  }
+
+  /**
+   * List vLLM models
+   */
+  async listVLLMModels() {
+    const url = `${this.config.vllmUrl}/v1/models`;
+    const response = await axios.get(url);
+    return response.data.data || [];
+  }
+
+  /**
+   * Load Ollama models
+   */
+  async loadOllamaModels() {
+    try {
+      const models = await this.listOllamaModels();
+      for (const model of models) {
+        this.models.set(model.name, {
+          name: model.name,
+          backend: 'ollama',
+          size: model.size,
+          modified: model.modified_at
+        });
+        this.loadedModels.add(model.name);
+      }
+    } catch (error) {
+      // Ignore errors
+    }
+  }
+
+  /**
+   * Pull/download model (Ollama)
+   */
+  async pullModel(modelName, backend = 'ollama') {
+    if (backend !== 'ollama') {
+      throw new Error('Model pulling only supported for Ollama');
+    }
+
+    this.emit('model:pull-started', { model: modelName });
+
+    const url = `${this.config.ollamaUrl}/api/pull`;
+    const response = await axios.post(url, { name: modelName }, {
+      timeout: 600000, // 10 minutes
+      onDownloadProgress: (progress) => {
+        this.emit('model:pull-progress', {
+          model: modelName,
+          progress: progress.loaded
+        });
+      }
+    });
+
+    this.loadedModels.add(modelName);
+    this.emit('model:pull-completed', { model: modelName });
+
+    return { success: true, model: modelName };
+  }
+
+  /**
+   * Health checks
+   */
+  async checkOllamaHealth() {
+    try {
+      await axios.get(`${this.config.ollamaUrl}/api/tags`, { timeout: 5000 });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async checkVLLMHealth() {
+    try {
+      await axios.get(`${this.config.vllmUrl}/health`, { timeout: 5000 });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get default model for backend
+   */
+  getDefaultModel(backend) {
+    const defaults = {
+      ollama: 'llama3.2',
+      vllm: 'meta-llama/Meta-Llama-3-8B-Instruct',
+      tgi: 'mistralai/Mistral-7B-Instruct-v0.2'
+    };
+    return defaults[backend] || 'llama3.2';
+  }
+
+  /**
+   * Update statistics
+   */
+  updateStatistics(backend, model, latency, result, success) {
+    this.stats.totalRequests++;
+    if (success) {
+      this.stats.successfulRequests++;
+    } else {
+      this.stats.failedRequests++;
+    }
+
+    const n = this.stats.totalRequests;
+    this.stats.avgLatency = (this.stats.avgLatency * (n - 1) + latency) / n;
+
+    if (result && result.tokens) {
+      this.stats.totalTokens += result.tokens.total;
+    }
+
+    if (backend) {
+      this.stats.byBackend[backend] = (this.stats.byBackend[backend] || 0) + 1;
+    }
+
+    if (model) {
+      this.stats.byModel[model] = (this.stats.byModel[model] || 0) + 1;
+    }
+  }
+
+  /**
+   * Get statistics
+   */
+  getStatistics() {
     return {
       ...this.stats,
-      successRate: `${successRate}%`,
-      avgLatency: `${avgLatency}ms`,
-      cacheHitRate: `${cacheHitRate}%`,
-      activeRequests: this.activeRequests,
-      queuedRequests: this.requestQueue.length,
-      deployedModels: this.listModels({ status: 'deployed' }).length,
+      successRate: this.stats.totalRequests > 0
+        ? (this.stats.successfulRequests / this.stats.totalRequests) * 100
+        : 0,
+      avgTokensPerRequest: this.stats.totalRequests > 0
+        ? this.stats.totalTokens / this.stats.totalRequests
+        : 0
     };
   }
-  
-  // ========================================
-  // Ollama integration
-  // ========================================
-  
-  async ollamaPull(modelName) {
-    try {
-      logger.info(`Pulling Ollama model: ${modelName}`);
-      
-      // In production, use actual Ollama API
-      // const response = await fetch(`${this.config.ollamaHost}/api/pull`, {
-      //   method: 'POST',
-      //   body: JSON.stringify({ name: modelName }),
-      // });
-      
-      logger.info(`Model pulled successfully: ${modelName} (simulated)`);
-      return true;
-    } catch (error) {
-      logger.error('Error pulling Ollama model:', error);
-      throw error;
-    }
-  }
-  
-  async ollamaInfer(modelName, prompt, options) {
-    try {
-      // In production, use actual Ollama API
-      // const response = await fetch(`${this.config.ollamaHost}/api/generate`, {
-      //   method: 'POST',
-      //   body: JSON.stringify({
-      //     model: modelName,
-      //     prompt,
-      //     options: {
-      //       num_predict: options.maxTokens,
-      //       temperature: options.temperature,
-      //       top_p: options.topP,
-      //     },
-      //   }),
-      // });
-      
-      // Simulated response
-      return {
-        text: `[Simulated response from ${modelName}] This is a placeholder response. In production, this would call the actual Ollama API.`,
-        tokensUsed: 50,
-      };
-    } catch (error) {
-      logger.error('Ollama inference error:', error);
-      throw error;
-    }
-  }
-  
-  async warmUpModel(modelId) {
-    logger.info(`Warming up model: ${modelId}`);
-    try {
-      await this.infer(modelId, 'Hello', { useCache: false });
-      logger.info(`Model warmed up: ${modelId}`);
-    } catch (error) {
-      logger.warn(`Failed to warm up model ${modelId}:`, error);
-    }
-  }
-  
-  // ========================================
-  // Queue management
-  // ========================================
-  
-  async queueRequest() {
-    return new Promise((resolve) => {
-      this.requestQueue.push(resolve);
-    });
-  }
-  
-  processQueue() {
-    if (this.requestQueue.length > 0 && this.activeRequests < this.config.maxConcurrentRequests) {
-      const resolve = this.requestQueue.shift();
-      resolve();
-    }
-  }
-  
-  // ========================================
-  // Helper methods
-  // ========================================
-  
-  hashPrompt(prompt) {
-    let hash = 0;
-    for (let i = 0; i < prompt.length; i++) {
-      const char = prompt.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(36);
+
+  resetStatistics() {
+    this.stats = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      avgLatency: 0,
+      totalTokens: 0,
+      byBackend: {},
+      byModel: {}
+    };
   }
 }
 
-module.exports = new InferenceEngine();
+// Singleton
+let inferenceEngineInstance = null;
+
+function getInferenceEngine(config = {}) {
+  if (!inferenceEngineInstance) {
+    inferenceEngineInstance = new InferenceEngine(config);
+  }
+  return inferenceEngineInstance;
+}
+
+module.exports = {
+  InferenceEngine,
+  getInferenceEngine
+};

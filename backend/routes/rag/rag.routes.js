@@ -1,174 +1,123 @@
-const express = require('express');
-const router = express.Router();
-const RAGService = require('../../services/rag/RAGService');
-const { authenticateToken } = require('../../middleware/auth');
-const logger = require('../../config/logger');
-
 /**
- * RAG API Routes
- * Retrieval-Augmented Generation for context-aware responses
+ * RAG API Routes - Retrieval-Augmented Generation
  */
 
-// Query with RAG
-router.post('/:workspaceId/query', authenticateToken, async (req, res) => {
+const express = require('express');
+const router = express.Router();
+const { getRAGService } = require('../../services/rag/RAGService');
+const { authenticate } = require('../../middleware/auth');
+
+router.use(authenticate);
+
+// POST /api/rag/query - Ask a question with context retrieval
+router.post('/query', async (req, res) => {
   try {
-    const { workspaceId } = req.params;
-    const {
-      question,
-      entityTypes,
-      topK,
-      minSimilarity,
+    const { question, namespace, topK, minScore, model, rerank, expandQuery } = req.body;
+
+    if (!question) {
+      return res.status(400).json({ success: false, error: 'Question is required' });
+    }
+
+    const ragService = getRAGService();
+    const result = await ragService.query(question, {
+      namespace: namespace || req.user.workspace.toString(),
+      topK, minScore, model, rerank, expandQuery,
+      workspace: req.user.workspace
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/rag/query-with-history - Query with conversation context
+router.post('/query-with-history', async (req, res) => {
+  try {
+    const { question, history, namespace, model } = req.body;
+
+    if (!question) {
+      return res.status(400).json({ success: false, error: 'Question is required' });
+    }
+
+    if (!Array.isArray(history)) {
+      return res.status(400).json({ success: false, error: 'History must be an array' });
+    }
+
+    const ragService = getRAGService();
+    const result = await ragService.queryWithHistory(question, history, {
+      namespace: namespace || req.user.workspace.toString(),
       model,
-      temperature,
-      conversationHistory,
-    } = req.body;
-    
-    if (!question) {
-      return res.status(400).json({
-        success: false,
-        error: 'Question is required',
-      });
+      workspace: req.user.workspace
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/rag/synthesize - Synthesize information from documents
+router.post('/synthesize', async (req, res) => {
+  try {
+    const { documentIds, prompt, model, maxContextLength } = req.body;
+
+    if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'Document IDs required' });
     }
-    
-    const result = await RAGService.query(question, {
-      workspace: workspaceId,
-      entityTypes,
-      topK,
-      minSimilarity,
-      model,
-      temperature,
-      conversationHistory,
-    });
-    
-    res.json({
-      success: true,
-      ...result,
-    });
-  } catch (error) {
-    logger.error('Error in RAG query endpoint:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
 
-// Start conversation
-router.post('/:workspaceId/conversation/start', authenticateToken, async (req, res) => {
-  try {
-    const { workspaceId } = req.params;
-    const { question, entityTypes } = req.body;
-    
-    if (!question) {
-      return res.status(400).json({
-        success: false,
-        error: 'Question is required',
-      });
+    const ragService = getRAGService();
+    const vectorDB = ragService.vectorDB;
+
+    // Retrieve documents by ID
+    const documents = [];
+    for (const id of documentIds) {
+      const doc = await vectorDB.getById(req.user.workspace.toString(), id);
+      if (doc) documents.push(doc);
     }
-    
-    const conversationId = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const result = await RAGService.conversationalQuery(question, conversationId, {
-      workspace: workspaceId,
-      entityTypes,
-    });
-    
-    res.json({
-      success: true,
-      ...result,
-    });
-  } catch (error) {
-    logger.error('Error starting conversation:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
 
-// Continue conversation
-router.post('/:workspaceId/conversation/:conversationId', authenticateToken, async (req, res) => {
-  try {
-    const { workspaceId, conversationId } = req.params;
-    const { question } = req.body;
-    
-    if (!question) {
-      return res.status(400).json({
-        success: false,
-        error: 'Question is required',
-      });
+    if (documents.length === 0) {
+      return res.status(404).json({ success: false, error: 'No documents found' });
     }
-    
-    const result = await RAGService.continueConversation(conversationId, question, workspaceId);
-    
-    res.json({
-      success: true,
-      ...result,
+
+    const result = await ragService.synthesizeDocuments(documents, {
+      prompt, model, maxContextLength,
+      workspace: req.user.workspace
     });
+
+    res.json(result);
   } catch (error) {
-    logger.error('Error continuing conversation:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Summarize conversation
-router.get('/:workspaceId/conversation/:conversationId/summary', authenticateToken, async (req, res) => {
+// GET /api/rag/statistics - Get RAG service statistics
+router.get('/statistics', async (req, res) => {
   try {
-    const { workspaceId, conversationId } = req.params;
-    
-    const result = await RAGService.summarizeConversation(conversationId, workspaceId);
-    
+    const ragService = getRAGService();
+    const stats = ragService.getStatistics();
+
     res.json({
       success: true,
-      ...result,
+      statistics: stats
     });
   } catch (error) {
-    logger.error('Error summarizing conversation:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Clear conversation
-router.delete('/:workspaceId/conversation/:conversationId', authenticateToken, async (req, res) => {
+// POST /api/rag/cache/clear - Clear response cache
+router.post('/cache/clear', async (req, res) => {
   try {
-    const { workspaceId, conversationId } = req.params;
-    
-    const result = await RAGService.clearConversation(conversationId, workspaceId);
-    
-    res.json({
-      success: true,
-      message: 'Conversation cleared successfully',
-    });
-  } catch (error) {
-    logger.error('Error clearing conversation:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+    const ragService = getRAGService();
+    ragService.clearCache();
 
-// Get RAG statistics
-router.get('/:workspaceId/stats', authenticateToken, async (req, res) => {
-  try {
-    const stats = RAGService.getStats();
-    
     res.json({
       success: true,
-      stats,
+      message: 'Cache cleared'
     });
   } catch (error) {
-    logger.error('Error getting RAG stats:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

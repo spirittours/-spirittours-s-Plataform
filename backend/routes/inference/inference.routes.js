@@ -1,187 +1,133 @@
-const express = require('express');
-const router = express.Router();
-const InferenceEngine = require('../../services/inference/InferenceEngine');
-const { authenticateToken } = require('../../middleware/auth');
-const logger = require('../../config/logger');
-
 /**
- * Custom Inference Engine Routes
- * Local model deployment and serving
+ * Custom Inference Engine API Routes
  */
 
-// List models
-router.get('/models', authenticateToken, async (req, res) => {
-  try {
-    const { status, capability } = req.query;
-    
-    const models = InferenceEngine.listModels({ status, capability });
-    
-    res.json({
-      success: true,
-      models,
-      count: models.length,
-    });
-  } catch (error) {
-    logger.error('Error listing models:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+const express = require('express');
+const router = express.Router();
+const { getInferenceEngine } = require('../../services/inference/InferenceEngine');
+const { authenticate } = require('../../middleware/auth');
 
-// Get model info
-router.get('/models/:modelId', authenticateToken, async (req, res) => {
-  try {
-    const { modelId } = req.params;
-    
-    const model = InferenceEngine.getModelInfo(modelId);
-    
-    res.json({
-      success: true,
-      model,
-    });
-  } catch (error) {
-    logger.error('Error getting model info:', error);
-    res.status(404).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+router.use(authenticate);
 
-// Deploy model
-router.post('/models/:modelId/deploy', authenticateToken, async (req, res) => {
+// POST /api/inference/generate - Generate text completion
+router.post('/generate', async (req, res) => {
   try {
-    const { modelId } = req.params;
-    
-    const result = await InferenceEngine.deployModel(modelId);
-    
-    res.json({
-      success: true,
-      ...result,
-    });
-  } catch (error) {
-    logger.error('Error deploying model:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
+    const { prompt, model, backend, temperature, maxTokens, topP, topK } = req.body;
 
-// Infer with model
-router.post('/infer/:modelId', authenticateToken, async (req, res) => {
-  try {
-    const { modelId } = req.params;
-    const { prompt, maxTokens, temperature, topP, stream, useCache } = req.body;
-    
     if (!prompt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Prompt is required',
-      });
+      return res.status(400).json({ success: false, error: 'Prompt is required' });
     }
-    
-    const result = await InferenceEngine.infer(modelId, prompt, {
-      maxTokens,
-      temperature,
-      topP,
-      stream,
-      useCache,
+
+    const engine = getInferenceEngine();
+    const result = await engine.generate(prompt, {
+      model, backend, temperature, maxTokens, topP, topK
     });
-    
-    res.json({
-      success: true,
-      ...result,
-    });
+
+    res.json(result);
   } catch (error) {
-    logger.error('Error in inference:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Batch infer
-router.post('/infer/:modelId/batch', authenticateToken, async (req, res) => {
+// POST /api/inference/chat - Chat completion
+router.post('/chat', async (req, res) => {
   try {
-    const { modelId } = req.params;
-    const { prompts, maxTokens, temperature, topP } = req.body;
-    
-    if (!prompts || !Array.isArray(prompts) || prompts.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Array of prompts is required',
-      });
+    const { messages, model, backend, temperature, maxTokens, template } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ success: false, error: 'Messages array is required' });
     }
-    
-    const result = await InferenceEngine.batchInfer(modelId, prompts, {
-      maxTokens,
-      temperature,
-      topP,
+
+    const engine = getInferenceEngine();
+    const result = await engine.chat(messages, {
+      model, backend, temperature, maxTokens, template
     });
-    
-    res.json({
-      success: true,
-      ...result,
-    });
+
+    res.json(result);
   } catch (error) {
-    logger.error('Error in batch inference:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// A/B test
-router.post('/ab-test', authenticateToken, async (req, res) => {
+// GET /api/inference/models - List available models
+router.get('/models', async (req, res) => {
   try {
-    const { modelA, modelB, prompt, trafficSplit, maxTokens, temperature } = req.body;
-    
-    if (!modelA || !modelB || !prompt) {
-      return res.status(400).json({
-        success: false,
-        error: 'modelA, modelB, and prompt are required',
-      });
-    }
-    
-    const result = await InferenceEngine.abTest(modelA, modelB, prompt, {
-      trafficSplit,
-      maxTokens,
-      temperature,
-    });
-    
+    const { backend } = req.query;
+
+    const engine = getInferenceEngine();
+    const models = await engine.listModels(backend);
+
     res.json({
       success: true,
-      ...result,
+      models
     });
   } catch (error) {
-    logger.error('Error in A/B test:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Get engine statistics
-router.get('/stats', authenticateToken, async (req, res) => {
+// POST /api/inference/models/pull - Download a model (Ollama only)
+router.post('/models/pull', async (req, res) => {
   try {
-    const stats = InferenceEngine.getStats();
+    const { model, backend = 'ollama' } = req.body;
+
+    if (!model) {
+      return res.status(400).json({ success: false, error: 'Model name is required' });
+    }
+
+    const engine = getInferenceEngine();
     
+    // Start pull in background
+    engine.pullModel(model, backend).then(() => {
+      // Completed
+    }).catch(error => {
+      console.error('Model pull error:', error);
+    });
+
     res.json({
       success: true,
-      stats,
+      message: `Model ${model} download started`,
+      model
     });
   } catch (error) {
-    logger.error('Error getting inference stats:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/inference/health - Check backend health
+router.get('/health', async (req, res) => {
+  try {
+    const engine = getInferenceEngine();
+
+    const health = {
+      ollama: await engine.checkOllamaHealth(),
+      vllm: await engine.checkVLLMHealth()
+    };
+
+    res.json({
+      success: true,
+      health,
+      backends: Object.entries(health)
+        .filter(([_, status]) => status)
+        .map(([backend]) => backend)
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/inference/statistics - Get inference statistics
+router.get('/statistics', async (req, res) => {
+  try {
+    const engine = getInferenceEngine();
+    const stats = engine.getStatistics();
+
+    res.json({
+      success: true,
+      statistics: stats
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

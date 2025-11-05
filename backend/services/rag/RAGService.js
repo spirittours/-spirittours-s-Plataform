@@ -1,447 +1,540 @@
-const { OpenAI } = require('openai');
-const VectorDatabaseService = require('../vector/VectorDatabaseService');
-const RedisCacheService = require('../cache/RedisCacheService');
-const logger = require('../../config/logger');
-
 /**
- * RAGService
- * Retrieval-Augmented Generation for context-aware AI responses
+ * RAG Service - Retrieval-Augmented Generation
+ * Combines vector search with LLM generation for context-aware responses
  * 
  * Features:
- * - Semantic document retrieval
- * - Context-aware generation
- * - Multi-source knowledge integration
+ * - Semantic document search
+ * - Context-aware answer generation
+ * - Multi-document synthesis
  * - Citation tracking
- * - Answer grounding
- * - Conversational context management
- * - Hybrid retrieval (vector + keyword)
+ * - Relevance scoring
+ * - Hybrid search (semantic + keyword)
+ * - Query expansion
+ * - Re-ranking
  */
-class RAGService {
-  constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-    
-    this.vectorDB = VectorDatabaseService;
-    this.cache = RedisCacheService;
+
+const { getVectorDatabaseService } = require('../vector/VectorDatabaseService');
+const { MultiModelAI } = require('../../ai/MultiModelAI');
+const { EventEmitter } = require('events');
+
+class RAGService extends EventEmitter {
+  constructor(config = {}) {
+    super();
     
     this.config = {
-      retrievalModel: 'text-embedding-3-small',
-      generationModel: 'gpt-4o-mini',
-      topK: 5, // Number of documents to retrieve
-      minSimilarity: 0.7,
-      maxContextLength: 8000, // tokens
-      temperature: 0.3,
-      enableCaching: true,
-      cacheeTTL: 3600, // 1 hour
+      topK: config.topK || 5,
+      minScore: config.minScore || 0.7,
+      maxContextLength: config.maxContextLength || 4000,
+      includeMetadata: config.includeMetadata !== false,
+      includeCitations: config.includeCitations !== false,
+      rerank: config.rerank !== false,
+      expandQuery: config.expandQuery || false,
+      hybridSearch: config.hybridSearch || false,
+      model: config.model || 'gpt-4o-mini',
+      temperature: config.temperature || 0.3,
+      ...config
     };
-    
+
+    this.vectorDB = getVectorDatabaseService();
+    this.ai = new MultiModelAI();
+
     this.stats = {
       totalQueries: 0,
-      cacheHits: 0,
-      retrievalCount: 0,
-      generationCount: 0,
+      totalDocuments: 0,
+      avgRetrievalTime: 0,
+      avgGenerationTime: 0,
+      avgRelevanceScore: 0,
+      cacheHits: 0
     };
+
+    // Response cache
+    this.cache = new Map();
+    this.cacheMaxSize = config.cacheMaxSize || 100;
+    this.cacheTTL = config.cacheTTL || 3600000; // 1 hour
   }
-  
+
   /**
-   * Query with RAG (Retrieval-Augmented Generation)
+   * Query RAG system
    */
   async query(question, options = {}) {
+    const startTime = Date.now();
+
     try {
-      const {
-        workspace,
-        entityTypes = ['contact', 'lead', 'deal', 'activity', 'document'],
-        topK = this.config.topK,
-        minSimilarity = this.config.minSimilarity,
-        model = this.config.generationModel,
-        temperature = this.config.temperature,
-        conversationHistory = [],
-        systemPrompt = null,
-      } = options;
-      
-      this.stats.totalQueries++;
-      
       // Check cache
-      if (this.config.enableCaching) {
-        const cacheKey = this.cache.generateKey(workspace, 'rag', this.hashQuery(question));
-        const cached = await this.cache.get(cacheKey);
-        
-        if (cached) {
-          this.stats.cacheHits++;
-          logger.info('RAG query served from cache');
-          return {
-            ...cached,
-            fromCache: true,
-          };
-        }
+      const cacheKey = this.getCacheKey(question, options);
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        this.stats.cacheHits++;
+        this.emit('query:cache-hit', { question });
+        return cached;
       }
-      
+
+      this.emit('query:started', { question });
+
       // Step 1: Retrieve relevant documents
-      logger.info(`Retrieving documents for query: ${question.substring(0, 50)}...`);
-      
-      const retrievedDocs = await this.retrieve(question, {
-        workspace,
-        entityTypes,
-        topK,
-        minSimilarity,
-      });
-      
-      this.stats.retrievalCount++;
-      
-      if (retrievedDocs.length === 0) {
-        logger.warn('No relevant documents found');
+      const retrievalStart = Date.now();
+      const documents = await this.retrieveDocuments(question, options);
+      const retrievalTime = Date.now() - retrievalStart;
+
+      if (documents.length === 0) {
         return {
-          answer: 'I could not find relevant information to answer your question.',
+          success: false,
+          error: 'No relevant documents found',
+          answer: 'I could not find any relevant information to answer your question.',
           confidence: 0,
-          sources: [],
-          retrievedDocuments: [],
+          sources: []
         };
       }
-      
-      // Step 2: Build context from retrieved documents
-      const context = this.buildContext(retrievedDocs);
-      
-      // Step 3: Generate answer with context
-      logger.info(`Generating answer with ${retrievedDocs.length} retrieved documents`);
-      
-      const answer = await this.generate(question, context, {
-        model,
-        temperature,
-        conversationHistory,
-        systemPrompt,
-      });
-      
-      this.stats.generationCount++;
-      
+
+      // Step 2: Prepare context
+      const context = this.prepareContext(documents, options);
+
+      // Step 3: Generate answer
+      const generationStart = Date.now();
+      const answer = await this.generateAnswer(question, context, options);
+      const generationTime = Date.now() - generationStart;
+
       // Step 4: Extract citations
-      const citations = this.extractCitations(retrievedDocs, answer);
-      
+      const citations = this.extractCitations(documents, answer);
+
       const result = {
+        success: true,
         answer: answer.text,
-        confidence: this.calculateConfidence(retrievedDocs, answer),
-        sources: citations,
-        retrievedDocuments: retrievedDocs.map(doc => ({
+        confidence: answer.confidence,
+        sources: documents.map(doc => ({
           id: doc.id,
-          type: doc.metadata.entityType,
+          content: doc.content.substring(0, 200) + '...',
           score: doc.score,
-          snippet: doc.metadata.textContent,
+          metadata: doc.metadata
         })),
-        tokensUsed: answer.usage,
-        fromCache: false,
+        citations: this.config.includeCitations ? citations : undefined,
+        metadata: {
+          retrievalTime,
+          generationTime,
+          totalTime: Date.now() - startTime,
+          documentsRetrieved: documents.length,
+          model: answer.model
+        }
       };
-      
+
+      // Update stats
+      this.updateStatistics(retrievalTime, generationTime, documents, answer);
+
       // Cache result
-      if (this.config.enableCaching) {
-        const cacheKey = this.cache.generateKey(workspace, 'rag', this.hashQuery(question));
-        await this.cache.set(cacheKey, result, { ttl: this.config.cacheTTL });
-      }
-      
+      this.setInCache(cacheKey, result);
+
+      this.emit('query:completed', { question, totalTime: result.metadata.totalTime });
+
       return result;
+
     } catch (error) {
-      logger.error('Error in RAG query:', error);
-      throw error;
+      this.emit('query:error', { question, error: error.message });
+      throw new Error(`RAG query failed: ${error.message}`);
     }
   }
-  
+
   /**
    * Retrieve relevant documents
    */
-  async retrieve(query, options = {}) {
-    try {
-      const {
-        workspace,
-        entityTypes,
-        topK,
-        minSimilarity,
-        useHybrid = true,
-      } = options;
-      
-      if (useHybrid) {
-        // Hybrid retrieval: vector + keyword
-        const result = await this.vectorDB.hybridSearch(query, {
-          workspace,
-          entityTypes,
-          topK,
-          vectorWeight: 0.7,
-        });
-        
-        return result.results.filter(r => r.finalScore >= minSimilarity);
-      } else {
-        // Pure vector retrieval
-        const result = await this.vectorDB.search(query, {
-          workspace,
-          entityTypes,
-          topK,
-          minScore: minSimilarity,
-        });
-        
-        return result.results;
-      }
-    } catch (error) {
-      logger.error('Error retrieving documents:', error);
-      return [];
+  async retrieveDocuments(query, options = {}) {
+    const namespace = options.namespace || 'default';
+    const topK = options.topK || this.config.topK;
+    const minScore = options.minScore || this.config.minScore;
+
+    // Query expansion
+    let queries = [query];
+    if (this.config.expandQuery || options.expandQuery) {
+      const expanded = await this.expandQuery(query);
+      queries = queries.concat(expanded);
     }
-  }
-  
-  /**
-   * Generate answer with context
-   */
-  async generate(question, context, options = {}) {
-    try {
-      const {
-        model,
-        temperature,
-        conversationHistory = [],
-        systemPrompt,
-      } = options;
-      
-      const defaultSystemPrompt = `You are a helpful AI assistant with access to a knowledge base. 
-Answer questions based on the provided context. 
-If the context doesn't contain enough information, say so clearly.
-Always cite your sources when making claims.
-Be concise but comprehensive.`;
-      
-      const messages = [
-        {
-          role: 'system',
-          content: systemPrompt || defaultSystemPrompt,
-        },
-      ];
-      
-      // Add conversation history
-      conversationHistory.forEach(msg => {
-        messages.push({
-          role: msg.role,
-          content: msg.content,
-        });
-      });
-      
-      // Add current query with context
-      messages.push({
-        role: 'user',
-        content: `Context from knowledge base:\n\n${context}\n\nQuestion: ${question}\n\nPlease answer based on the context provided above.`,
-      });
-      
-      const completion = await this.openai.chat.completions.create({
-        model,
-        messages,
-        temperature,
-        max_tokens: 1500,
-      });
-      
-      return {
-        text: completion.choices[0].message.content,
-        usage: completion.usage,
-        model,
-      };
-    } catch (error) {
-      logger.error('Error generating answer:', error);
-      throw error;
+
+    // Search for each query
+    const allResults = [];
+    for (const q of queries) {
+      const results = await this.vectorDB.search(namespace, q, topK * 2);
+      allResults.push(...results);
     }
+
+    // Deduplicate and filter by score
+    const uniqueResults = this.deduplicateResults(allResults);
+    const filtered = uniqueResults.filter(doc => doc.score >= minScore);
+
+    // Re-rank if enabled
+    let finalResults = filtered;
+    if (this.config.rerank || options.rerank) {
+      finalResults = await this.rerankDocuments(query, filtered);
+    }
+
+    // Return top K
+    return finalResults.slice(0, topK);
   }
-  
+
   /**
-   * Build context from retrieved documents
+   * Prepare context from documents
    */
-  buildContext(documents) {
+  prepareContext(documents, options = {}) {
+    const maxLength = options.maxContextLength || this.config.maxContextLength;
     let context = '';
-    let tokenCount = 0;
-    
-    documents.forEach((doc, index) => {
-      const docText = `[Document ${index + 1}] (${doc.metadata.entityType})\n${doc.metadata.textContent}\n\n`;
+    let currentLength = 0;
+
+    for (let i = 0; i < documents.length; i++) {
+      const doc = documents[i];
+      const docText = `[Document ${i + 1}]\n${doc.content}\n\n`;
       
-      // Rough token estimation (1 token ≈ 4 characters)
-      const estimatedTokens = docText.length / 4;
-      
-      if (tokenCount + estimatedTokens < this.config.maxContextLength) {
-        context += docText;
-        tokenCount += estimatedTokens;
+      if (currentLength + docText.length > maxLength) {
+        // Truncate if necessary
+        const remaining = maxLength - currentLength;
+        if (remaining > 100) {
+          context += docText.substring(0, remaining) + '...\n\n';
+        }
+        break;
       }
-    });
-    
+
+      context += docText;
+      currentLength += docText.length;
+    }
+
     return context;
   }
-  
+
+  /**
+   * Generate answer using LLM
+   */
+  async generateAnswer(question, context, options = {}) {
+    const prompt = this.buildPrompt(question, context, options);
+
+    const response = await this.ai.processRequest({
+      prompt,
+      model: options.model || this.config.model,
+      temperature: options.temperature || this.config.temperature,
+      maxTokens: options.maxTokens || 1000,
+      workspace: options.workspace
+    });
+
+    return {
+      text: response.response,
+      confidence: this.estimateConfidence(response, context),
+      model: response.model,
+      tokens: response.usage
+    };
+  }
+
+  /**
+   * Build prompt for LLM
+   */
+  buildPrompt(question, context, options = {}) {
+    const systemPrompt = options.systemPrompt || `You are a helpful AI assistant that answers questions based on the provided context. 
+Always base your answers on the given information. If the context doesn't contain enough information to answer the question, say so clearly.
+If you reference information, indicate which document it came from using [Document N] notation.`;
+
+    return `${systemPrompt}
+
+Context:
+${context}
+
+Question: ${question}
+
+Answer (be concise, accurate, and cite sources):`;
+  }
+
+  /**
+   * Expand query with related terms
+   */
+  async expandQuery(query) {
+    try {
+      const prompt = `Generate 2-3 alternative phrasings or related queries for: "${query}"
+Return only the queries, one per line, without numbering or explanation.`;
+
+      const response = await this.ai.processRequest({
+        prompt,
+        model: 'gpt-4o-mini',
+        temperature: 0.7,
+        maxTokens: 100
+      });
+
+      const expanded = response.response
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .slice(0, 3);
+
+      return expanded;
+
+    } catch (error) {
+      return []; // Fallback to original query only
+    }
+  }
+
+  /**
+   * Re-rank documents for relevance
+   */
+  async rerankDocuments(query, documents) {
+    // Simple re-ranking based on keyword match
+    // Can be enhanced with more sophisticated methods
+    
+    const queryTerms = query.toLowerCase().split(/\s+/);
+    
+    const scored = documents.map(doc => {
+      const content = doc.content.toLowerCase();
+      let matchScore = 0;
+
+      for (const term of queryTerms) {
+        const count = (content.match(new RegExp(term, 'g')) || []).length;
+        matchScore += count;
+      }
+
+      return {
+        ...doc,
+        rerankScore: doc.score * 0.7 + (matchScore / queryTerms.length) * 0.3
+      };
+    });
+
+    return scored.sort((a, b) => b.rerankScore - a.rerankScore);
+  }
+
+  /**
+   * Deduplicate search results
+   */
+  deduplicateResults(results) {
+    const seen = new Set();
+    const unique = [];
+
+    for (const result of results) {
+      if (!seen.has(result.id)) {
+        seen.add(result.id);
+        unique.push(result);
+      }
+    }
+
+    // Sort by score
+    return unique.sort((a, b) => b.score - a.score);
+  }
+
   /**
    * Extract citations from answer
    */
   extractCitations(documents, answer) {
     const citations = [];
-    
-    documents.forEach((doc, index) => {
-      // Check if document is referenced in answer
-      const docNumber = index + 1;
-      if (answer.text.includes(`[Document ${docNumber}]`) || 
-          answer.text.includes(`Document ${docNumber}`) ||
-          this.contentOverlap(doc.metadata.textContent, answer.text) > 0.3) {
-        
+    const text = answer.text;
+
+    for (let i = 0; i < documents.length; i++) {
+      const docRef = `[Document ${i + 1}]`;
+      if (text.includes(docRef)) {
         citations.push({
-          documentNumber: docNumber,
-          entityType: doc.metadata.entityType,
-          entityId: doc.metadata.entityId,
-          relevanceScore: doc.score,
-          snippet: doc.metadata.textContent.substring(0, 200),
+          docNumber: i + 1,
+          documentId: documents[i].id,
+          content: documents[i].content.substring(0, 150) + '...',
+          metadata: documents[i].metadata
         });
       }
-    });
-    
+    }
+
     return citations;
   }
-  
+
   /**
-   * Calculate answer confidence
+   * Estimate answer confidence
    */
-  calculateConfidence(documents, answer) {
-    if (documents.length === 0) return 0;
-    
-    // Base confidence on retrieval scores
-    const avgScore = documents.reduce((sum, doc) => sum + doc.score, 0) / documents.length;
-    
-    // Adjust for answer length (longer answers often indicate more comprehensive responses)
-    const lengthFactor = Math.min(answer.text.length / 500, 1);
-    
-    // Combine factors
-    const confidence = (avgScore * 0.7 + lengthFactor * 0.3) * 100;
-    
-    return Math.round(Math.min(confidence, 100));
-  }
-  
-  /**
-   * Conversational RAG (maintains context)
-   */
-  async conversationalQuery(question, conversationId, options = {}) {
-    try {
-      const { workspace } = options;
-      
-      // Retrieve conversation history
-      const historyKey = this.cache.generateKey(workspace, 'conversation', conversationId);
-      let history = await this.cache.get(historyKey) || [];
-      
-      // Query with history
-      const result = await this.query(question, {
-        ...options,
-        conversationHistory: history,
-      });
-      
-      // Update history
-      history.push(
-        { role: 'user', content: question },
-        { role: 'assistant', content: result.answer }
-      );
-      
-      // Keep only last 10 exchanges
-      if (history.length > 20) {
-        history = history.slice(-20);
+  estimateConfidence(response, context) {
+    // Estimate based on response characteristics
+    let confidence = 0.8; // Base confidence
+
+    // Lower confidence if answer indicates uncertainty
+    const uncertainPhrases = [
+      'i don\'t know',
+      'not enough information',
+      'cannot determine',
+      'unclear from the context'
+    ];
+
+    const lowerText = response.response.toLowerCase();
+    for (const phrase of uncertainPhrases) {
+      if (lowerText.includes(phrase)) {
+        confidence *= 0.5;
+        break;
       }
-      
-      // Cache updated history
-      await this.cache.set(historyKey, history, { ttl: 3600 });
-      
-      return {
-        ...result,
-        conversationId,
-      };
-    } catch (error) {
-      logger.error('Error in conversational query:', error);
-      throw error;
     }
-  }
-  
-  /**
-   * Multi-turn RAG conversation
-   */
-  async continueConversation(conversationId, question, workspace) {
-    return await this.conversationalQuery(question, conversationId, { workspace });
-  }
-  
-  /**
-   * Clear conversation history
-   */
-  async clearConversation(conversationId, workspace) {
-    const historyKey = this.cache.generateKey(workspace, 'conversation', conversationId);
-    await this.cache.delete(historyKey);
-    return { success: true };
-  }
-  
-  /**
-   * Summarize conversation
-   */
-  async summarizeConversation(conversationId, workspace) {
-    try {
-      const historyKey = this.cache.generateKey(workspace, 'conversation', conversationId);
-      const history = await this.cache.get(historyKey) || [];
-      
-      if (history.length === 0) {
-        return { summary: 'No conversation to summarize' };
-      }
-      
-      const conversationText = history
-        .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-        .join('\n\n');
-      
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Summarize the following conversation in 3-5 key points.',
-          },
-          {
-            role: 'user',
-            content: conversationText,
-          },
-        ],
-        temperature: 0.3,
-      });
-      
-      return {
-        summary: completion.choices[0].message.content,
-        messageCount: history.length,
-      };
-    } catch (error) {
-      logger.error('Error summarizing conversation:', error);
-      throw error;
+
+    // Higher confidence if context is substantial
+    if (context.length > 1000) {
+      confidence = Math.min(confidence * 1.1, 0.95);
     }
+
+    return confidence;
   }
-  
-  // ========================================
-  // Helper methods
-  // ========================================
-  
-  hashQuery(query) {
-    let hash = 0;
-    for (let i = 0; i < query.length; i++) {
-      const char = query.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(36);
-  }
-  
-  contentOverlap(text1, text2) {
-    const words1 = new Set(text1.toLowerCase().split(/\s+/));
-    const words2 = new Set(text2.toLowerCase().split(/\s+/));
-    
-    let overlap = 0;
-    words1.forEach(word => {
-      if (words2.has(word)) overlap++;
+
+  /**
+   * Multi-document synthesis
+   */
+  async synthesizeDocuments(documents, options = {}) {
+    const context = this.prepareContext(documents, {
+      maxContextLength: options.maxContextLength || 8000
     });
-    
-    return overlap / Math.min(words1.size, words2.size);
+
+    const prompt = options.prompt || `Synthesize the key information from these documents into a coherent summary:
+
+${context}
+
+Provide a comprehensive synthesis that:
+1. Identifies main themes
+2. Highlights key points
+3. Notes any contradictions
+4. Draws connections between documents`;
+
+    const response = await this.ai.processRequest({
+      prompt,
+      model: options.model || this.config.model,
+      temperature: 0.4,
+      maxTokens: options.maxTokens || 2000,
+      workspace: options.workspace
+    });
+
+    return {
+      success: true,
+      synthesis: response.response,
+      documentCount: documents.length,
+      model: response.model
+    };
   }
-  
-  getStats() {
+
+  /**
+   * Answer with conversation history
+   */
+  async queryWithHistory(question, history, options = {}) {
+    // Build conversation context
+    let conversationContext = '';
+    for (const turn of history) {
+      conversationContext += `Q: ${turn.question}\nA: ${turn.answer}\n\n`;
+    }
+
+    // Retrieve documents
+    const documents = await this.retrieveDocuments(question, options);
+    const docContext = this.prepareContext(documents, options);
+
+    // Build enhanced prompt
+    const prompt = `Previous conversation:
+${conversationContext}
+
+Current context:
+${docContext}
+
+Current question: ${question}
+
+Answer (considering the conversation history):`;
+
+    const response = await this.ai.processRequest({
+      prompt,
+      model: options.model || this.config.model,
+      temperature: options.temperature || this.config.temperature,
+      maxTokens: options.maxTokens || 1000,
+      workspace: options.workspace
+    });
+
+    return {
+      success: true,
+      answer: response.response,
+      sources: documents,
+      model: response.model
+    };
+  }
+
+  /**
+   * Cache management
+   */
+  getCacheKey(question, options) {
+    const key = JSON.stringify({
+      q: question.toLowerCase().trim(),
+      opts: {
+        model: options.model || this.config.model,
+        topK: options.topK || this.config.topK,
+        namespace: options.namespace
+      }
+    });
+    return Buffer.from(key).toString('base64');
+  }
+
+  getFromCache(key) {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+
+    if (Date.now() - cached.timestamp > this.cacheTTL) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return cached.data;
+  }
+
+  setInCache(key, data) {
+    if (this.cache.size >= this.cacheMaxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  clearCache() {
+    this.cache.clear();
+  }
+
+  /**
+   * Update statistics
+   */
+  updateStatistics(retrievalTime, generationTime, documents, answer) {
+    this.stats.totalQueries++;
+    this.stats.totalDocuments += documents.length;
+
+    const n = this.stats.totalQueries;
+    this.stats.avgRetrievalTime = 
+      (this.stats.avgRetrievalTime * (n - 1) + retrievalTime) / n;
+    this.stats.avgGenerationTime = 
+      (this.stats.avgGenerationTime * (n - 1) + generationTime) / n;
+    this.stats.avgRelevanceScore = 
+      (this.stats.avgRelevanceScore * (n - 1) + answer.confidence) / n;
+  }
+
+  /**
+   * Get statistics
+   */
+  getStatistics() {
     return {
       ...this.stats,
+      cacheSize: this.cache.size,
       cacheHitRate: this.stats.totalQueries > 0
-        ? ((this.stats.cacheHits / this.stats.totalQueries) * 100).toFixed(2) + '%'
-        : '0%',
-      avgRetrievalPerQuery: this.stats.totalQueries > 0
-        ? (this.stats.retrievalCount / this.stats.totalQueries).toFixed(2)
+        ? (this.stats.cacheHits / this.stats.totalQueries) * 100
         : 0,
+      avgDocumentsPerQuery: this.stats.totalQueries > 0
+        ? this.stats.totalDocuments / this.stats.totalQueries
+        : 0
+    };
+  }
+
+  resetStatistics() {
+    this.stats = {
+      totalQueries: 0,
+      totalDocuments: 0,
+      avgRetrievalTime: 0,
+      avgGenerationTime: 0,
+      avgRelevanceScore: 0,
+      cacheHits: 0
     };
   }
 }
 
-module.exports = new RAGService();
+// Singleton
+let ragServiceInstance = null;
+
+function getRAGService(config = {}) {
+  if (!ragServiceInstance) {
+    ragServiceInstance = new RAGService(config);
+  }
+  return ragServiceInstance;
+}
+
+module.exports = {
+  RAGService,
+  getRAGService
+};
