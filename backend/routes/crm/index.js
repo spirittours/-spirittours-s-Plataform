@@ -27,6 +27,10 @@ const ssoRoutes = require('./sso.routes');
 const rolesRoutes = require('./roles.routes');
 const auditRoutes = require('./audit.routes');
 const ipRestrictionsRoutes = require('./ip-restrictions.routes');
+const projectRoutes = require('./project.routes');
+const documentRoutes = require('./document.routes');
+const timeEntryRoutes = require('./timeEntry.routes');
+const commentRoutes = require('./comment.routes');
 const statisticsRoutes = require('./statistics.routes');
 
 // Mount routes
@@ -48,6 +52,10 @@ router.use('/sso', ssoRoutes);
 router.use('/roles', rolesRoutes);
 router.use('/audit', auditRoutes);
 router.use('/ip-restrictions', ipRestrictionsRoutes);
+router.use('/projects', projectRoutes);
+router.use('/documents', documentRoutes);
+router.use('/time-entries', timeEntryRoutes);
+router.use('/comments', commentRoutes);
 router.use('/statistics', statisticsRoutes);
 
 // Health check endpoint
