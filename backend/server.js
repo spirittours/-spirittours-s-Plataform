@@ -174,6 +174,11 @@ try {
   app.use('/api/automation/lead-scoring', leadScoringRoutes);
   logger.info('✅ AI Lead Scoring routes registered (Sprint 3.2)');
 
+  // Sprint 3.2: AI Lead Scoring routes
+  const leadScoringRoutes = require('./routes/automation/lead-scoring.routes');
+  app.use('/api/automation/lead-scoring', leadScoringRoutes);
+  logger.info('✅ AI Lead Scoring routes registered (Sprint 3.2)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
