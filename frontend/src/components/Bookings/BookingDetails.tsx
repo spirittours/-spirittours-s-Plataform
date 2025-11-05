@@ -68,6 +68,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { bookingsService } from '../../services/bookingsService';
 import { Booking, BookingStatus, PaymentStatus } from '../../types/booking.types';
+import CommentThread from '../crm/CommentThread';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -318,6 +319,7 @@ const BookingDetails: React.FC = () => {
                 <Tab label="Timeline" />
                 <Tab label="Payments" />
                 <Tab label="Notes" />
+                <Tab label="Comments" />
               </Tabs>
 
               {/* Overview Tab */}
@@ -538,6 +540,16 @@ const BookingDetails: React.FC = () => {
                 ) : (
                   <Alert severity="info">No internal notes</Alert>
                 )}
+              </TabPanel>
+
+              {/* Comments Tab - SPRINT 2.2 */}
+              <TabPanel value={activeTab} index={4}>
+                <CommentThread
+                  workspaceId="default"
+                  entityType="booking"
+                  entityId={id || ''}
+                  showTitle={false}
+                />
               </TabPanel>
             </CardContent>
           </Card>
