@@ -68,7 +68,11 @@ app.get('/api', (req, res) => {
       search: '/api/search',
       fineTuning: '/api/ai/fine-tuning',
       vector: '/api/vector',
-      agents: '/api/agents'
+      agents: '/api/agents',
+      voice: '/api/voice',
+      vision: '/api/vision',
+      rag: '/api/rag',
+      inference: '/api/inference'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -225,6 +229,26 @@ try {
   const agentsRoutes = require('./routes/agents/agents.routes');
   app.use('/api/agents', agentsRoutes);
   logger.info('✅ Multi-Agent Systems routes registered (Sprint 12 - Fase 2.4)');
+
+  // Sprint 13: Voice Capabilities routes (Fase 3.1)
+  const voiceRoutes = require('./routes/voice/voice.routes');
+  app.use('/api/voice', voiceRoutes);
+  logger.info('✅ Voice Capabilities routes registered (Sprint 13 - Fase 3.1)');
+
+  // Sprint 14: Vision Enhancement routes (Fase 3.2)
+  const visionRoutes = require('./routes/vision/vision.routes');
+  app.use('/api/vision', visionRoutes);
+  logger.info('✅ Vision Enhancement routes registered (Sprint 14 - Fase 3.2)');
+
+  // Sprint 15: RAG System routes (Fase 3.3)
+  const ragRoutes = require('./routes/rag/rag.routes');
+  app.use('/api/rag', ragRoutes);
+  logger.info('✅ RAG System routes registered (Sprint 15 - Fase 3.3)');
+
+  // Sprint 16: Custom Inference Engine routes (Fase 3.4)
+  const inferenceRoutes = require('./routes/inference/inference.routes');
+  app.use('/api/inference', inferenceRoutes);
+  logger.info('✅ Custom Inference Engine routes registered (Sprint 16 - Fase 3.4)');
 
 } catch (error) {
   logger.error('Error registering routes:', error);
