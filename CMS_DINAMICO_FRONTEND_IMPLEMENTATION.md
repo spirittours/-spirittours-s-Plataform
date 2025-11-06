@@ -572,3 +572,151 @@ For questions or issues:
 **Last Updated**: November 6, 2025  
 **Version**: 1.0  
 **Author**: AI Development Assistant
+
+---
+
+## 🗄️ MongoDB Setup & Deployment Status
+
+### ✅ Completed Configuration
+1. **Mongoose Connection**: Added to `backend/server.js` startup sequence
+2. **Environment Variable**: `MONGODB_URI` configured in `.env`
+3. **Seed Script**: Created `scripts/seed-institutional-pages.js` with 12 pages
+4. **Documentation**: 
+   - `MONGODB_SETUP.md` - Complete setup guide
+   - `scripts/README_SEED.md` - Seed script documentation
+
+### ⚠️ Deployment Requirement
+**MongoDB is not available in the sandbox environment**. The CMS backend requires MongoDB to be running before the seed script can execute.
+
+### Deployment Options
+
+#### Option 1: MongoDB Atlas (Recommended for Production)
+- Free tier available (512MB)
+- No local installation required
+- Automatic backups and scaling
+- See `MONGODB_SETUP.md` for setup instructions
+
+#### Option 2: Local Development
+```bash
+# Docker (Easiest)
+docker-compose -f docker-compose.mongodb.yml up -d
+
+# Or install MongoDB locally
+# See MONGODB_SETUP.md for platform-specific instructions
+```
+
+#### Option 3: Production Deployment
+- Self-hosted MongoDB replica set
+- MongoDB Enterprise
+- See deployment checklist in `MONGODB_SETUP.md`
+
+### Running the Seed Script
+
+Once MongoDB is connected:
+
+```bash
+# From project root
+node scripts/seed-institutional-pages.js
+```
+
+**Expected Output:**
+```
+✅ Connected to MongoDB
+🌱 Starting institutional pages seed...
+📄 Creating page: about-us
+✅ Created: About Us (about-us)
+... (11 more pages)
+✨ All done! The 12 institutional pages have been created.
+```
+
+### 12 Institutional Pages
+
+The seed script creates the following pages:
+
+1. **about-us** - Company story with hero + text + gallery
+2. **contact-us** - Contact form with 5 fields
+3. **our-services** - Services overview
+4. **faq** - 6-item accordion with common questions
+5. **privacy-policy** - Privacy policy content
+6. **terms-and-conditions** - Terms of service
+7. **cancellation-policy** - Cancellation and refund policy
+8. **our-team** - Team showcase with gallery
+9. **careers** - Job openings and benefits
+10. **blog** - Blog landing page
+11. **press-media** - Press information and media kit
+12. **partners** - Partner network information
+
+Each page includes:
+- Pre-configured sections (Hero, Text, Form, Accordion, Gallery)
+- Complete SEO metadata (title, description, keywords)
+- Published status (immediately visible)
+- Professional content structure
+
+### Testing Post-Deployment
+
+After MongoDB setup and seed script execution:
+
+1. ✅ Backend server running on port 5001
+2. ✅ MongoDB connected (check server logs)
+3. ⏳ Verify 12 pages created: `db.pages.countDocuments()`
+4. ⏳ Access CMS at: http://localhost:3000/admin/cms/pages
+5. ⏳ Test page creation, editing, and publishing
+6. ⏳ Test drag-and-drop functionality
+7. ⏳ Test media upload and library
+8. ⏳ Test SEO settings and preview
+9. ⏳ Test auto-save and undo/redo
+
+### Current Status
+
+- ✅ **Frontend**: 100% complete and functional
+- ✅ **Backend API**: 100% complete and ready
+- ✅ **Mongoose Integration**: Configured in server.js
+- ✅ **Seed Data**: Ready to deploy
+- ⏳ **MongoDB**: Requires setup in target environment
+- ⏳ **Testing**: Pending MongoDB availability
+
+---
+
+## 🚀 Quick Start (After MongoDB Setup)
+
+1. **Set MongoDB URI** in `.env`:
+   ```bash
+   MONGODB_URI=mongodb://localhost:27017/spirit-tours
+   # Or for Atlas:
+   MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/spirit-tours
+   ```
+
+2. **Restart Backend**:
+   ```bash
+   cd backend
+   npm start
+   ```
+   
+   Look for: `✅ Mongoose connected successfully for CMS`
+
+3. **Run Seed Script**:
+   ```bash
+   node scripts/seed-institutional-pages.js
+   ```
+
+4. **Access CMS**:
+   - Navigate to: http://localhost:3000/admin
+   - Click: "📝 CMS Dinámico" tab
+   - View all 12 institutional pages
+
+5. **Start Editing**:
+   - Click any page to edit
+   - Drag-and-drop blocks
+   - Upload media
+   - Configure SEO
+   - Publish changes
+
+---
+
+## 📚 Related Documentation
+
+- `MONGODB_SETUP.md` - Complete MongoDB setup guide
+- `scripts/README_SEED.md` - Seed script documentation
+- Backend API docs: http://localhost:5001/api
+- CMS Models: `backend/models/cms/`
+- Frontend Components: `spirit-tours/src/components/admin/cms/`

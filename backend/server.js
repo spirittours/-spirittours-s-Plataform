@@ -369,6 +369,21 @@ app.use((req, res) => {
 // Initialize configuration manager and start server
 async function startServer() {
   try {
+    // Initialize Mongoose connection for CMS
+    const mongoose = require('mongoose');
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/spirit-tours';
+    
+    try {
+      logger.info('🍃 Connecting to MongoDB (Mongoose for CMS)...');
+      await mongoose.connect(mongoURI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      logger.info('✅ Mongoose connected successfully for CMS');
+    } catch (mongoError) {
+      logger.warn('⚠️  MongoDB/Mongoose connection failed (CMS features may be limited):', mongoError.message);
+    }
+
     // Initialize configuration manager
     logger.info('Initializing configuration manager...');
     await configManager.initialize();
