@@ -81,7 +81,15 @@ app.get('/api', (req, res) => {
       prospects: '/api/prospects (Fase 8 - B2B)',
       campaigns: '/api/campaigns (Fase 8 - B2B)',
       prospecting: '/api/prospecting (Fase 8 - B2B)',
-      outreach: '/api/outreach (Fase 8 - B2B)'
+      outreach: '/api/outreach (Fase 8 - B2B)',
+      cms: {
+        pages: '/api/cms/pages',
+        media: '/api/cms/media',
+        templates: '/api/cms/templates',
+        seo: '/api/cms/seo'
+      },
+      catalogs: '/api/catalogs',
+      apiConfig: '/api/admin/api-config'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -300,6 +308,39 @@ try {
   app.use('/api/outreach', outreachRoutes);
   logger.info('✅ Outreach Automation routes registered (Fase 8)');
 
+  // ==================================
+  // CMS DINÁMICO SYSTEM (New Feature)
+  // ==================================
+  const cmsPageRoutes = require('./routes/cms/pages.routes');
+  app.use('/api/cms/pages', cmsPageRoutes);
+  logger.info('✅ CMS Pages routes registered (CMS Dinámico)');
+
+  const cmsMediaRoutes = require('./routes/cms/media.routes');
+  app.use('/api/cms/media', cmsMediaRoutes);
+  logger.info('✅ CMS Media routes registered (CMS Dinámico)');
+
+  const cmsTemplatesRoutes = require('./routes/cms/templates.routes');
+  app.use('/api/cms/templates', cmsTemplatesRoutes);
+  logger.info('✅ CMS Templates routes registered (CMS Dinámico)');
+
+  const cmsSEORoutes = require('./routes/cms/seo.routes');
+  app.use('/api/cms/seo', cmsSEORoutes);
+  logger.info('✅ CMS SEO routes registered (CMS Dinámico)');
+
+  // ========================================
+  // CATALOG GENERATOR SYSTEM (New Feature)
+  // ========================================
+  const catalogsRoutes = require('./routes/catalog/catalogs.routes');
+  app.use('/api/catalogs', catalogsRoutes);
+  logger.info('✅ Catalogs routes registered (Generador de Catálogos)');
+
+  // ==========================================
+  // API CONFIGURATION DASHBOARD (New Feature)
+  // ==========================================
+  const apiConfigRoutes = require('./routes/admin/api-config.routes');
+  app.use('/api/admin/api-config', apiConfigRoutes);
+  logger.info('✅ API Configuration routes registered (API Config Dashboard)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
@@ -411,6 +452,76 @@ async function startServer() {
       logger.warn('   Services will be available but may require manual configuration');
     }
 
+    // ==============================================
+    // NEW FEATURES - CMS, CATALOGS, API CONFIG
+    // ==============================================
+    
+    logger.info('🚀 Initializing new platform features...');
+    
+    try {
+      // CMS Dinámico Services
+      const { getPageBuilderService } = require('./services/cms/PageBuilderService');
+      const { getMediaManagerService } = require('./services/cms/MediaManagerService');
+      const { getContentTemplateService } = require('./services/cms/ContentTemplateService');
+      const { getSEOManagerService } = require('./services/cms/SEOManagerService');
+      
+      const pageBuilder = getPageBuilderService();
+      const mediaManager = getMediaManagerService();
+      const contentTemplate = getContentTemplateService();
+      const seoManager = getSEOManagerService();
+      
+      await pageBuilder.initialize();
+      await mediaManager.initialize();
+      await contentTemplate.initialize();
+      await seoManager.initialize();
+      
+      app.locals.pageBuilder = pageBuilder;
+      app.locals.mediaManager = mediaManager;
+      app.locals.contentTemplate = contentTemplate;
+      app.locals.seoManager = seoManager;
+      
+      logger.info('✅ CMS Dinámico Services initialized (4 services)');
+      
+      // Catalog Generator Services
+      const { getCatalogBuilderService } = require('./services/catalog/CatalogBuilderService');
+      const { getCatalogExportService } = require('./services/catalog/CatalogExportService');
+      
+      const catalogBuilder = getCatalogBuilderService();
+      const catalogExport = getCatalogExportService();
+      
+      await catalogBuilder.initialize();
+      await catalogExport.initialize();
+      
+      app.locals.catalogBuilder = catalogBuilder;
+      app.locals.catalogExport = catalogExport;
+      
+      logger.info('✅ Catalog Generator Services initialized (2 services)');
+      
+      // API Configuration Dashboard Services
+      const { getAPIConfigService } = require('./services/admin/APIConfigService');
+      const { getHealthCheckService } = require('./services/admin/HealthCheckService');
+      
+      const apiConfig = getAPIConfigService();
+      const healthCheck = getHealthCheckService();
+      
+      await apiConfig.initialize();
+      await healthCheck.initialize();
+      
+      app.locals.apiConfig = apiConfig;
+      app.locals.healthCheck = healthCheck;
+      
+      logger.info('✅ API Configuration Dashboard Services initialized (2 services)');
+      
+      logger.info('✅ All new features initialized successfully!');
+      logger.info('   - CMS Dinámico: 4 services (Pages, Media, Templates, SEO)');
+      logger.info('   - Catalog Generator: 2 services (Builder, Export)');
+      logger.info('   - API Config Dashboard: 2 services (Config, Health Check)');
+      
+    } catch (error) {
+      logger.warn('⚠️  New features initialization failed (non-critical):', error.message);
+      logger.warn('   Features will be available but may require manual configuration');
+    }
+
     // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`🚀 Spirit Tours Backend Server running on port ${PORT}`);
@@ -436,6 +547,10 @@ async function startServer() {
       logger.info(`🎯 Campaigns (Fase 8): http://localhost:${PORT}/api/campaigns`);
       logger.info(`🔍 Prospecting Control (Fase 8): http://localhost:${PORT}/api/prospecting`);
       logger.info(`📧 Outreach Automation (Fase 8): http://localhost:${PORT}/api/outreach`);
+      logger.info(`📝 CMS Dinámico: http://localhost:${PORT}/api/cms/pages`);
+      logger.info(`📂 CMS Media: http://localhost:${PORT}/api/cms/media`);
+      logger.info(`📚 Catalog Generator: http://localhost:${PORT}/api/catalogs`);
+      logger.info(`🔧 API Config Dashboard: http://localhost:${PORT}/api/admin/api-config`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
       // Log WebSocket stats
