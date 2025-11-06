@@ -76,7 +76,12 @@ app.get('/api', (req, res) => {
       marketplace: '/api/marketplace',
       streaming: '/api/streaming',
       orchestration: '/api/orchestration',
-      monitoring: '/api/monitoring'
+      monitoring: '/api/monitoring',
+      predictiveAnalytics: '/api/analytics/predictive (Sprint 26 - ML)',
+      prospects: '/api/prospects (Fase 8 - B2B)',
+      campaigns: '/api/campaigns (Fase 8 - B2B)',
+      prospecting: '/api/prospecting (Fase 8 - B2B)',
+      outreach: '/api/outreach (Fase 8 - B2B)'
     },
     aiAgent: {
       description: 'AI Accounting Agent with 9 integrated services',
@@ -274,6 +279,27 @@ try {
   app.use('/api/monitoring', monitoringRoutes);
   logger.info('✅ Observability & Monitoring routes registered (Sprint 20 - Fase 4.4)');
 
+  // Sprint 26 & Fase 8: Predictive Analytics & B2B Prospecting System
+  const predictiveAnalyticsRoutes = require('./routes/analytics/predictive.routes');
+  app.use('/api/analytics/predictive', predictiveAnalyticsRoutes);
+  logger.info('✅ Predictive Analytics routes registered (Sprint 26)');
+
+  const prospectsRoutes = require('./routes/prospects.routes');
+  app.use('/api/prospects', prospectsRoutes);
+  logger.info('✅ Prospects Management routes registered (Fase 8)');
+
+  const campaignsRoutes = require('./routes/campaigns.routes');
+  app.use('/api/campaigns', campaignsRoutes);
+  logger.info('✅ Campaigns Management routes registered (Fase 8)');
+
+  const prospectingRoutes = require('./routes/prospecting.routes');
+  app.use('/api/prospecting', prospectingRoutes);
+  logger.info('✅ Prospecting Control routes registered (Fase 8)');
+
+  const outreachRoutes = require('./routes/outreach.routes');
+  app.use('/api/outreach', outreachRoutes);
+  logger.info('✅ Outreach Automation routes registered (Fase 8)');
+
 } catch (error) {
   logger.error('Error registering routes:', error);
   console.error('Route registration error:', error);
@@ -317,6 +343,74 @@ async function startServer() {
     global.notificationService = new NotificationService(WebSocketService);
     logger.info('✅ NotificationService initialized with WebSocket integration');
 
+    // ==============================================
+    // FASE 8 & SPRINT 26 - B2B PROSPECTING & ML
+    // ==============================================
+    
+    logger.info('🚀 Initializing Fase 8 B2B Prospecting System & Sprint 26 ML...');
+    
+    try {
+      // Inicializar Predictive Analytics Service
+      const { getPredictiveAnalyticsService } = require('./services/ml/PredictiveAnalyticsService');
+      const predictiveAnalytics = getPredictiveAnalyticsService();
+      app.locals.predictiveAnalytics = predictiveAnalytics;
+      logger.info('✅ Predictive Analytics Service initialized (Sprint 26)');
+      
+      // Inicializar servicios de prospección
+      const { getMultiSourceScraperService } = require('./services/prospecting/MultiSourceScraperService');
+      const { getLeadEnrichmentService } = require('./services/prospecting/LeadEnrichmentService');
+      
+      const scraperService = getMultiSourceScraperService();
+      const enrichmentService = getLeadEnrichmentService(null); // AIService se pasa null por ahora
+      
+      app.locals.scraperService = scraperService;
+      app.locals.enrichmentService = enrichmentService;
+      logger.info('✅ Lead Enrichment & Scraper Services initialized (Fase 8)');
+      
+      // Inicializar agentes principales
+      const { getProspectingAgent } = require('./services/agents/ProspectingAgent');
+      const { getOutreachAgent } = require('./services/agents/OutreachAgent');
+      
+      const prospectingAgent = getProspectingAgent(null, scraperService, enrichmentService);
+      const outreachAgent = getOutreachAgent(null, global.notificationService);
+      
+      app.locals.prospectingAgent = prospectingAgent;
+      app.locals.outreachAgent = outreachAgent;
+      logger.info('✅ Prospecting & Outreach Agents initialized (Fase 8)');
+      
+      // Inicializar Campaign Orchestrator
+      const { getCampaignOrchestratorService } = require('./services/prospecting/CampaignOrchestratorService');
+      const campaignOrchestrator = getCampaignOrchestratorService(
+        prospectingAgent,
+        outreachAgent,
+        enrichmentService
+      );
+      
+      app.locals.campaignOrchestrator = campaignOrchestrator;
+      logger.info('✅ Campaign Orchestrator Service initialized (Fase 8)');
+      
+      // Event listeners para monitoring
+      prospectingAgent.on('prospect_saved', (prospect) => {
+        logger.info(`📋 New prospect saved: ${prospect.business_name} (${prospect.country_code})`);
+      });
+      
+      outreachAgent.on('outreach_sent', (data) => {
+        logger.info(`📧 Outreach sent: ${data.channel} to ${data.prospectId}`);
+      });
+      
+      logger.info('✅ Fase 8 B2B Prospecting System fully initialized');
+      logger.info('✅ Sprint 26 Predictive Analytics fully initialized');
+      
+      // Nota: La prospección 24/7 NO se inicia automáticamente
+      // Se debe iniciar manualmente via: POST /api/prospecting/start
+      logger.info('ℹ️  Prospecting 24/7: Use POST /api/prospecting/start to begin');
+      logger.info('ℹ️  Outreach automation: Use POST /api/outreach/start to begin');
+      
+    } catch (error) {
+      logger.warn('⚠️  Fase 8/Sprint 26 services initialization failed (non-critical):', error.message);
+      logger.warn('   Services will be available but may require manual configuration');
+    }
+
     // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`🚀 Spirit Tours Backend Server running on port ${PORT}`);
@@ -337,6 +431,11 @@ async function startServer() {
       logger.info(`🔍 Advanced Search: http://localhost:${PORT}/api/search`);
       logger.info(`🤖 AI Providers (10+): http://localhost:${PORT}/api/ai/providers`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
+      logger.info(`📊 Predictive Analytics (Sprint 26): http://localhost:${PORT}/api/analytics/predictive`);
+      logger.info(`🏢 B2B Prospects (Fase 8): http://localhost:${PORT}/api/prospects`);
+      logger.info(`🎯 Campaigns (Fase 8): http://localhost:${PORT}/api/campaigns`);
+      logger.info(`🔍 Prospecting Control (Fase 8): http://localhost:${PORT}/api/prospecting`);
+      logger.info(`📧 Outreach Automation (Fase 8): http://localhost:${PORT}/api/outreach`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
       // Log WebSocket stats

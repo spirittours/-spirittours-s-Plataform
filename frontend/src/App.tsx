@@ -24,6 +24,7 @@ import {
   PaymentsRouter,
   FileManagerRouter,
   NotificationsRouter,
+  ProspectDashboard,
   Layout,
   Dashboard,
   ComingSoon,
@@ -167,6 +168,16 @@ const App: React.FC = () => {
                   element={
                     <SuspenseWrapper fallback="skeleton">
                       <AnalyticsRouter />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                {/* B2B Prospecting Routes (Fase 8) */}
+                <Route 
+                  path="/prospects" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <ProspectDashboard />
                     </SuspenseWrapper>
                   } 
                 />

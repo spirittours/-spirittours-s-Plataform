@@ -48,6 +48,12 @@ export const AIAgentsRouter = lazy(() => import('../components/AIAgents/AIAgents
 export const AnalyticsRouter = lazy(() => import('../components/Analytics/AnalyticsRouter'));
 
 // ============================================================================
+// B2B PROSPECTING ROUTES (FASE 8)
+// ============================================================================
+
+export const ProspectDashboard = lazy(() => import('../components/Prospecting/ProspectDashboard'));
+
+// ============================================================================
 // PORTALS ROUTES
 // ============================================================================
 
