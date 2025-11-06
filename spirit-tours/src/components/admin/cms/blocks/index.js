@@ -7,6 +7,10 @@ import TextBlock from './TextBlock';
 import ImageBlock from './ImageBlock';
 import HeroBlock from './HeroBlock';
 import CTABlock from './CTABlock';
+import VideoBlock from './VideoBlock';
+import AccordionBlock from './AccordionBlock';
+import FormBlock from './FormBlock';
+import GalleryBlock from './GalleryBlock';
 
 // Block type definitions with metadata
 export const BLOCK_TYPES = {
@@ -24,6 +28,20 @@ export const BLOCK_TYPES = {
     icon: '🖼️',
     category: 'media',
   },
+  video: {
+    component: VideoBlock,
+    label: 'Video',
+    description: 'Embedded video player',
+    icon: '🎬',
+    category: 'media',
+  },
+  gallery: {
+    component: GalleryBlock,
+    label: 'Gallery',
+    description: 'Image gallery with lightbox',
+    icon: '🖼️',
+    category: 'media',
+  },
   hero: {
     component: HeroBlock,
     label: 'Hero',
@@ -38,7 +56,20 @@ export const BLOCK_TYPES = {
     icon: '📢',
     category: 'marketing',
   },
-  // Additional blocks can be added here
+  form: {
+    component: FormBlock,
+    label: 'Form',
+    description: 'Contact or lead capture form',
+    icon: '📋',
+    category: 'forms',
+  },
+  accordion: {
+    component: AccordionBlock,
+    label: 'Accordion',
+    description: 'Collapsible FAQ sections',
+    icon: '📑',
+    category: 'content',
+  },
   heading: {
     component: TextBlock, // Reuse TextBlock for now
     label: 'Heading',
