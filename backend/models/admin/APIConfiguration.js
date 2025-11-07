@@ -175,7 +175,10 @@ apiConfigurationSchema.pre('save', function(next) {
   if (this.isModified('credentials')) {
     // IMPORTANTE: En producción, usar una clave de encriptación segura
     // almacenada en variables de entorno
-    const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY must be set in environment variables for security');
+    }
+    const encryptionKey = process.env.ENCRYPTION_KEY;
     
     if (this.credentials.apiKey && !this.credentials.apiKey.startsWith('enc:')) {
       this.credentials.apiKey = 'enc:' + this.encrypt(this.credentials.apiKey, encryptionKey);

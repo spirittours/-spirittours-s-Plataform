@@ -82,6 +82,79 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Contact'
   },
   
+  // B2B Integration Fields
+  b2b: {
+    // Es una reserva B2B (de otro operador o hacia otro operador)
+    isB2B: { type: Boolean, default: false },
+    
+    // Tipo de relación B2B
+    relationship: {
+      type: String,
+      enum: ['inbound', 'outbound', 'internal'], // inbound: compramos, outbound: vendemos
+      default: 'inbound'
+    },
+    
+    // Operador turístico asociado
+    tourOperator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TourOperator'
+    },
+    
+    // Localizador externo (del sistema del operador)
+    externalLocator: {
+      type: String,
+      index: true
+    },
+    
+    // RatePlanCode (específico de eJuniper y sistemas similares)
+    ratePlanCode: String,
+    
+    // Sistema de origen
+    sourceSystem: {
+      type: String,
+      enum: ['ejuniper', 'amadeus', 'sabre', 'hotelbeds', 'manual', 'other']
+    },
+    
+    // Comisión
+    commission: {
+      type: { type: String, enum: ['percentage', 'fixed', 'none'], default: 'percentage' },
+      value: { type: Number, default: 0 },
+      amount: Number, // Monto calculado de comisión
+      currency: { type: String, default: 'USD' }
+    },
+    
+    // Precios detallados
+    pricing: {
+      netPrice: Number, // Precio neto (sin comisión)
+      grossPrice: Number, // Precio bruto (con comisión)
+      costPrice: Number, // Precio de costo (lo que pagamos al proveedor)
+      sellingPrice: Number, // Precio de venta (lo que cobra el cliente)
+      margin: Number, // Margen de ganancia
+      taxes: Number,
+      currency: { type: String, default: 'USD' }
+    },
+    
+    // Estado de sincronización
+    syncStatus: {
+      lastSync: Date,
+      syncErrors: Number,
+      lastError: String,
+      needsSync: { type: Boolean, default: false }
+    },
+    
+    // Política de cancelación
+    cancellationPolicy: {
+      isRefundable: { type: Boolean, default: true },
+      cancellationDeadline: Date,
+      penaltyPercentage: Number,
+      penaltyAmount: Number,
+      terms: String
+    },
+    
+    // Metadatos adicionales del sistema externo
+    externalMetadata: mongoose.Schema.Types.Mixed
+  },
+  
   // Timestamps
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
@@ -91,6 +164,11 @@ const bookingSchema = new mongoose.Schema({
 bookingSchema.index({ status: 1, bookingDate: -1 });
 bookingSchema.index({ 'customer.email': 1 });
 bookingSchema.index({ startDate: 1 });
+
+// B2B indexes
+bookingSchema.index({ 'b2b.isB2B': 1, 'b2b.tourOperator': 1 });
+bookingSchema.index({ 'b2b.externalLocator': 1 });
+bookingSchema.index({ 'b2b.relationship': 1, status: 1 });
 
 // Update timestamp on save
 bookingSchema.pre('save', function(next) {

@@ -30,6 +30,26 @@ const userSchema = new mongoose.Schema({
   phone: String,
   avatar: String,
   
+  // Role-Based Access Control
+  role: {
+    type: String,
+    enum: ['system_admin', 'operator_admin', 'operator_user', 'agent', 'customer'],
+    default: 'customer',
+    index: true,
+  },
+  
+  // Organization/Tour Operator Association
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TourOperator',
+    index: true,
+  },
+  
+  // Permissions
+  permissions: [{
+    type: String,
+  }],
+  
   // Two-Factor Authentication
   twoFactorAuth: {
     enabled: {
@@ -108,6 +128,40 @@ userSchema.virtual('fullName').get(function() {
 // Methods
 userSchema.methods.isAccountLocked = function() {
   return this.accountLockedUntil && this.accountLockedUntil > Date.now();
+};
+
+userSchema.methods.hasRole = function(role) {
+  return this.role === role;
+};
+
+userSchema.methods.hasAnyRole = function(roles) {
+  return roles.includes(this.role);
+};
+
+userSchema.methods.hasPermission = function(permission) {
+  return this.permissions.includes(permission);
+};
+
+userSchema.methods.isSystemAdmin = function() {
+  return this.role === 'system_admin';
+};
+
+userSchema.methods.isOperatorAdmin = function() {
+  return this.role === 'operator_admin' || this.role === 'system_admin';
+};
+
+userSchema.methods.canManageOperator = function(operatorId) {
+  // System admins can manage any operator
+  if (this.role === 'system_admin') {
+    return true;
+  }
+  
+  // Operator admins can only manage their own operator
+  if (this.role === 'operator_admin') {
+    return this.organization && this.organization.toString() === operatorId.toString();
+  }
+  
+  return false;
 };
 
 userSchema.methods.incrementFailedLoginAttempts = async function() {

@@ -116,6 +116,47 @@ class WebSocketService {
       }
     });
   }
+
+  // Get WebSocket statistics
+  getStats() {
+    const connectedUsers = this.clients.size;
+    const activeRooms = this.rooms.size;
+    
+    // Count trip and workspace rooms
+    let activeTripRooms = 0;
+    let activeWorkspaceRooms = 0;
+    
+    this.rooms.forEach((users, roomId) => {
+      if (roomId.startsWith('trip_')) {
+        activeTripRooms++;
+      } else if (roomId.startsWith('workspace_')) {
+        activeWorkspaceRooms++;
+      }
+    });
+
+    return {
+      connected_users: connectedUsers,
+      active_rooms: activeRooms,
+      active_trip_rooms: activeTripRooms,
+      active_workspace_rooms: activeWorkspaceRooms,
+      total_rooms: this.rooms.size
+    };
+  }
+
+  // Get connection status
+  isConnected() {
+    return this.wss !== null;
+  }
+
+  // Close all connections
+  closeAll() {
+    this.clients.forEach((ws) => {
+      ws.close();
+    });
+    this.clients.clear();
+    this.rooms.clear();
+    logger.info('All WebSocket connections closed');
+  }
 }
 
 module.exports = new WebSocketService();

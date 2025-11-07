@@ -143,10 +143,12 @@
     "react-color": "^2.19.3",
     "recharts": "^3.3.0",
     "redis": "^4.6.0",
+    "soap": "^1.6.0",
     "speakeasy": "^2.0.0",
     "winston": "^3.11.0",
     "ws": "^8.14.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

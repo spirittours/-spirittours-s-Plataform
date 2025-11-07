@@ -10,10 +10,11 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const logger = require('./utils/logger');
+const portManager = require('./config/port-manager');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.DEMO_PORT || 5002;
+let PORT = process.env.DEMO_PORT || 5002;
 
 // Middleware
 app.use(cors({
@@ -694,42 +695,58 @@ app.use((req, res) => {
 // Start Demo Server
 // ============================================
 
-app.listen(PORT, () => {
-  console.log('\n' + '='.repeat(60));
-  console.log('🎭 SPIRIT TOURS CMS - DEMO SERVER');
-  console.log('='.repeat(60));
-  console.log(`✅ Demo server running on: http://localhost:${PORT}`);
-  console.log(`📊 Mode: DEMO (No MongoDB required)`);
-  console.log(`📄 Mock pages loaded: ${mockPages.length}`);
-  console.log(`🖼️  Mock media loaded: ${mockMedia.length}`);
-  console.log(`📋 Mock templates loaded: ${mockTemplates.length}`);
-  console.log('\n📍 Available Endpoints:');
-  console.log(`   GET  /health`);
-  console.log(`   GET  /api/cms/pages`);
-  console.log(`   POST /api/cms/pages`);
-  console.log(`   GET  /api/cms/pages/:id`);
-  console.log(`   PUT  /api/cms/pages/:id`);
-  console.log(`   DELETE /api/cms/pages/:id`);
-  console.log(`   GET  /api/cms/media`);
-  console.log(`   POST /api/cms/media/upload`);
-  console.log(`   GET  /api/cms/templates`);
-  console.log('\n💡 Tips:');
-  console.log('   - All data is in-memory (resets on restart)');
-  console.log('   - Perfect for frontend development and demos');
-  console.log('   - No authentication required');
-  console.log('   - Update REACT_APP_API_URL to http://localhost:' + PORT);
-  console.log('\n' + '='.repeat(60) + '\n');
-  
-  logger.info(`Demo server started on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    // Get available port dynamically
+    PORT = await portManager.getServicePort('demo');
+    
+    app.listen(PORT, () => {
+      console.log('\n' + '='.repeat(60));
+      console.log('🎭 SPIRIT TOURS CMS - DEMO SERVER');
+      console.log('='.repeat(60));
+      console.log(`✅ Demo server running on: http://localhost:${PORT}`);
+      console.log(`📊 Mode: DEMO (No MongoDB required)`);
+      console.log(`📄 Mock pages loaded: ${mockPages.length}`);
+      console.log(`🖼️  Mock media loaded: ${mockMedia.length}`);
+      console.log(`📋 Mock templates loaded: ${mockTemplates.length}`);
+      console.log('\n📍 Available Endpoints:');
+      console.log(`   GET  /health`);
+      console.log(`   GET  /api/cms/pages`);
+      console.log(`   POST /api/cms/pages`);
+      console.log(`   GET  /api/cms/pages/:id`);
+      console.log(`   PUT  /api/cms/pages/:id`);
+      console.log(`   DELETE /api/cms/pages/:id`);
+      console.log(`   GET  /api/cms/media`);
+      console.log(`   POST /api/cms/media/upload`);
+      console.log(`   GET  /api/cms/templates`);
+      console.log('\n💡 Tips:');
+      console.log('   - All data is in-memory (resets on restart)');
+      console.log('   - Perfect for frontend development and demos');
+      console.log('   - No authentication required');
+      console.log('   - Update REACT_APP_API_URL to http://localhost:' + PORT);
+      console.log('\n' + '='.repeat(60) + '\n');
+      
+      logger.info(`Demo server started on port ${PORT}`);
+    });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down demo server...');
-  process.exit(0);
-});
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      logger.info('SIGTERM received, shutting down demo server...');
+      portManager.releasePort(PORT);
+      process.exit(0);
+    });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down demo server...');
-  process.exit(0);
-});
+    process.on('SIGINT', () => {
+      logger.info('SIGINT received, shutting down demo server...');
+      portManager.releasePort(PORT);
+      process.exit(0);
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start demo server:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
