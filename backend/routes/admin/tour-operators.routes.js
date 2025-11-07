@@ -657,6 +657,68 @@ router.get('/:id/stats', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/tour-operators/:id/statistics
+ * Alias para /stats - formato esperado por frontend service
+ */
+router.get('/:id/statistics', async (req, res) => {
+  try {
+    const operator = await TourOperator.findById(req.params.id);
+    
+    if (!operator) {
+      return res.status(404).json({
+        success: false,
+        error: 'Operador no encontrado'
+      });
+    }
+    
+    // Obtener estadísticas de reservas
+    const Booking = require('../../models/Booking');
+    const bookings = await Booking.find({
+      'b2b.tourOperator': operator._id,
+      'b2b.isB2B': true
+    });
+    
+    const totalBookings = bookings.length;
+    const successfulBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length;
+    const failedBookings = bookings.filter(b => b.status === 'cancelled' || b.status === 'failed').length;
+    
+    const totalRevenue = bookings
+      .filter(b => b.b2b?.pricing?.sellingPrice)
+      .reduce((sum, b) => sum + b.b2b.pricing.sellingPrice, 0);
+    
+    const totalCommission = bookings
+      .filter(b => b.b2b?.commission?.amount)
+      .reduce((sum, b) => sum + b.b2b.commission.amount, 0);
+    
+    const averageCommission = totalBookings > 0 ? totalCommission / totalBookings : 0;
+    
+    res.json({
+      success: true,
+      data: {
+        totalBookings,
+        successfulBookings,
+        failedBookings,
+        totalRevenue,
+        averageCommission,
+        commission: {
+          total: totalCommission,
+          average: averageCommission
+        },
+        successRate: totalBookings > 0 ? (successfulBookings / totalBookings) * 100 : 0
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener estadísticas',
+      message: error.message
+    });
+  }
+});
+
 // ===== BÚSQUEDA Y RESERVAS =====
 
 /**

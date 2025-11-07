@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRBACStore } from '../../store/rbacStore';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import tourOperatorsService from '../../services/tourOperatorsService';
+import SearchInterface from './SearchInterface';
 
 // Types
 interface TourOperator {
@@ -613,12 +615,22 @@ const TourOperatorsDashboard: React.FC = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <FiSearch /> Búsqueda de Disponibilidad
-                    </h2>
-                    <p className="text-gray-600">
-                      Próximamente: interfaz de búsqueda de hoteles y paquetes
-                    </p>
+                    <SearchInterface
+                      operatorId={selectedOperator._id}
+                      operatorName={selectedOperator.name}
+                      onSearch={async (params) => {
+                        try {
+                          const results = await tourOperatorsService.searchHotels(
+                            selectedOperator._id,
+                            params
+                          );
+                          return results;
+                        } catch (error: any) {
+                          toast.error(error.response?.data?.error || 'Error en la búsqueda');
+                          return [];
+                        }
+                      }}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
