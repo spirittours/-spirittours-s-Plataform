@@ -112,8 +112,18 @@ class B2BBookingAgent extends EventEmitter {
     }
 
     // Factor 4: Destination match (15 points)
-    // TODO: Check if operator specializes in the requested destination
-    score += 10;
+    // Check if operator specializes in the requested destination
+    const destinationMatch = await this.checkDestinationSpecialization(
+      operator,
+      searchCriteria.destination
+    );
+    if (destinationMatch.isSpecialized) {
+      score += 15;
+    } else if (destinationMatch.hasExperience) {
+      score += 8;
+    } else {
+      score += 3;
+    }
 
     // Factor 5: User preferences (10 points)
     if (preferences.preferredOperators && preferences.preferredOperators.includes(operator._id.toString())) {
@@ -377,17 +387,129 @@ class B2BBookingAgent extends EventEmitter {
   }
 
   /**
+   * Check if operator specializes in destination
+   */
+  async checkDestinationSpecialization(operator, destination) {
+    try {
+      // Check destination coverage in operator profile
+      const destinationCoverage = operator.operationalDetails?.destinationCoverage || [];
+      
+      // Normalize destination for comparison
+      const normalizedDestination = destination.toLowerCase().trim();
+      
+      // Check if explicitly listed as specialized destination
+      const isSpecialized = destinationCoverage.some(dest => 
+        dest.country?.toLowerCase().includes(normalizedDestination) ||
+        dest.region?.toLowerCase().includes(normalizedDestination) ||
+        dest.city?.toLowerCase().includes(normalizedDestination)
+      );
+
+      if (isSpecialized) {
+        return { isSpecialized: true, hasExperience: true };
+      }
+
+      // Check historical bookings for this destination
+      const Booking = require('../../models/Booking');
+      const historicalBookings = await Booking.countDocuments({
+        'b2b.tourOperator': operator._id,
+        'b2b.isB2B': true,
+        'destination': { $regex: normalizedDestination, $options: 'i' },
+        'status': { $in: ['confirmed', 'completed'] }
+      });
+
+      const hasExperience = historicalBookings >= 5;
+
+      return {
+        isSpecialized: false,
+        hasExperience,
+        bookingsCount: historicalBookings
+      };
+    } catch (error) {
+      console.error('Error checking destination specialization:', error);
+      return { isSpecialized: false, hasExperience: false };
+    }
+  }
+
+  /**
    * Get agent analytics
    */
   async getAnalytics(startDate, endDate) {
     try {
-      // TODO: Implement analytics queries
+      const Booking = require('../../models/Booking');
+      
+      // Build date filter
+      const dateFilter = {};
+      if (startDate || endDate) {
+        dateFilter.createdAt = {};
+        if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+        if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
+      }
+
+      // Query bookings
+      const bookings = await Booking.find({
+        'b2b.isB2B': true,
+        ...dateFilter
+      }).populate('b2b.tourOperator');
+
+      // Calculate metrics
+      const totalBookings = bookings.length;
+      const successfulBookings = bookings.filter(b => 
+        b.status === 'confirmed' || b.status === 'completed'
+      ).length;
+      const successRate = totalBookings > 0 
+        ? (successfulBookings / totalBookings) * 100 
+        : 0;
+
+      // Calculate average response time
+      const responseTimes = bookings
+        .filter(b => b.b2b?.processingTime)
+        .map(b => b.b2b.processingTime);
+      const averageResponseTime = responseTimes.length > 0
+        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+        : 0;
+
+      // Calculate top operators by booking count
+      const operatorStats = {};
+      bookings.forEach(booking => {
+        const operatorId = booking.b2b?.tourOperator?._id?.toString();
+        if (operatorId) {
+          if (!operatorStats[operatorId]) {
+            operatorStats[operatorId] = {
+              operator: booking.b2b.tourOperator,
+              bookings: 0,
+              revenue: 0,
+              commission: 0
+            };
+          }
+          operatorStats[operatorId].bookings++;
+          operatorStats[operatorId].revenue += booking.b2b?.pricing?.sellingPrice || 0;
+          operatorStats[operatorId].commission += booking.b2b?.commission?.amount || 0;
+        }
+      });
+
+      const topOperators = Object.values(operatorStats)
+        .sort((a, b) => b.bookings - a.bookings)
+        .slice(0, 10)
+        .map(stat => ({
+          operatorId: stat.operator._id,
+          operatorName: stat.operator.name,
+          bookings: stat.bookings,
+          revenue: stat.revenue,
+          commission: stat.commission
+        }));
+
+      // Calculate total commission
+      const commissionGenerated = bookings
+        .filter(b => b.b2b?.commission?.amount)
+        .reduce((sum, b) => sum + b.b2b.commission.amount, 0);
+
       return {
-        totalBookings: 0,
-        successRate: 0,
-        averageResponseTime: 0,
-        topOperators: [],
-        commissionGenerated: 0
+        totalBookings,
+        successRate: Math.round(successRate * 100) / 100,
+        averageResponseTime: Math.round(averageResponseTime),
+        topOperators,
+        commissionGenerated: Math.round(commissionGenerated * 100) / 100,
+        period: { startDate, endDate }
       };
     } catch (error) {
       console.error('❌ B2B Agent: Error getting analytics:', error);

@@ -193,8 +193,13 @@ class OperatorRecommendationAgent extends EventEmitter {
       else if (commission.value >= 5) score += 10;
     }
 
-    // Price competitiveness (would need market data)
-    // TODO: Compare with market average
+    // Price competitiveness (compare with market average)
+    const marketComparison = await this.compareWithMarketAverage(operator, criteria);
+    if (marketComparison.isCompetitive) {
+      score += 10; // Competitive pricing
+    } else if (marketComparison.isPremium) {
+      score += 5; // Premium but justified
+    }
 
     return Math.max(0, Math.min(100, score));
   }
@@ -203,9 +208,48 @@ class OperatorRecommendationAgent extends EventEmitter {
    * Calculate destination coverage score
    */
   async calculateCoverageScore(operator, criteria) {
-    // TODO: Implement destination coverage analysis
-    // For now, return base score
-    return 70;
+    let score = 0;
+
+    // Check if destination is specified in criteria
+    if (!criteria.destination) return 70; // Base score if no destination specified
+
+    const destinationCoverage = operator.operationalDetails?.destinationCoverage || [];
+    const normalizedDestination = criteria.destination.toLowerCase().trim();
+
+    // Check explicit coverage
+    const hasCoverage = destinationCoverage.some(dest => {
+      const country = dest.country?.toLowerCase() || '';
+      const region = dest.region?.toLowerCase() || '';
+      const city = dest.city?.toLowerCase() || '';
+      
+      return country.includes(normalizedDestination) ||
+             region.includes(normalizedDestination) ||
+             city.includes(normalizedDestination) ||
+             normalizedDestination.includes(country) ||
+             normalizedDestination.includes(region) ||
+             normalizedDestination.includes(city);
+    });
+
+    if (hasCoverage) {
+      score = 100; // Perfect match
+    } else {
+      // Check historical bookings for this destination
+      const Booking = require('../../models/Booking');
+      const bookingsInDestination = await Booking.countDocuments({
+        'b2b.tourOperator': operator._id,
+        'b2b.isB2B': true,
+        'destination': { $regex: normalizedDestination, $options: 'i' },
+        'status': { $in: ['confirmed', 'completed'] }
+      });
+
+      if (bookingsInDestination >= 20) score = 90; // Extensive experience
+      else if (bookingsInDestination >= 10) score = 75; // Good experience
+      else if (bookingsInDestination >= 5) score = 60; // Some experience
+      else if (bookingsInDestination >= 1) score = 40; // Minimal experience
+      else score = 20; // No experience
+    }
+
+    return score;
   }
 
   /**
@@ -411,11 +455,87 @@ class OperatorRecommendationAgent extends EventEmitter {
   }
 
   /**
+   * Compare pricing with market average
+   */
+  async compareWithMarketAverage(operator, criteria) {
+    try {
+      const Booking = require('../../models/Booking');
+      
+      // Get recent bookings for similar criteria
+      const recentBookings = await Booking.find({
+        'b2b.isB2B': true,
+        'status': { $in: ['confirmed', 'completed'] },
+        'createdAt': { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
+      }).limit(100);
+
+      if (recentBookings.length < 10) {
+        return { isCompetitive: true, isPremium: false, insufficient: true };
+      }
+
+      // Calculate market average price
+      const prices = recentBookings
+        .filter(b => b.b2b?.pricing?.sellingPrice)
+        .map(b => b.b2b.pricing.sellingPrice);
+      
+      if (prices.length === 0) {
+        return { isCompetitive: true, isPremium: false, insufficient: true };
+      }
+
+      const marketAverage = prices.reduce((sum, p) => sum + p, 0) / prices.length;
+
+      // Get operator's recent bookings
+      const operatorBookings = recentBookings.filter(b => 
+        b.b2b?.tourOperator?.toString() === operator._id.toString()
+      );
+
+      if (operatorBookings.length === 0) {
+        return { isCompetitive: true, isPremium: false, noData: true };
+      }
+
+      const operatorPrices = operatorBookings
+        .filter(b => b.b2b?.pricing?.sellingPrice)
+        .map(b => b.b2b.pricing.sellingPrice);
+
+      const operatorAverage = operatorPrices.reduce((sum, p) => sum + p, 0) / operatorPrices.length;
+
+      // Compare: competitive if within 10% above market average
+      const isCompetitive = operatorAverage <= marketAverage * 1.10;
+      const isPremium = operatorAverage > marketAverage * 1.10 && operatorAverage <= marketAverage * 1.25;
+
+      return {
+        isCompetitive,
+        isPremium,
+        marketAverage: Math.round(marketAverage * 100) / 100,
+        operatorAverage: Math.round(operatorAverage * 100) / 100,
+        difference: Math.round((operatorAverage - marketAverage) * 100) / 100,
+        differencePercent: Math.round(((operatorAverage - marketAverage) / marketAverage) * 100 * 100) / 100
+      };
+    } catch (error) {
+      console.error('Error comparing with market average:', error);
+      return { isCompetitive: true, isPremium: false, error: true };
+    }
+  }
+
+  /**
    * Calculate average response time
    */
   calculateAverageResponseTime(bookings) {
-    // TODO: Implement based on actual booking timestamps
-    return 0;
+    // Calculate based on actual booking timestamps
+    const responseTimes = bookings
+      .filter(b => {
+        // Must have both creation timestamp and confirmation timestamp
+        return b.createdAt && b.b2b?.confirmedAt;
+      })
+      .map(b => {
+        const created = new Date(b.createdAt);
+        const confirmed = new Date(b.b2b.confirmedAt);
+        return confirmed - created; // Milliseconds
+      });
+
+    if (responseTimes.length === 0) return 0;
+
+    const avgMs = responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length;
+    return Math.round(avgMs); // Return in milliseconds
   }
 
   /**

@@ -24,6 +24,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import tourOperatorsService from '../../services/tourOperatorsService';
 import SearchInterface from './SearchInterface';
+import CreateOperatorModal from './CreateOperatorModal';
 
 // Types
 interface TourOperator {
@@ -98,6 +99,7 @@ const TourOperatorsDashboard: React.FC = () => {
   const [credentials, setCredentials] = useState<any>(null);
   const [editingCredentials, setEditingCredentials] = useState(false);
   const [newCredentials, setNewCredentials] = useState<any>({});
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Role-based permissions
   const isSystemAdmin = user?.role === 'system_admin';
@@ -244,7 +246,7 @@ const TourOperatorsDashboard: React.FC = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold flex items-center gap-2 shadow-lg hover:bg-blue-700"
-                onClick={() => {/* Crear nuevo operador */}}
+                onClick={() => setShowCreateModal(true)}
               >
                 <FiPlus /> Nuevo Operador
               </motion.button>
@@ -645,6 +647,16 @@ const TourOperatorsDashboard: React.FC = () => {
           )}
         </motion.div>
       </div>
+
+      {/* Create Operator Modal */}
+      <CreateOperatorModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          loadOperators();
+          setShowCreateModal(false);
+        }}
+      />
     </div>
   );
 };
