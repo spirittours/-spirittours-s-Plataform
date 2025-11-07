@@ -170,6 +170,9 @@ const CRMDashboard: React.FC = () => {
     { id: 'financial-reports', name: 'Reportes Financieros', description: 'Ingresos, gastos y rentabilidad', icon: <FiCreditCard />, permission: 'financial_reports:read:report', path: '/crm/financial-reports', category: 'analytics' },
     { id: 'data-export', name: 'Exportación Datos', description: 'Exportar datos en varios formatos', icon: <FiDownload />, permission: 'data_export:execute:export', path: '/crm/data-export', category: 'analytics' },
 
+    // B2B Tour Operators
+    { id: 'b2b-operators', name: 'Operadores Turísticos B2B', description: 'Gestión de operadores e integraciones', icon: <FiGlobe />, permission: 'tour_operators:read:own', path: '/crm/b2b/operators', category: 'business' },
+    
     // Administración del Sistema
     { id: 'user-management', name: 'Gestión Usuarios', description: 'Administrar usuarios y permisos', icon: <FiUsers />, permission: 'user_management:read:user', path: '/crm/user-management', category: 'admin' },
     { id: 'system-config', name: 'Configuración Sistema', description: 'Ajustes generales del sistema', icon: <FiSettings />, permission: 'system_configuration:read:config', path: '/crm/system-config', category: 'admin' },

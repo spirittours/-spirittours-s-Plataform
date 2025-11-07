@@ -32,6 +32,9 @@ import {
   preloadRoleBasedRoutes,
 } from './routes/lazyRoutes';
 
+// B2B Components
+import TourOperatorsDashboard from './components/B2B/TourOperatorsDashboard';
+
 // Suspense wrapper
 import { SuspenseWrapper } from './components/Suspense/SuspenseWrapper';
 
@@ -288,6 +291,16 @@ const App: React.FC = () => {
                         <WorkspaceSettings workspaceId="" />
                       </SuspenseWrapper>
                     </AdminGate>
+                  } 
+                />
+                
+                {/* B2B Tour Operators Route */}
+                <Route 
+                  path="/crm/b2b/operators" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <TourOperatorsDashboard />
+                    </SuspenseWrapper>
                   } 
                 />
                 
