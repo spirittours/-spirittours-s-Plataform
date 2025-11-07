@@ -12,7 +12,7 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install build dependencies
+# Install build dependencies for native modules
 RUN apk add --no-cache \
     python3 \
     make \
@@ -21,26 +21,26 @@ RUN apk add --no-cache \
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && \
+# Install ALL dependencies (not just production) for the build
+RUN npm install --legacy-peer-deps && \
     npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build arguments
-ARG VITE_API_URL
-ARG VITE_WS_URL
-ARG VITE_ENVIRONMENT=production
+# Build arguments for Create React App
+ARG REACT_APP_API_URL
+ARG REACT_APP_WS_URL
+ARG REACT_APP_ENVIRONMENT=production
 
-# Set environment variables
+# Set environment variables for Create React App build
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_WS_URL=$VITE_WS_URL
-ENV VITE_ENVIRONMENT=$VITE_ENVIRONMENT
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_WS_URL=$REACT_APP_WS_URL
+ENV REACT_APP_ENVIRONMENT=$REACT_APP_ENVIRONMENT
 
-# Build application
+# Build application using react-scripts
 RUN npm run build
 
 # ============================================
@@ -51,8 +51,7 @@ FROM nginx:alpine AS production
 # Install curl for healthchecks
 RUN apk add --no-cache curl
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy custom nginx configuration files
 COPY default.conf /etc/nginx/conf.d/default.conf
 
 # Copy build artifacts from builder
