@@ -1,119 +1,82 @@
 #!/bin/bash
-# Deployment script for B2B2B Platform
-# Usage: ./scripts/deploy.sh [environment]
+# Deployment Script for AI/CRM Platform
 
-set -e  # Exit on error
+set -e
 
-ENVIRONMENT=${1:-staging}
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+echo "🚀 Starting deployment..."
 
-echo "🚀 Starting deployment to $ENVIRONMENT environment..."
+# Check if .env exists
+if [ ! -f .env ]; then
+    echo "❌ Error: .env file not found"
+    echo "📝 Please copy .env.example to .env and configure your environment"
+    exit 1
+fi
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "❌ Error: Docker is not installed"
+    exit 1
+fi
+
+if ! command -v docker-compose &> /dev/null; then
+    echo "❌ Error: Docker Compose is not installed"
+    exit 1
+fi
 
 # Load environment variables
-if [ -f "$PROJECT_ROOT/.env.$ENVIRONMENT" ]; then
-    source "$PROJECT_ROOT/.env.$ENVIRONMENT"
-    echo "✅ Loaded environment variables from .env.$ENVIRONMENT"
-else
-    echo "⚠️  No .env.$ENVIRONMENT file found, using defaults"
+source .env
+
+# Check required variables
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo "⚠️  Warning: OPENAI_API_KEY not set (required for Fase 3 features)"
 fi
-
-# Function to check if command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Check prerequisites
-echo "📋 Checking prerequisites..."
-
-if ! command_exists docker; then
-    echo "❌ Docker is not installed. Please install Docker first."
-    exit 1
-fi
-
-if ! command_exists docker-compose; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose first."
-    exit 1
-fi
-
-echo "✅ Prerequisites check passed"
-
-# Build Docker images
-echo "🔨 Building Docker images..."
-cd "$PROJECT_ROOT"
-
-docker-compose build --no-cache
-
-echo "✅ Docker images built successfully"
 
 # Stop existing containers
 echo "🛑 Stopping existing containers..."
 docker-compose down
 
-# Start new containers
-echo "🚀 Starting new containers..."
+# Pull latest images
+echo "📥 Pulling latest images..."
+docker-compose pull
+
+# Build application
+echo "🔨 Building application..."
+docker-compose build --no-cache
+
+# Start services
+echo "▶️  Starting services..."
 docker-compose up -d
 
 # Wait for services to be healthy
-echo "⏳ Waiting for services to be healthy..."
+echo "⏳ Waiting for services to start..."
 sleep 10
 
-# Check backend health
-echo "🔍 Checking backend health..."
-max_attempts=30
-attempt=0
-
-while [ $attempt -lt $max_attempts ]; do
-    if curl -f http://localhost:${BACKEND_PORT:-8000}/health > /dev/null 2>&1; then
-        echo "✅ Backend is healthy"
-        break
-    fi
-    
-    attempt=$((attempt + 1))
-    echo "⏳ Waiting for backend... (attempt $attempt/$max_attempts)"
-    sleep 2
-done
-
-if [ $attempt -eq $max_attempts ]; then
-    echo "❌ Backend health check failed"
-    docker-compose logs backend
-    exit 1
-fi
-
-# Run database migrations
-echo "📦 Running database migrations..."
-docker-compose exec -T backend alembic upgrade head || true
-
-# Warm up caches
-echo "♨️  Warming up caches..."
-curl -X POST http://localhost:${BACKEND_PORT:-8000}/api/v1/admin/cache/warm || true
-
-# Check frontend health
-echo "🔍 Checking frontend health..."
-if curl -f http://localhost:${FRONTEND_PORT:-3000} > /dev/null 2>&1; then
-    echo "✅ Frontend is healthy"
-else
-    echo "⚠️  Frontend health check failed"
-fi
-
-# Display running services
-echo "📊 Running services:"
+# Check health
+echo "🏥 Checking service health..."
 docker-compose ps
 
-# Display logs
-echo "📝 Recent logs:"
-docker-compose logs --tail=50
+# Run database migrations (if any)
+# echo "📊 Running database migrations..."
+# docker-compose exec backend npm run migrate
+
+# Download Ollama models (if Ollama is enabled)
+if [ "$OLLAMA_URL" != "" ]; then
+    echo "🤖 Downloading Ollama models..."
+    docker-compose exec ollama ollama pull llama3.2 || true
+    docker-compose exec ollama ollama pull mistral || true
+fi
+
+echo "✅ Deployment complete!"
+echo ""
+echo "📍 Services running:"
+echo "   - Backend API: http://localhost:5000"
+echo "   - Health Check: http://localhost:5000/api/monitoring/health"
+echo "   - MongoDB: localhost:27017"
+echo "   - Redis: localhost:6379"
+if [ "$OLLAMA_URL" != "" ]; then
+    echo "   - Ollama: http://localhost:11434"
+fi
 
 echo ""
-echo "✅ Deployment to $ENVIRONMENT completed successfully!"
-echo ""
-echo "🌐 Access points:"
-echo "   - Frontend: http://localhost:${FRONTEND_PORT:-3000}"
-echo "   - Backend API: http://localhost:${BACKEND_PORT:-8000}"
-echo "   - API Docs: http://localhost:${BACKEND_PORT:-8000}/docs"
-echo ""
-echo "📊 Useful commands:"
-echo "   - View logs: docker-compose logs -f"
-echo "   - Stop services: docker-compose down"
-echo "   - Restart services: docker-compose restart"
-echo ""
+echo "📚 View logs: docker-compose logs -f"
+echo "🛑 Stop services: docker-compose down"

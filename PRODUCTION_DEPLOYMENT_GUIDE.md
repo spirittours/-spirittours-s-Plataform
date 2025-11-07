@@ -1,784 +1,557 @@
-# 🚀 Production Deployment Guide - Spirit Tours Frontend
-
-## 📋 Tabla de Contenidos
-
-1. [Pre-requisitos](#pre-requisitos)
-2. [Configuración de Entorno](#configuración-de-entorno)
-3. [Build para Producción](#build-para-producción)
-4. [Opciones de Deployment](#opciones-de-deployment)
-5. [Optimizaciones](#optimizaciones)
-6. [Monitoreo](#monitoreo)
-7. [Rollback](#rollback)
-8. [Troubleshooting](#troubleshooting)
+# 🚀 GUÍA DE DESPLIEGUE EN PRODUCCIÓN
+## Spirit Tours Platform - Paso a Paso
 
 ---
 
-## ✅ Pre-requisitos
+## 📋 PRE-REQUISITOS
 
-### Software Requerido
+### Servidores Requeridos
+```
+1. Servidor de Aplicación (Backend + Frontend)
+   - CPU: 4 cores
+   - RAM: 8 GB
+   - Disco: 100 GB SSD
+   - SO: Ubuntu 22.04 LTS
 
-- **Node.js**: v18.x o superior
-- **npm**: v9.x o superior
-- **Git**: Para control de versiones
+2. Servidor de Base de Datos (MongoDB)
+   - CPU: 2 cores
+   - RAM: 4 GB
+   - Disco: 50 GB SSD
+   - SO: Ubuntu 22.04 LTS
 
-### Verificación del Sistema
-
-```bash
-# Verificar versiones
-node --version  # debe ser >= 18.x
-npm --version   # debe ser >= 9.x
-git --version
-
-# Verificar que el proyecto se puede construir localmente
-cd /home/user/webapp/frontend
-npm install
-npm run build
+3. Servidor de Cache (Redis)
+   - CPU: 2 cores
+   - RAM: 4 GB
+   - Disco: 20 GB SSD
+   - SO: Ubuntu 22.04 LTS
 ```
 
-### Dependencias del Proyecto
-
-Todas las dependencias están definidas en `package.json`:
-
-- **React**: 19.1.1
-- **TypeScript**: 4.9.5
-- **Material-UI**: 7.3.4
-- **Axios**: 1.12.2
-- **Recharts**: 2.12.1
-- **React Router**: 7.9.1
+### Dominios y DNS
+```
+✅ spirittours.us configurado
+✅ Certificado SSL/TLS activo
+✅ DNS records configurados (MX, SPF, DKIM, DMARC)
+```
 
 ---
 
-## 🔧 Configuración de Entorno
+## 🔧 OPCIÓN 1: DESPLIEGUE CON DOCKER (RECOMENDADO)
 
-### 1. Variables de Entorno
-
-Crear archivo `.env.production` en `frontend/`:
-
+### Paso 1: Preparar Servidor
 ```bash
-# API Configuration
-VITE_API_URL=https://api.spirittours.com/api
-VITE_WS_URL=wss://api.spirittours.com/ws
+# Actualizar sistema
+sudo apt update && sudo apt upgrade -y
 
-# Stripe Configuration (Production)
-VITE_STRIPE_PUBLIC_KEY=pk_live_...
+# Instalar Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
 
-# PayPal Configuration (Production)
-VITE_PAYPAL_CLIENT_ID=...
+# Instalar Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
 
-# Feature Flags
-VITE_ENABLE_AI_AGENTS=true
-VITE_ENABLE_ANALYTICS=true
-VITE_ENABLE_PORTALS=true
-VITE_ENABLE_PAYMENTS=true
-VITE_ENABLE_FILES=true
-VITE_ENABLE_NOTIFICATIONS=true
-
-# Analytics (opcional)
-VITE_GOOGLE_ANALYTICS_ID=G-...
-VITE_SENTRY_DSN=https://...
-
-# Build Configuration
-VITE_APP_VERSION=2.0.0
-VITE_BUILD_DATE=$(date +%Y-%m-%d)
+# Verificar instalación
+docker --version
+docker-compose --version
 ```
 
-### 2. Configuración de CORS en Backend
+### Paso 2: Clonar Repositorio
+```bash
+# Crear directorio para la aplicación
+sudo mkdir -p /var/www/spirittours
+cd /var/www/spirittours
 
-Asegurarse de que el backend permita el dominio de producción:
+# Clonar desde Git
+git clone https://github.com/your-org/spirit-tours.git .
 
-```python
-# backend/config.py
-allowed_origins = [
-    "https://spirittours.com",
-    "https://www.spirittours.com",
-    "https://app.spirittours.com"
-]
+# O subir archivos via SCP/SFTP
 ```
 
-### 3. Configuración de Proxy (si aplica)
+### Paso 3: Configurar Variables de Entorno
+```bash
+# Copiar template seguro
+cp .env.secure .env
 
-Si se usa Nginx como proxy inverso:
+# Editar con credenciales reales
+sudo nano .env
+
+# Cambiar:
+# - MONGODB_URI (URI de MongoDB en producción)
+# - REDIS_PASSWORD (password de Redis)
+# - JWT_SECRET (secreto único de producción)
+# - SMTP_PASSWORD (App password de Google)
+# - API keys reales (OpenAI, SendGrid, etc.)
+```
+
+### Paso 4: Construir y Ejecutar
+```bash
+# Construir imágenes Docker
+docker-compose build
+
+# Iniciar servicios
+docker-compose up -d
+
+# Verificar estado
+docker-compose ps
+
+# Ver logs
+docker-compose logs -f
+```
+
+### Paso 5: Configurar Nginx (Reverse Proxy)
+```bash
+# Instalar Nginx
+sudo apt install nginx -y
+
+# Crear configuración
+sudo nano /etc/nginx/sites-available/spirittours
+```
 
 ```nginx
-# /etc/nginx/sites-available/spirittours
 server {
     listen 80;
-    server_name spirittours.com www.spirittours.com;
+    server_name spirittours.us www.spirittours.us;
+    
+    # Redirect to HTTPS
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name spirittours.com www.spirittours.com;
+    server_name spirittours.us www.spirittours.us;
 
-    ssl_certificate /etc/letsencrypt/live/spirittours.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/spirittours.com/privkey.pem;
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/spirittours.us/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/spirittours.us/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
 
-    root /var/www/spirittours/build;
-    index index.html;
-
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 10240;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml+rss;
-
-    # Frontend static files
+    # Frontend
     location / {
-        try_files $uri $uri/ /index.html;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
     }
 
-    # API proxy
+    # Backend API
     location /api {
-        proxy_pass http://localhost:8000/api;
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # WebSocket proxy
+    # WebSocket
     location /ws {
-        proxy_pass http://localhost:8000/ws;
+        proxy_pass http://localhost:5001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection "Upgrade";
         proxy_set_header Host $host;
     }
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:;" always;
 }
 ```
 
----
-
-## 🏗️ Build para Producción
-
-### Paso 1: Preparar el Entorno
-
 ```bash
-cd /home/user/webapp/frontend
-
-# Limpiar builds anteriores
-rm -rf build/
-rm -rf node_modules/
-
-# Instalar dependencias limpias
-npm ci  # usa package-lock.json exacto
-```
-
-### Paso 2: Ejecutar Build
-
-```bash
-# Build optimizado para producción
-npm run build
-
-# Output esperado:
-# ✓ Creating an optimized production build...
-# ✓ Compiled successfully!
-# 
-# File sizes after gzip:
-#   XX.XX KB  build/static/js/main.xxxxxxxx.js
-#   XX.XX KB  build/static/css/main.xxxxxxxx.css
-```
-
-### Paso 3: Verificar Build
-
-```bash
-# Verificar estructura de archivos
-ls -la build/
-
-# Debe contener:
-# - index.html
-# - asset-manifest.json
-# - static/js/
-# - static/css/
-# - static/media/
-
-# Probar build localmente
-npx serve -s build -p 3000
-
-# Abrir http://localhost:3000 y verificar funcionamiento
-```
-
-### Paso 4: Análisis del Bundle (opcional)
-
-```bash
-# Instalar herramienta de análisis
-npm install --save-dev source-map-explorer
-
-# Agregar script a package.json
-"scripts": {
-  "analyze": "source-map-explorer 'build/static/js/*.js'"
-}
-
-# Ejecutar análisis
-npm run analyze
-```
-
----
-
-## 🌐 Opciones de Deployment
-
-### Opción 1: Vercel (Recomendado para Frontend)
-
-#### A. Deployment desde CLI
-
-```bash
-# Instalar Vercel CLI
-npm install -g vercel
-
-# Login
-vercel login
-
-# Deploy
-cd frontend/
-vercel --prod
-
-# Configurar variables de entorno en Vercel Dashboard
-# https://vercel.com/spirittours/settings/environment-variables
-```
-
-#### B. Deployment desde GitHub
-
-1. Conectar repositorio en Vercel Dashboard
-2. Configurar build settings:
-   - Framework Preset: Create React App
-   - Build Command: `npm run build`
-   - Output Directory: `build`
-   - Root Directory: `frontend`
-3. Agregar variables de entorno
-4. Deploy automático en cada push a `main`
-
-**Ventajas**:
-- ✅ CDN global automático
-- ✅ HTTPS automático
-- ✅ Zero-config
-- ✅ Rollback fácil
-
----
-
-### Opción 2: Netlify
-
-#### A. Deployment desde CLI
-
-```bash
-# Instalar Netlify CLI
-npm install -g netlify-cli
-
-# Login
-netlify login
-
-# Inicializar
-cd frontend/
-netlify init
-
-# Deploy
-netlify deploy --prod
-```
-
-#### B. Configuración netlify.toml
-
-```toml
-[build]
-  command = "npm run build"
-  publish = "build"
-  base = "frontend"
-
-[build.environment]
-  NODE_VERSION = "18"
-
-[[redirects]]
-  from = "/api/*"
-  to = "https://api.spirittours.com/api/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "SAMEORIGIN"
-    X-Content-Type-Options = "nosniff"
-    X-XSS-Protection = "1; mode=block"
-    Referrer-Policy = "no-referrer-when-downgrade"
-
-[[headers]]
-  for = "/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-```
-
-**Ventajas**:
-- ✅ CDN global
-- ✅ HTTPS automático
-- ✅ Forms y Functions integrados
-- ✅ Split testing A/B
-
----
-
-### Opción 3: AWS S3 + CloudFront
-
-#### Paso 1: Crear S3 Bucket
-
-```bash
-# Crear bucket
-aws s3 mb s3://spirittours-frontend
-
-# Configurar como website
-aws s3 website s3://spirittours-frontend \
-  --index-document index.html \
-  --error-document index.html
-
-# Configurar política de acceso público
-aws s3api put-bucket-policy \
-  --bucket spirittours-frontend \
-  --policy file://bucket-policy.json
-```
-
-`bucket-policy.json`:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "PublicReadGetObject",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::spirittours-frontend/*"
-    }
-  ]
-}
-```
-
-#### Paso 2: Upload Build
-
-```bash
-# Build
-npm run build
-
-# Sync to S3
-aws s3 sync build/ s3://spirittours-frontend \
-  --delete \
-  --cache-control "max-age=31536000" \
-  --exclude "index.html" \
-  --exclude "asset-manifest.json"
-
-# Upload index.html sin cache
-aws s3 cp build/index.html s3://spirittours-frontend/index.html \
-  --cache-control "max-age=0, no-cache, no-store, must-revalidate"
-```
-
-#### Paso 3: CloudFront Distribution
-
-1. Crear CloudFront distribution
-2. Origin: S3 bucket
-3. Default Root Object: `index.html`
-4. Error Pages: 403, 404 → `/index.html` (200)
-5. SSL Certificate: Request from ACM
-
-**Ventajas**:
-- ✅ Control total
-- ✅ CDN global
-- ✅ Escalabilidad ilimitada
-- ✅ Bajo costo
-
----
-
-### Opción 4: Docker + Kubernetes
-
-#### Dockerfile
-
-```dockerfile
-# frontend/Dockerfile
-FROM node:18-alpine AS build
-
-WORKDIR /app
-
-# Install dependencies
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Build
-COPY . .
-RUN npm run build
-
-# Production stage con nginx
-FROM nginx:alpine
-
-# Copy build
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-#### nginx.conf
-
-```nginx
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /static {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-}
-```
-
-#### Build y Deploy
-
-```bash
-# Build image
-docker build -t spirittours-frontend:latest .
-
-# Test locally
-docker run -p 8080:80 spirittours-frontend:latest
-
-# Push to registry
-docker tag spirittours-frontend:latest registry.example.com/spirittours-frontend:latest
-docker push registry.example.com/spirittours-frontend:latest
-
-# Deploy to Kubernetes
-kubectl apply -f k8s-deployment.yaml
-```
-
----
-
-### Opción 5: VPS Tradicional (DigitalOcean, Linode)
-
-```bash
-# SSH al servidor
-ssh user@server-ip
-
-# Instalar dependencias
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs nginx certbot python3-certbot-nginx
-
-# Clonar repositorio
-git clone https://github.com/spirittours/-spirittours-s-Plataform.git
-cd -spirittours-s-Plataform/frontend
-
-# Build
-npm ci
-npm run build
-
-# Mover build a nginx
-sudo mkdir -p /var/www/spirittours
-sudo cp -r build/* /var/www/spirittours/
-
-# Configurar nginx (ver sección anterior)
-sudo nano /etc/nginx/sites-available/spirittours
+# Activar configuración
 sudo ln -s /etc/nginx/sites-available/spirittours /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
+```
 
-# SSL con Let's Encrypt
-sudo certbot --nginx -d spirittours.com -d www.spirittours.com
+### Paso 6: Configurar SSL con Let's Encrypt
+```bash
+# Instalar Certbot
+sudo apt install certbot python3-certbot-nginx -y
+
+# Obtener certificado
+sudo certbot --nginx -d spirittours.us -d www.spirittours.us
+
+# Renovación automática
+sudo certbot renew --dry-run
 ```
 
 ---
 
-## ⚡ Optimizaciones
+## 💻 OPCIÓN 2: DESPLIEGUE MANUAL (SIN DOCKER)
 
-### 1. Code Splitting
-
-El proyecto ya usa React.lazy() para code splitting. Verificar con:
-
+### Paso 1: Instalar Dependencias
 ```bash
+# Node.js 20.x
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# MongoDB
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt update
+sudo apt install -y mongodb-org
+
+# Redis
+sudo apt install redis-server -y
+
+# Python (para scripts)
+sudo apt install python3 python3-pip -y
+```
+
+### Paso 2: Configurar MongoDB
+```bash
+# Editar configuración
+sudo nano /etc/mongod.conf
+
+# Cambiar:
+# security:
+#   authorization: enabled
+
+# Iniciar MongoDB
+sudo systemctl start mongod
+sudo systemctl enable mongod
+
+# Crear usuario admin
+mongosh
+use admin
+db.createUser({
+  user: "admin",
+  pwd: "SpiritTours_DB_Prod_2025_Secure",
+  roles: ["root"]
+})
+exit
+
+# Reiniciar con autenticación
+sudo systemctl restart mongod
+```
+
+### Paso 3: Configurar Redis
+```bash
+# Editar configuración
+sudo nano /etc/redis/redis.conf
+
+# Cambiar:
+# requirepass SpiritTours_Redis_Prod_2025
+
+# Reiniciar
+sudo systemctl restart redis
+sudo systemctl enable redis
+```
+
+### Paso 4: Desplegar Aplicación
+```bash
+# Clonar repositorio
+cd /var/www
+git clone https://github.com/your-org/spirit-tours.git spirittours
+cd spirittours
+
+# Instalar dependencias
+npm install
+
+# Configurar .env
+cp .env.secure .env
+nano .env
+
+# Ejecutar optimización de DB
+node scripts/optimize-mongodb.js
+
+# Construir frontend
+cd frontend
+npm install
 npm run build
-# Verificar múltiples chunks en build/static/js/
+cd ..
 ```
 
-### 2. Image Optimization
+### Paso 5: Configurar PM2
+```bash
+# Instalar PM2
+sudo npm install -g pm2
+
+# Crear archivo ecosystem
+nano ecosystem.config.js
+```
+
+```javascript
+module.exports = {
+  apps: [
+    {
+      name: 'spirit-tours-backend',
+      script: 'backend/server.js',
+      instances: 4,
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 5000
+      }
+    },
+    {
+      name: 'spirit-tours-frontend',
+      script: 'npm',
+      args: 'start',
+      cwd: './frontend',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      }
+    }
+  ]
+};
+```
 
 ```bash
-# Instalar herramienta
-npm install --save-dev imagemin imagemin-webp
+# Iniciar aplicación
+pm2 start ecosystem.config.js
 
-# Script para optimizar imágenes
-node scripts/optimize-images.js
-```
+# Configurar inicio automático
+pm2 startup
+pm2 save
 
-### 3. Service Worker (PWA)
+# Ver logs
+pm2 logs
 
-El proyecto incluye service worker. Para habilitarlo en producción:
-
-```typescript
-// frontend/src/index.tsx
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
-
-serviceWorkerRegistration.register();
-```
-
-### 4. Bundle Optimization
-
-```json
-// frontend/package.json
-"scripts": {
-  "build": "GENERATE_SOURCEMAP=false react-scripts build"
-}
-```
-
-### 5. Caching Strategy
-
-Headers de cache recomendados:
-
-```
-# Static assets (con hash en nombre)
-Cache-Control: public, max-age=31536000, immutable
-
-# index.html
-Cache-Control: no-cache, no-store, must-revalidate
-
-# API requests
-Cache-Control: private, max-age=0, must-revalidate
+# Ver estado
+pm2 status
 ```
 
 ---
 
-## 📊 Monitoreo
+## 🔒 SEGURIDAD POST-DESPLIEGUE
 
-### 1. Error Tracking con Sentry
-
+### Firewall (UFW)
 ```bash
-npm install @sentry/react
+# Habilitar firewall
+sudo ufw enable
 
-# frontend/src/index.tsx
-import * as Sentry from "@sentry/react";
+# Permitir puertos necesarios
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
 
-Sentry.init({
-  dsn: process.env.VITE_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: 1.0,
-});
+# Verificar
+sudo ufw status
 ```
 
-### 2. Analytics con Google Analytics
-
+### Fail2Ban (Protección contra ataques)
 ```bash
-npm install react-ga4
+# Instalar
+sudo apt install fail2ban -y
 
-# frontend/src/index.tsx
-import ReactGA from 'react-ga4';
+# Configurar
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+sudo nano /etc/fail2ban/jail.local
 
-ReactGA.initialize(process.env.VITE_GOOGLE_ANALYTICS_ID);
+# Iniciar
+sudo systemctl start fail2ban
+sudo systemctl enable fail2ban
 ```
 
-### 3. Performance Monitoring
-
-```typescript
-// frontend/src/reportWebVitals.ts
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
-
-function sendToAnalytics(metric) {
-  // Send to your analytics service
-  console.log(metric);
-}
-
-getCLS(sendToAnalytics);
-getFID(sendToAnalytics);
-getFCP(sendToAnalytics);
-getLCP(sendToAnalytics);
-getTTFB(sendToAnalytics);
+### Backups Automáticos
+```bash
+# Crear script de backup
+sudo nano /usr/local/bin/backup-spirittours.sh
 ```
 
-### 4. Uptime Monitoring
-
-Servicios recomendados:
-- **UptimeRobot** (gratis para 50 monitores)
-- **Pingdom**
-- **StatusCake**
-
----
-
-## 🔄 Rollback
-
-### Vercel/Netlify
-
 ```bash
-# Ver deployments
-vercel ls
-netlify sites:list
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/var/backups/spirittours"
 
-# Rollback a deployment anterior
-vercel rollback deployment-url
-netlify sites:rollback site-id
+mkdir -p $BACKUP_DIR
+
+# Backup MongoDB
+mongodump --uri="mongodb://admin:password@localhost:27017" --out=$BACKUP_DIR/mongo_$DATE
+
+# Backup archivos
+tar -czf $BACKUP_DIR/files_$DATE.tar.gz /var/www/spirittours
+
+# Eliminar backups antiguos (> 30 días)
+find $BACKUP_DIR -type f -mtime +30 -delete
+
+echo "Backup completado: $DATE"
 ```
 
-### S3 + CloudFront
-
 ```bash
-# Habilitar versioning en S3
-aws s3api put-bucket-versioning \
-  --bucket spirittours-frontend \
-  --versioning-configuration Status=Enabled
+# Hacer ejecutable
+sudo chmod +x /usr/local/bin/backup-spirittours.sh
 
-# Restaurar versión anterior
-aws s3api list-object-versions --bucket spirittours-frontend
-aws s3api copy-object \
-  --bucket spirittours-frontend \
-  --copy-source spirittours-frontend/index.html?versionId=VERSION_ID \
-  --key index.html
-
-# Invalidar CloudFront cache
-aws cloudfront create-invalidation \
-  --distribution-id DISTRIBUTION_ID \
-  --paths "/*"
-```
-
-### Docker/Kubernetes
-
-```bash
-# Rollback deployment
-kubectl rollout undo deployment/spirittours-frontend
-
-# Ver historial
-kubectl rollout history deployment/spirittours-frontend
-
-# Rollback a versión específica
-kubectl rollout undo deployment/spirittours-frontend --to-revision=2
+# Programar con cron (diario a las 2 AM)
+sudo crontab -e
+# Agregar: 0 2 * * * /usr/local/bin/backup-spirittours.sh
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## 📊 MONITOREO Y LOGS
 
-### Problema 1: Blank Page después del deploy
-
-**Causa**: Rutas incorrectas en build
-
-**Solución**:
-```json
-// frontend/package.json
-{
-  "homepage": "."  // Para deployment en subdirectorio
-}
-```
-
-### Problema 2: 404 en rutas de React Router
-
-**Causa**: Servidor no redirige a index.html
-
-**Solución Nginx**:
-```nginx
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
-
-### Problema 3: CORS errors
-
-**Causa**: Backend no permite origen del frontend
-
-**Solución Backend**:
-```python
-allowed_origins = [
-    "https://spirittours.com",
-    "https://www.spirittours.com"
-]
-```
-
-### Problema 4: WebSocket no conecta
-
-**Causa**: Proxy no configurado para WebSocket
-
-**Solución Nginx**:
-```nginx
-location /ws {
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-}
-```
-
-### Problema 5: Build falla con memory error
-
-**Solución**:
+### Configurar Logs
 ```bash
-# Aumentar memoria de Node.js
-NODE_OPTIONS=--max-old-space-size=4096 npm run build
+# Logs de Nginx
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+
+# Logs de aplicación
+tail -f /var/www/spirittours/logs/combined.log
+tail -f /var/www/spirittours/logs/error.log
+
+# Logs de MongoDB
+tail -f /var/log/mongodb/mongod.log
+
+# Logs de PM2
+pm2 logs spirit-tours-backend
+```
+
+### Monitoreo con PM2
+```bash
+# Dashboard en tiempo real
+pm2 monit
+
+# Métricas
+pm2 status
+
+# Uso de memoria
+pm2 describe spirit-tours-backend
 ```
 
 ---
 
-## 📝 Checklist Pre-Deployment
+## ✅ CHECKLIST POST-DESPLIEGUE
 
-- [ ] Build local exitoso
-- [ ] Variables de entorno configuradas
-- [ ] SSL configurado (HTTPS)
-- [ ] CORS configurado en backend
-- [ ] WebSocket proxy configurado
-- [ ] Caching headers configurados
-- [ ] Error tracking configurado (Sentry)
-- [ ] Analytics configurado (GA4)
-- [ ] Backup strategy definida
-- [ ] Rollback plan documentado
-- [ ] Monitoreo de uptime configurado
-- [ ] Performance baseline establecida
+### Verificaciones Inmediatas
+- [ ] Aplicación accesible en https://spirittours.us
+- [ ] API respondiendo en https://spirittours.us/api/health
+- [ ] WebSocket conectando correctamente
+- [ ] MongoDB conectado y optimizado
+- [ ] Redis funcionando
+- [ ] Certificado SSL válido
+- [ ] Emails enviándose correctamente
+- [ ] Sin errores en logs
 
----
+### Pruebas Funcionales
+- [ ] Login de usuarios funciona
+- [ ] Crear nueva reservación
+- [ ] Procesar pago de prueba
+- [ ] Envío de email de confirmación
+- [ ] Dashboard carga correctamente
+- [ ] Reportes se generan
+- [ ] API externa integrada (si aplica)
 
-## 🎯 Post-Deployment
+### Seguridad
+- [ ] Firewall configurado
+- [ ] Fail2Ban activo
+- [ ] SSL/TLS funcionando
+- [ ] Backups programados
+- [ ] Logs rotando correctamente
+- [ ] Credenciales únicas en producción
+- [ ] 2FA activado en cuentas admin
 
-1. **Verificar funcionalidad**:
-   - Login/Logout
-   - Navegación entre páginas
-   - API calls funcionan
-   - WebSocket conecta
-   - File uploads funcionan
-   - Payments funcionan (test mode primero)
-
-2. **Performance tests**:
-   - Lighthouse score >90
-   - First Contentful Paint <1.8s
-   - Time to Interactive <3.8s
-   - Largest Contentful Paint <2.5s
-
-3. **Monitoreo continuo**:
-   - Revisar errores en Sentry
-   - Revisar analytics en GA4
-   - Revisar uptime en UptimeRobot
-   - Revisar logs del servidor
-
----
-
-## 📞 Soporte
-
-Para problemas de deployment:
-- Revisar logs del servidor: `nginx -t && tail -f /var/log/nginx/error.log`
-- Revisar build logs
-- Verificar variables de entorno
-- Verificar conectividad backend
+### Performance
+- [ ] Tiempo de respuesta < 100ms
+- [ ] Cache hit rate > 80%
+- [ ] CPU usage < 70%
+- [ ] Memory usage estable
+- [ ] Sin memory leaks
+- [ ] Base de datos indexada
 
 ---
 
-**Última actualización**: 31 de Octubre, 2025
-**Versión del Frontend**: 2.0.0
-**Estado**: ✅ Listo para deployment a producción
+## 🚨 TROUBLESHOOTING
+
+### Aplicación No Inicia
+```bash
+# Ver logs detallados
+pm2 logs --err
+
+# Verificar puerto
+netstat -tulpn | grep :5000
+
+# Verificar variables de entorno
+cat .env | grep -v "^#"
+
+# Reiniciar
+pm2 restart all
+```
+
+### MongoDB No Conecta
+```bash
+# Verificar estado
+sudo systemctl status mongod
+
+# Ver logs
+tail -f /var/log/mongodb/mongod.log
+
+# Probar conexión
+mongosh mongodb://localhost:27017
+
+# Reiniciar
+sudo systemctl restart mongod
+```
+
+### Redis No Conecta
+```bash
+# Verificar estado
+sudo systemctl status redis
+
+# Probar conexión
+redis-cli ping
+
+# Ver logs
+tail -f /var/log/redis/redis-server.log
+
+# Reiniciar
+sudo systemctl restart redis
+```
+
+### SSL/HTTPS No Funciona
+```bash
+# Verificar certificado
+sudo certbot certificates
+
+# Renovar si es necesario
+sudo certbot renew
+
+# Verificar configuración Nginx
+sudo nginx -t
+
+# Reiniciar Nginx
+sudo systemctl restart nginx
+```
+
+---
+
+## 📞 SOPORTE POST-DESPLIEGUE
+
+### Contactos de Emergencia
+- **DevOps Lead:** devops@spirittours.us
+- **Tech Support:** tech@spirittours.us
+- **System Admin:** admin@spirittours.us
+
+### Documentación Adicional
+- Guía de Operaciones: `/docs/operations.md`
+- Runbook DevOps: `DEVOPS_RUNBOOK.md`
+- FAQ Técnico: `/docs/faq-technical.md`
+
+---
+
+## 🎯 SIGUIENTES PASOS
+
+### Primera Semana
+1. Monitorear logs diariamente
+2. Verificar performance metrics
+3. Revisar backups
+4. Probar recuperación ante desastres
+5. Optimizar según carga real
+
+### Primer Mes
+1. Escalar si es necesario (horizontal/vertical)
+2. Implementar CDN (Cloudflare)
+3. Configurar alertas automáticas
+4. Auditoría de seguridad
+5. Documentar lecciones aprendidas
+
+---
+
+**✅ SISTEMA LISTO PARA PRODUCCIÓN**
+
+*Guía creada: 6 de Noviembre, 2025*  
+*Para: Spirit Tours Platform v2.0*

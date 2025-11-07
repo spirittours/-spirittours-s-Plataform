@@ -27,6 +27,14 @@ export const LoginPage = lazy(() => import('../components/Auth/LoginPage'));
 export const CRMDashboard = lazy(() => import('../components/CRM/CRMDashboard'));
 export const UserManagement = lazy(() => import('../components/CRM/UserManagement'));
 
+// Advanced CRM Components
+export const DealKanban = lazy(() => import('../components/crm/DealKanban'));
+export const ContactManager = lazy(() => import('../components/crm/ContactManager'));
+export const PipelineManager = lazy(() => import('../components/crm/PipelineManager'));
+export const BoardView = lazy(() => import('../components/crm/BoardView'));
+export const WorkspaceSettings = lazy(() => import('../components/crm/WorkspaceSettings'));
+export const CRMAdvancedDashboard = lazy(() => import('../components/crm/CRMDashboard'));
+
 // ============================================================================
 // AI AGENTS ROUTES
 // ============================================================================
@@ -38,6 +46,12 @@ export const AIAgentsRouter = lazy(() => import('../components/AIAgents/AIAgents
 // ============================================================================
 
 export const AnalyticsRouter = lazy(() => import('../components/Analytics/AnalyticsRouter'));
+
+// ============================================================================
+// B2B PROSPECTING ROUTES (FASE 8)
+// ============================================================================
+
+export const ProspectDashboard = lazy(() => import('../components/Prospecting/ProspectDashboard'));
 
 // ============================================================================
 // PORTALS ROUTES

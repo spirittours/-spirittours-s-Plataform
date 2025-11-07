@@ -1,247 +1,181 @@
 /**
- * Data Formatting Utilities
- * Common formatting functions for analytics dashboard display.
+ * Utility Formatters
+ * 
+ * Formatting functions for currency, dates, numbers, etc.
  */
 
 /**
- * Format currency values
- * @param {number} value - The currency value to format
- * @param {string} currency - Currency code (default: EUR)
- * @param {string} locale - Locale for formatting (default: es-ES)
- * @returns {string} Formatted currency string
+ * Format currency value
  */
-export const formatCurrency = (value, currency = 'EUR', locale = 'es-ES') => {
-  if (value === null || value === undefined) return '€0.00';
+export const formatCurrency = (value, currency = 'USD') => {
+  if (value === null || value === undefined) return '-';
   
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2
-    }).format(value);
-  } catch (error) {
-    console.error('Currency formatting error:', error);
-    return `${currency} ${value.toFixed(2)}`;
-  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
 };
 
 /**
- * Format percentage values
- * @param {number} value - The percentage value to format (0-100 scale)
- * @param {number} decimals - Number of decimal places (default: 1)
- * @returns {string} Formatted percentage string
+ * Format date
  */
-export const formatPercentage = (value, decimals = 1) => {
-  if (value === null || value === undefined) return '0.0%';
+export const formatDate = (date) => {
+  if (!date) return '-';
   
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  return `${numValue.toFixed(decimals)}%`;
-};
-
-/**
- * Format large numbers with appropriate suffixes
- * @param {number} value - The number to format
- * @param {number} decimals - Number of decimal places (default: 1)
- * @returns {string} Formatted number string
- */
-export const formatNumber = (value, decimals = 1) => {
-  if (value === null || value === undefined) return '0';
-  
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
-  if (numValue >= 1000000000) {
-    return `${(numValue / 1000000000).toFixed(decimals)}B`;
-  } else if (numValue >= 1000000) {
-    return `${(numValue / 1000000).toFixed(decimals)}M`;
-  } else if (numValue >= 1000) {
-    return `${(numValue / 1000).toFixed(decimals)}K`;
-  } else if (numValue < 1 && numValue > 0) {
-    return numValue.toFixed(decimals + 1);
-  } else {
-    return Math.round(numValue).toString();
-  }
-};
-
-/**
- * Format date for display
- * @param {string|Date} date - The date to format
- * @param {object} options - Formatting options
- * @returns {string} Formatted date string
- */
-export const formatDate = (date, options = {}) => {
-  if (!date) return '';
-  
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
-  const defaultOptions = {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    ...options
-  };
-  
-  try {
-    return new Intl.DateTimeFormat('es-ES', defaultOptions).format(dateObj);
-  } catch (error) {
-    console.error('Date formatting error:', error);
-    return dateObj.toLocaleDateString();
-  }
+  });
 };
 
 /**
- * Format time duration
- * @param {number} seconds - Duration in seconds
- * @returns {string} Formatted duration string
+ * Format time
  */
-export const formatDuration = (seconds) => {
-  if (!seconds || seconds < 0) return '0s';
+export const formatTime = (time) => {
+  if (!time) return '-';
   
-  if (seconds < 60) {
-    return `${Math.round(seconds)}s`;
-  } else if (seconds < 3600) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.round(seconds % 60);
-    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
-  } else {
-    const hours = Math.floor(seconds / 3600);
-    const remainingMinutes = Math.floor((seconds % 3600) / 60);
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  const d = new Date(time);
+  return d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+/**
+ * Format date and time
+ */
+export const formatDateTime = (dateTime) => {
+  if (!dateTime) return '-';
+  
+  const d = new Date(dateTime);
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+/**
+ * Format relative time (e.g., "2 hours ago")
+ */
+export const formatRelativeTime = (date) => {
+  if (!date) return '-';
+  
+  const d = new Date(date);
+  const now = new Date();
+  const seconds = Math.floor((now - d) / 1000);
+  
+  const intervals = {
+    year: 31536000,
+    month: 2592000,
+    week: 604800,
+    day: 86400,
+    hour: 3600,
+    minute: 60,
+  };
+  
+  for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+    const interval = Math.floor(seconds / secondsInUnit);
+    if (interval >= 1) {
+      return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
+    }
   }
+  
+  return 'just now';
+};
+
+/**
+ * Format number with thousands separator
+ */
+export const formatNumber = (value) => {
+  if (value === null || value === undefined) return '-';
+  
+  return new Intl.NumberFormat('en-US').format(value);
+};
+
+/**
+ * Format percentage
+ */
+export const formatPercentage = (value, decimals = 1) => {
+  if (value === null || value === undefined) return '-';
+  
+  return `${value.toFixed(decimals)}%`;
 };
 
 /**
  * Format file size
- * @param {number} bytes - Size in bytes
- * @returns {string} Formatted size string
  */
 export const formatFileSize = (bytes) => {
-  if (!bytes || bytes === 0) return '0 B';
+  if (bytes === 0) return '0 Bytes';
   
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 /**
- * Format metric change with trend indication
- * @param {number} current - Current value
- * @param {number} previous - Previous value
- * @param {string} format - Format type: 'number', 'currency', 'percentage'
- * @returns {object} Formatted change object
+ * Format phone number
  */
-export const formatMetricChange = (current, previous, format = 'number') => {
-  if (previous === null || previous === undefined || previous === 0) {
-    return {
-      value: current,
-      change: null,
-      changePercent: null,
-      trend: 'neutral',
-      formattedValue: formatByType(current, format),
-      formattedChange: null
-    };
+export const formatPhoneNumber = (phone) => {
+  if (!phone) return '-';
+  
+  const cleaned = ('' + phone).replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  
+  if (match) {
+    return '(' + match[1] + ') ' + match[2] + '-' + match[3];
   }
   
-  const change = current - previous;
-  const changePercent = (change / previous) * 100;
-  const trend = change > 0 ? 'up' : change < 0 ? 'down' : 'neutral';
-  
-  return {
-    value: current,
-    change,
-    changePercent,
-    trend,
-    formattedValue: formatByType(current, format),
-    formattedChange: formatByType(Math.abs(change), format),
-    formattedChangePercent: formatPercentage(Math.abs(changePercent))
-  };
+  return phone;
 };
 
 /**
- * Format value by type
- * @param {number} value - Value to format
- * @param {string} type - Format type
- * @returns {string} Formatted value
+ * Truncate text with ellipsis
  */
-const formatByType = (value, type) => {
-  switch (type) {
-    case 'currency':
-      return formatCurrency(value);
-    case 'percentage':
-      return formatPercentage(value);
-    case 'number':
-    default:
-      return formatNumber(value);
-  }
+export const truncateText = (text, maxLength = 50) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
 };
 
 /**
- * Format analytics time period
- * @param {string} timeFrame - Time frame (hour, day, week, month, quarter, year)
- * @returns {string} Human-readable time period
+ * Format duration (in seconds)
  */
-export const formatTimePeriod = (timeFrame) => {
-  const periods = {
-    hour: 'Última hora',
-    day: 'Último día',
-    week: 'Última semana',
-    month: 'Último mes',
-    quarter: 'Último trimestre',
-    year: 'Último año'
-  };
+export const formatDuration = (seconds) => {
+  if (!seconds) return '0s';
   
-  return periods[timeFrame] || timeFrame;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (secs > 0) parts.push(`${secs}s`);
+  
+  return parts.join(' ');
 };
 
-/**
- * Create color palette for charts
- * @param {number} count - Number of colors needed
- * @returns {array} Array of color codes
- */
-export const createColorPalette = (count) => {
-  const baseColors = [
-    '#1976d2', '#dc004e', '#2e7d32', '#ed6c02',
-    '#0288d1', '#7b1fa2', '#d32f2f', '#388e3c',
-    '#f57c00', '#5d4037', '#455a64', '#e91e63'
-  ];
-  
-  if (count <= baseColors.length) {
-    return baseColors.slice(0, count);
-  }
-  
-  // Generate additional colors if needed
-  const colors = [...baseColors];
-  while (colors.length < count) {
-    const hue = (360 / count) * colors.length;
-    colors.push(`hsl(${hue}, 65%, 50%)`);
-  }
-  
-  return colors;
-};
-
-/**
- * Format response time
- * @param {number} ms - Response time in milliseconds
- * @returns {string} Formatted response time
- */
-export const formatResponseTime = (ms) => {
-  if (ms < 1000) {
-    return `${Math.round(ms)}ms`;
-  } else if (ms < 60000) {
-    return `${(ms / 1000).toFixed(1)}s`;
-  } else {
-    return `${(ms / 60000).toFixed(1)}m`;
-  }
-};
-
-/**
- * Truncate text to specified length
- * @param {string} text - Text to truncate
- * @param {number} length - Maximum length
- * @returns {string} Truncated text
- */
-export const truncateText = (text, length = 50) => {
-  if (!text || text.length <= length) return text;
-  return `${text.substring(0, length)}...`;
+export default {
+  formatCurrency,
+  formatDate,
+  formatTime,
+  formatDateTime,
+  formatRelativeTime,
+  formatNumber,
+  formatPercentage,
+  formatFileSize,
+  formatPhoneNumber,
+  truncateText,
+  formatDuration,
 };

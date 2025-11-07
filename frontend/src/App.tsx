@@ -12,18 +12,28 @@ import {
   LoginPage,
   CRMDashboard,
   UserManagement,
+  DealKanban,
+  ContactManager,
+  PipelineManager,
+  BoardView,
+  WorkspaceSettings,
+  CRMAdvancedDashboard,
   AIAgentsRouter,
   AnalyticsRouter,
   PortalsRouter,
   PaymentsRouter,
   FileManagerRouter,
   NotificationsRouter,
+  ProspectDashboard,
   Layout,
   Dashboard,
   ComingSoon,
   preloadCriticalRoutes,
   preloadRoleBasedRoutes,
 } from './routes/lazyRoutes';
+
+// B2B Components
+import TourOperatorsDashboard from './components/B2B/TourOperatorsDashboard';
 
 // Suspense wrapper
 import { SuspenseWrapper } from './components/Suspense/SuspenseWrapper';
@@ -165,6 +175,16 @@ const App: React.FC = () => {
                   } 
                 />
                 
+                {/* B2B Prospecting Routes (Fase 8) */}
+                <Route 
+                  path="/prospects" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <ProspectDashboard />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
                 {/* Portals Routes */}
                 <Route 
                   path="/portals/*" 
@@ -214,6 +234,73 @@ const App: React.FC = () => {
                         <UserManagement isAdmin={isAdmin} />
                       </SuspenseWrapper>
                     </AdminGate>
+                  } 
+                />
+                
+                {/* Advanced CRM Routes */}
+                <Route 
+                  path="/crm/advanced" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <CRMAdvancedDashboard />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/deals" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <DealKanban workspaceId="" pipelineId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/contacts" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <ContactManager workspaceId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/pipelines" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <PipelineManager workspaceId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/boards" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <BoardView workspaceId="" boardId="" />
+                    </SuspenseWrapper>
+                  } 
+                />
+                
+                <Route 
+                  path="/crm/workspace-settings" 
+                  element={
+                    <AdminGate fallback={<UnauthorizedAccess />}>
+                      <SuspenseWrapper fallback="default">
+                        <WorkspaceSettings workspaceId="" />
+                      </SuspenseWrapper>
+                    </AdminGate>
+                  } 
+                />
+                
+                {/* B2B Tour Operators Route */}
+                <Route 
+                  path="/crm/b2b/operators" 
+                  element={
+                    <SuspenseWrapper fallback="skeleton">
+                      <TourOperatorsDashboard />
+                    </SuspenseWrapper>
                   } 
                 />
                 

@@ -68,6 +68,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { bookingsService } from '../../services/bookingsService';
 import { Booking, BookingStatus, PaymentStatus } from '../../types/booking.types';
+import CommentThread from '../crm/CommentThread';
+import AIAssistantButton from '../shared/AIAssistantButton';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -318,6 +320,7 @@ const BookingDetails: React.FC = () => {
                 <Tab label="Timeline" />
                 <Tab label="Payments" />
                 <Tab label="Notes" />
+                <Tab label="Comments" />
               </Tabs>
 
               {/* Overview Tab */}
@@ -539,6 +542,16 @@ const BookingDetails: React.FC = () => {
                   <Alert severity="info">No internal notes</Alert>
                 )}
               </TabPanel>
+
+              {/* Comments Tab - SPRINT 2.2 */}
+              <TabPanel value={activeTab} index={4}>
+                <CommentThread
+                  workspaceId="default"
+                  entityType="booking"
+                  entityId={id || ''}
+                  showTitle={false}
+                />
+              </TabPanel>
             </CardContent>
           </Card>
         </Grid>
@@ -693,6 +706,25 @@ const BookingDetails: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* AI Assistant Button - SPRINT 2.3 */}
+      {booking && (
+        <AIAssistantButton
+          module="booking"
+          entityType="booking"
+          entityId={id}
+          contextData={{
+            bookingNumber: booking.bookingNumber,
+            customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+            tourTitle: booking.tourTitle,
+            status: booking.status,
+            totalPrice: booking.pricing?.total,
+            dates: `${format(new Date(booking.startDate), 'MMM dd, yyyy')} to ${format(new Date(booking.endDate), 'MMM dd, yyyy')}`,
+            specialRequests: booking.specialRequests,
+          }}
+          color="info"
+        />
+      )}
     </Box>
   );
 };
