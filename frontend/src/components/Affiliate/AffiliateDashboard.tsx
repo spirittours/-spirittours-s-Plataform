@@ -33,6 +33,7 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  ListItemIcon,
   ListItemSecondaryAction,
   LinearProgress,
   Alert,

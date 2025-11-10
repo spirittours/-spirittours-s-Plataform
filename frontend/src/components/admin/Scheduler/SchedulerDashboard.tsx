@@ -376,7 +376,7 @@ const SchedulerDashboard: React.FC = () => {
                 <Grid item xs={12}>
                   <Button
                     variant="contained"
-                    size="large"
+                    size="medium"
                     startIcon={<Schedule />}
                     onClick={handleSchedulePost}
                     disabled={schedulePostMutation.isPending}
@@ -470,7 +470,7 @@ const SchedulerDashboard: React.FC = () => {
                 <Grid item xs={12}>
                   <Button
                     variant="contained"
-                    size="large"
+                    size="medium"
                     startIcon={<AutoAwesome />}
                     onClick={handleScheduleWithAI}
                     disabled={scheduleWithAIMutation.isPending}

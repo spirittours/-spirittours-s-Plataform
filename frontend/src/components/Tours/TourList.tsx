@@ -612,7 +612,7 @@ const TourList: React.FC<TourListProps> = ({ embedded = false, onTourSelect }) =
             page={page}
             onChange={handlePageChange}
             color="primary"
-            size="large"
+            size="medium"
           />
         </Box>
       )}

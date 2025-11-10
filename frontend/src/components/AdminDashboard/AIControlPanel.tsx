@@ -56,7 +56,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  ListItemSecondary,
+  ListItemSecondaryAction,
   FormGroup,
   Checkbox,
   Radio,
@@ -78,6 +78,7 @@ import {
 import {
   Settings,
   Add,
+  Remove,
   Delete,
   Edit,
   Save,
@@ -283,7 +284,8 @@ const AIControlPanel: React.FC = () => {
         setEditingProvider(null);
         setShowAddProvider(false);
       } else {
-        throw new Error('Failed to save provider');
+        console.error('Failed to save provider');
+        return;
       }
     } catch (error) {
       showNotification('Error saving provider', 'error');

@@ -157,7 +157,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, isDarkMode = false }) =>
           {isMobile && (
             <Box sx={{ flexGrow: 1 }}>
               <IconButton
-                size="large"
+                size="medium"
                 onClick={() => setMobileMenuOpen(true)}
                 sx={{ color: theme.palette.text.primary }}
               >

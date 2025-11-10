@@ -349,7 +349,7 @@ const SentimentViewer: React.FC = () => {
 
                   <Button
                     variant="contained"
-                    size="large"
+                    size="medium"
                     startIcon={<Psychology />}
                     onClick={handleAnalyze}
                     disabled={analyzeMutation.isPending}
@@ -509,7 +509,7 @@ const SentimentViewer: React.FC = () => {
               <Grid item xs={12}>
                 <Button
                   variant="contained"
-                  size="large"
+                  size="medium"
                   startIcon={<FilterList />}
                   onClick={handleBatchAnalyze}
                   disabled={batchAnalyzeMutation.isPending}

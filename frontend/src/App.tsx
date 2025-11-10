@@ -309,7 +309,7 @@ const App: React.FC = () => {
                   path="/crm/agents/ethical-tourism" 
                   element={
                     <AgentGate 
-                      requiredScope="ethical_tourism" 
+                      agentScope="ethical_tourism" 
                       fallback={<UnauthorizedAccess />}
                     >
                       <ComingSoon 
@@ -325,7 +325,7 @@ const App: React.FC = () => {
                   path="/crm/agents/sustainable-travel" 
                   element={
                     <AgentGate 
-                      requiredScope="sustainable_travel" 
+                      agentScope="sustainable_travel" 
                       fallback={<UnauthorizedAccess />}
                     >
                       <ComingSoon 
@@ -341,7 +341,7 @@ const App: React.FC = () => {
                   path="/crm/agents/cultural-immersion" 
                   element={
                     <AgentGate 
-                      requiredScope="cultural_immersion" 
+                      agentScope="cultural_immersion" 
                       fallback={<UnauthorizedAccess />}
                     >
                       <ComingSoon 
@@ -357,7 +357,7 @@ const App: React.FC = () => {
                   path="/crm/agents/adventure-planner" 
                   element={
                     <AgentGate 
-                      requiredScope="adventure_planner" 
+                      agentScope="adventure_planner" 
                       fallback={<UnauthorizedAccess />}
                     >
                       <ComingSoon 
@@ -373,7 +373,7 @@ const App: React.FC = () => {
                   path="/crm/agents/luxury-concierge" 
                   element={
                     <AgentGate 
-                      requiredScope="luxury_concierge" 
+                      agentScope="luxury_concierge" 
                       fallback={<UnauthorizedAccess />}
                     >
                       <ComingSoon 
@@ -389,7 +389,7 @@ const App: React.FC = () => {
                   path="/crm/agents/budget-optimizer" 
                   element={
                     <AgentGate 
-                      requiredScope="budget_optimizer" 
+                      agentScope="budget_optimizer" 
                       fallback={<UnauthorizedAccess />}
                     >
                       <ComingSoon 

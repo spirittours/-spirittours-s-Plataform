@@ -378,7 +378,7 @@ const AIContentGenerator: React.FC = () => {
             <Button
               fullWidth
               variant="contained"
-              size="large"
+              size="medium"
               onClick={handleGenerate}
               disabled={isGenerating || !prompt.trim()}
               startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}

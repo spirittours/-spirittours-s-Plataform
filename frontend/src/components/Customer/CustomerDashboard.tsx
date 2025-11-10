@@ -294,7 +294,7 @@ export const CustomerDashboard: React.FC = () => {
             <Typography variant="body1" color="text.secondary" paragraph>
               Our support team is here to help you 24/7
             </Typography>
-            <Button variant="contained" size="large">
+            <Button variant="contained" size="medium">
               Contact Support
             </Button>
           </Box>
@@ -317,7 +317,7 @@ export const CustomerDashboard: React.FC = () => {
             <Rating
               value={rating}
               onChange={(event, newValue) => setRating(newValue || 0)}
-              size="large"
+              size="medium"
               sx={{ mb: 2 }}
             />
             

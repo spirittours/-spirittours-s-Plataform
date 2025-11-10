@@ -487,7 +487,7 @@ const WhatsAppConfigWizard: React.FC = () => {
             <Box sx={{ textAlign: 'center', py: 3 }}>
               <Button
                 variant="contained"
-                size="large"
+                size="medium"
                 onClick={testConnection}
                 disabled={testingConnection}
                 startIcon={testingConnection ? <CircularProgress size={20} /> : <Send />}

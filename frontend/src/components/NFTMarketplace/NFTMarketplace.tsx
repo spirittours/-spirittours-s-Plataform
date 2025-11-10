@@ -913,7 +913,7 @@ const NFTMarketplace: React.FC<NFTMarketplaceProps> = ({
                         <Button
                           variant="contained"
                           fullWidth
-                          size="large"
+                          size="medium"
                           startIcon={<ShoppingCart />}
                           onClick={() => handlePurchase(selectedNFT)}
                         >

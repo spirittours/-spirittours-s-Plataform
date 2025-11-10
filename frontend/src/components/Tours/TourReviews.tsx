@@ -235,7 +235,7 @@ const TourReviews: React.FC<TourReviewsProps> = ({
               <Typography variant="h2" fontWeight="bold">
                 {stats.averageRating.toFixed(1)}
               </Typography>
-              <Rating value={stats.averageRating} precision={0.1} readOnly size="large" />
+              <Rating value={stats.averageRating} precision={0.1} readOnly size="medium" />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 Based on {stats.totalReviews} reviews
               </Typography>

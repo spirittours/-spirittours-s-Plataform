@@ -955,7 +955,7 @@ const AffiliateRegistration: React.FC = () => {
               icon={<MonetizationOn />}
               label={t('affiliate.registration.benefit_commission')}
               color="success"
-              size="large"
+              size="medium"
             />
           </Grid>
           <Grid item>
@@ -963,7 +963,7 @@ const AffiliateRegistration: React.FC = () => {
               icon={<Speed />}
               label={t('affiliate.registration.benefit_instant')}
               color="primary"
-              size="large"
+              size="medium"
             />
           </Grid>
           <Grid item>
@@ -971,7 +971,7 @@ const AffiliateRegistration: React.FC = () => {
               icon={<Support />}
               label={t('affiliate.registration.benefit_support')}
               color="secondary"
-              size="large"
+              size="medium"
             />
           </Grid>
           <Grid item>
@@ -979,7 +979,7 @@ const AffiliateRegistration: React.FC = () => {
               icon={<EmojiEvents />}
               label={t('affiliate.registration.benefit_rewards')}
               color="warning"
-              size="large"
+              size="medium"
             />
           </Grid>
         </Grid>

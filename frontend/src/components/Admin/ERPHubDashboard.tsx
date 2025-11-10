@@ -282,7 +282,7 @@ const ERPHubDashboard: React.FC = () => {
                 variant="contained"
                 startIcon={<LinkIcon />}
                 onClick={handleConnectERP}
-                size="large"
+                size="medium"
               >
                 Conectar Nuevo ERP
               </Button>

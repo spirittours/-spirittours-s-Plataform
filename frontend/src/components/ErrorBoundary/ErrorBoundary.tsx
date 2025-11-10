@@ -168,7 +168,7 @@ class ErrorBoundary extends Component<Props, State> {
                   variant="contained"
                   startIcon={<Refresh />}
                   onClick={this.handleReset}
-                  size="large"
+                  size="medium"
                 >
                   Try Again
                 </Button>
@@ -176,7 +176,7 @@ class ErrorBoundary extends Component<Props, State> {
                   variant="outlined"
                   startIcon={<Home />}
                   onClick={this.handleGoHome}
-                  size="large"
+                  size="medium"
                 >
                   Go Home
                 </Button>

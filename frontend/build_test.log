@@ -1,0 +1,18 @@
+
+> spirit-tours-frontend@1.0.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Failed to compile.
+
+TS2322: Type '{ children: Element; requiredScope: string; fallback: Element; }' is not assignable to type 'IntrinsicAttributes & AgentPermissionProps'.
+  Property 'requiredScope' does not exist on type 'IntrinsicAttributes & AgentPermissionProps'.
+    310 |                   element={
+    311 |                     <AgentGate 
+  > 312 |                       requiredScope="ethical_tourism" 
+        |                       ^^^^^^^^^^^^^
+    313 |                       fallback={<UnauthorizedAccess />}
+    314 |                     >
+    315 |                       <ComingSoon
+
+

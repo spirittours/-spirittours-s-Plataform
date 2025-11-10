@@ -252,7 +252,7 @@ const EmployeeAnalyticsPanel: React.FC = () => {
           <Button
             variant="contained"
             fullWidth
-            size="large"
+            size="medium"
             onClick={calculateMetrics}
             disabled={!selectedEmployee || loading}
             startIcon={<Analytics />}

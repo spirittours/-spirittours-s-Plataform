@@ -486,7 +486,7 @@ const AffiliateLinkGenerator: React.FC<LinkGeneratorProps> = ({ affiliateCode, a
         <Grid item xs={12}>
           <Button
             variant="contained"
-            size="large"
+            size="medium"
             fullWidth
             startIcon={loading ? <LinearProgress /> : <AutoAwesome />}
             onClick={generateLink}

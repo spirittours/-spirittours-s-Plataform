@@ -435,7 +435,7 @@ const DualReviewDashboard: React.FC<Props> = ({
                         checked={config.autoProcessing.enabled}
                         onChange={(e) => handleToggleAutoProcessing(e.target.checked)}
                         color="primary"
-                        size="large"
+                        size="medium"
                         disabled={loading || userRole === 'assistant'}
                       />
                     }

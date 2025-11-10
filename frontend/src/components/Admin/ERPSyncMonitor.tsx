@@ -168,7 +168,7 @@ const ERPSyncMonitor: React.FC<ERPSyncMonitorProps> = ({ branchId, erpConfigs })
                 <TableRow key={activity.id}>
                   <TableCell>
                     <Chip 
-                      icon={getStatusIcon(activity.status)}
+                      icon={getStatusIcon(activity.status) || undefined}
                       label={activity.status}
                       color={getStatusColor(activity.status)}
                       size="small"

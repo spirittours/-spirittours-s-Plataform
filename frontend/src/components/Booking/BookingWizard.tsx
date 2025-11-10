@@ -936,7 +936,7 @@ const PaymentForm: React.FC<{
               type="submit"
               variant="contained"
               fullWidth
-              size="large"
+              size="medium"
               disabled={!stripe || processing || loading}
             >
               {processing || loading ? (

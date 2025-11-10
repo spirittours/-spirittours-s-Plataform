@@ -160,7 +160,7 @@ const TravelPreferencesPanel: React.FC = () => {
           <Button
             variant="contained"
             fullWidth
-            size="large"
+            size="medium"
             onClick={analyzePreferences}
             disabled={!selectedCustomer || analyzing}
             startIcon={analyzing ? <CircularProgress size={20} /> : <TrendingUp />}
