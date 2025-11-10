@@ -49,30 +49,65 @@ class DatabaseConfig:
 # Global configuration instance
 db_config = DatabaseConfig()
 
-# Create engine based on environment
-if db_config.is_testing:
-    # Use SQLite for testing
-    engine = create_engine(
-        db_config.test_database_url,
-        echo=db_config.echo_sql,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False}
-    )
-else:
-    # Use PostgreSQL for development/production
-    engine = create_engine(
-        db_config.database_url,
-        echo=db_config.echo_sql,
-        pool_size=db_config.pool_size,
-        max_overflow=db_config.max_overflow,
-        pool_timeout=db_config.pool_timeout,
-        pool_recycle=db_config.pool_recycle,
-        # Connection args for PostgreSQL
-        connect_args={
-            "options": "-c timezone=UTC",
-            "application_name": "SpiritTours_CRM"
-        }
-    )
+# Lazy engine initialization to avoid crashes on empty DATABASE_URL
+_engine = None
+
+def get_engine():
+    """Get or create database engine with lazy initialization"""
+    global _engine
+    
+    if _engine is not None:
+        return _engine
+    
+    # Check if DATABASE_URL is empty or invalid
+    if not db_config.database_url or db_config.database_url.strip() == "":
+        logger.warning("DATABASE_URL is empty, using SQLite fallback for development")
+        _engine = create_engine(
+            "sqlite:///./spirittours_dev.db",
+            echo=db_config.echo_sql,
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False}
+        )
+        return _engine
+    
+    # Create engine based on environment
+    if db_config.is_testing:
+        # Use SQLite for testing
+        _engine = create_engine(
+            db_config.test_database_url,
+            echo=db_config.echo_sql,
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False}
+        )
+    else:
+        # Use PostgreSQL for development/production
+        try:
+            _engine = create_engine(
+                db_config.database_url,
+                echo=db_config.echo_sql,
+                pool_size=db_config.pool_size,
+                max_overflow=db_config.max_overflow,
+                pool_timeout=db_config.pool_timeout,
+                pool_recycle=db_config.pool_recycle,
+                # Connection args for PostgreSQL
+                connect_args={
+                    "options": "-c timezone=UTC",
+                    "application_name": "SpiritTours_CRM"
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to create PostgreSQL engine: {e}, falling back to SQLite")
+            _engine = create_engine(
+                "sqlite:///./spirittours_dev.db",
+                echo=db_config.echo_sql,
+                poolclass=StaticPool,
+                connect_args={"check_same_thread": False}
+            )
+    
+    return _engine
+
+# Get engine instance
+engine = get_engine()
 
 # Session configuration
 SessionLocal = sessionmaker(
@@ -94,27 +129,34 @@ except ImportError:
     db_metadata = Base.metadata
 
 # Event listeners for database optimization
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Set SQLite pragmas for better performance (testing only)"""
-    if "sqlite" in str(engine.url):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.execute("PRAGMA synchronous=NORMAL")
-        cursor.execute("PRAGMA temp_store=MEMORY")
-        cursor.execute("PRAGMA mmap_size=268435456")  # 256MB
-        cursor.close()
+def setup_event_listeners():
+    """Setup database event listeners"""
+    eng = get_engine()
+    
+    @event.listens_for(eng, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        """Set SQLite pragmas for better performance (testing only)"""
+        if "sqlite" in str(eng.url):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA temp_store=MEMORY")
+            cursor.execute("PRAGMA mmap_size=268435456")  # 256MB
+            cursor.close()
 
-@event.listens_for(engine, "connect")
-def set_postgresql_settings(dbapi_connection, connection_record):
-    """Set PostgreSQL connection settings"""
-    if "postgresql" in str(engine.url):
-        # Set timezone and other settings
-        with dbapi_connection.cursor() as cursor:
-            cursor.execute("SET timezone TO 'UTC'")
-            cursor.execute("SET statement_timeout = '30s'")
-            cursor.execute("SET lock_timeout = '10s'")
+    @event.listens_for(eng, "connect")
+    def set_postgresql_settings(dbapi_connection, connection_record):
+        """Set PostgreSQL connection settings"""
+        if "postgresql" in str(eng.url):
+            # Set timezone and other settings
+            with dbapi_connection.cursor() as cursor:
+                cursor.execute("SET timezone TO 'UTC'")
+                cursor.execute("SET statement_timeout = '30s'")
+                cursor.execute("SET lock_timeout = '10s'")
+
+# Setup event listeners after engine is created
+setup_event_listeners()
 
 # Database dependency for FastAPI
 def get_db() -> Generator[Session, None, None]:
@@ -317,7 +359,10 @@ __all__ = [
 # Initialize database on import if needed
 if not db_config.is_testing:
     # Only initialize in development/production, not during testing
-    if DatabaseManager.check_connection():
-        logger.info("Database connection verified")
-    else:
-        logger.warning("Database connection could not be verified")
+    try:
+        if DatabaseManager.check_connection():
+            logger.info("Database connection verified")
+        else:
+            logger.warning("Database connection could not be verified - API will start but database operations may fail")
+    except Exception as e:
+        logger.warning(f"Database connection check failed: {e} - API will start but database operations may fail")
