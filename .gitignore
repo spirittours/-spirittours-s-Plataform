@@ -1,0 +1,5 @@
+
+# Sensitive deployment files
+.env.digitalocean
+DIGITALOCEAN_DEPLOYMENT_GUIDE.md
+deploy-spirittours-minimal.sh
