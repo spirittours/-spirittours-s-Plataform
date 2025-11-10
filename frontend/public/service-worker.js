@@ -17,8 +17,6 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/static/css/main.css',
-  '/static/js/main.js',
   '/logo192.png',
   '/logo512.png',
   '/favicon.ico',
