@@ -62,12 +62,15 @@ def get_engine():
     # Check if DATABASE_URL is empty or invalid
     if not db_config.database_url or db_config.database_url.strip() == "":
         logger.warning("DATABASE_URL is empty, using SQLite fallback for development")
+        # Use /tmp directory for SQLite database (writable in Docker)
+        sqlite_path = "/tmp/spirittours_dev.db"
         _engine = create_engine(
-            "sqlite:///./spirittours_dev.db",
+            f"sqlite:///{sqlite_path}",
             echo=db_config.echo_sql,
             poolclass=StaticPool,
             connect_args={"check_same_thread": False}
         )
+        logger.info(f"SQLite database created at: {sqlite_path}")
         return _engine
     
     # Create engine based on environment
@@ -97,12 +100,15 @@ def get_engine():
             )
         except Exception as e:
             logger.error(f"Failed to create PostgreSQL engine: {e}, falling back to SQLite")
+            # Use /tmp directory for SQLite database (writable in Docker)
+            sqlite_path = "/tmp/spirittours_dev.db"
             _engine = create_engine(
-                "sqlite:///./spirittours_dev.db",
+                f"sqlite:///{sqlite_path}",
                 echo=db_config.echo_sql,
                 poolclass=StaticPool,
                 connect_args={"check_same_thread": False}
             )
+            logger.info(f"SQLite fallback database created at: {sqlite_path}")
     
     return _engine
 
