@@ -21,7 +21,7 @@ import aiohttp
 import jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, Field, validator
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Enum as SQLEnum, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
@@ -123,7 +123,7 @@ class User(Base):
     company_name = Column(String, nullable=True)
     company_registration = Column(String, nullable=True)
     business_license = Column(String, nullable=True)
-    commission_rate = Column(Decimal(5, 4), nullable=True)
+    commission_rate = Column(Numeric(5, 4), nullable=True)
     partner_tier = Column(String, nullable=True)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
@@ -175,7 +175,7 @@ class PartnerApplication(Base):
     references = Column(JSON, nullable=True)
     
     # Commission & Partnership
-    requested_commission_rate = Column(Decimal(5, 4))
+    requested_commission_rate = Column(Numeric(5, 4))
     partnership_type = Column(String)  # B2B or B2B2C
     integration_requirements = Column(JSON, nullable=True)
     
@@ -185,7 +185,7 @@ class PartnerApplication(Base):
     reviewed_by = Column(String, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     review_notes = Column(Text, nullable=True)
-    approved_commission_rate = Column(Decimal(5, 4), nullable=True)
+    approved_commission_rate = Column(Numeric(5, 4), nullable=True)
 
 # Pydantic Models
 class OAuthUserInfo(BaseModel):
