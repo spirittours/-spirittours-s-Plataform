@@ -136,7 +136,7 @@ pbx_service: Optional[PBX3CXIntegrationService] = None
 crm_service: Optional[OmnichannelCRMService] = None
 voice_agents_service = None  # Optional[AIVoiceAgentsService] - Disabled due to audio dependencies
 webrtc_service = None  # Optional[WebRTCSignalingService] - Disabled due to audio dependencies
-# advanced_voice_service is imported as global instance from services
+advanced_voice_service = None  # Disabled due to elevenlabs dependency
 
 # Initialize database on startup
 @app.on_event("startup")
