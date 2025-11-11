@@ -50,7 +50,7 @@ from api import (
     # ai_voice_agents_api,  # TODO: Fix - requires SpeechRecognition/pyaudio system libraries
     # webrtc_signaling_api,  # TODO: Fix - depends on ai_voice_agents_service
     # advanced_voice_api,  # TODO: Fix - requires elevenlabs module
-    social_media_credentials_api,
+    # social_media_credentials_api,  # TODO: Fix - missing SocialMediaCredentials model
     ai_content_api,
     scheduler_api,
     sentiment_analysis_api,
@@ -115,7 +115,7 @@ app.include_router(omnichannel_communications_api.router)
 # app.include_router(ai_voice_agents_api.router)  # TODO: Fix audio dependencies
 # app.include_router(webrtc_signaling_api.router)  # TODO: Fix audio dependencies
 # app.include_router(advanced_voice_api.router)  # TODO: Fix - requires elevenlabs module
-app.include_router(social_media_credentials_api.router)
+# app.include_router(social_media_credentials_api.router)  # TODO: Fix - missing SocialMediaCredentials model
 app.include_router(access_control_router)
 app.include_router(ai_content_api.router)
 app.include_router(scheduler_api.router)
