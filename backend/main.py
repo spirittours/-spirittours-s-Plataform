@@ -61,7 +61,7 @@ from api import (
 # from routers.opensource_router import router as opensource_router
 
 # Import access control router
-from routers.access_control_router import router as access_control_router
+# from routers.access_control_router import router as access_control_router  # TODO: Fix relative import error
 
 # Import services for startup initialization
 from services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
@@ -116,7 +116,7 @@ app.include_router(omnichannel_communications_api.router)
 # app.include_router(webrtc_signaling_api.router)  # TODO: Fix audio dependencies
 # app.include_router(advanced_voice_api.router)  # TODO: Fix - requires elevenlabs module
 # app.include_router(social_media_credentials_api.router)  # TODO: Fix - missing SocialMediaCredentials model
-app.include_router(access_control_router)
+# app.include_router(access_control_router)  # TODO: Fix relative import error
 app.include_router(ai_content_api.router)
 app.include_router(scheduler_api.router)
 app.include_router(sentiment_analysis_api.router)
