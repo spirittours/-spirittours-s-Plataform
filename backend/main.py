@@ -43,7 +43,7 @@ from api import (
     # notifications_api,  # TODO: Fix duplicate table definition
     # payments_api,  # TODO: Fix reserved attribute name 'metadata'
     # analytics_api,  # TODO: Fix FastAPI type annotation error
-    advanced_auth_api,
+    # advanced_auth_api,  # TODO: Fix - imports NotificationService with duplicate table
     admin_b2b_management_api,
     commission_management_api,
     omnichannel_communications_api,
@@ -108,7 +108,7 @@ app.include_router(b2b_management_api.router)
 # app.include_router(notifications_api.router)  # TODO: Fix duplicate table definition
 # app.include_router(payments_api.router)  # TODO: Fix reserved attribute name 'metadata'
 # app.include_router(analytics_api.router)  # TODO: Fix FastAPI type annotation error
-app.include_router(advanced_auth_api.router)
+# app.include_router(advanced_auth_api.router)  # TODO: Fix - imports NotificationService with duplicate table
 app.include_router(admin_b2b_management_api.router)
 app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
