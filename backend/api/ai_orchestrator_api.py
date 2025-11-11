@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 # Import database and AI orchestrator
 from config.database import get_db
-from ..ai_manager import ai_orchestrator, QueryRequest_API, AgentStatusResponse, QueryType
+# from ai_manager import ai_orchestrator, QueryRequest_API, AgentStatusResponse, QueryType  # TODO: Fix import when ai_manager is available
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Orchestrator"])
 
