@@ -44,7 +44,7 @@ from api import (
     # payments_api,  # TODO: Fix reserved attribute name 'metadata'
     # analytics_api,  # TODO: Fix FastAPI type annotation error
     # advanced_auth_api,  # TODO: Fix - imports NotificationService with duplicate table
-    admin_b2b_management_api,
+    # admin_b2b_management_api,  # TODO: Fix - imports NotificationService with duplicate table
     commission_management_api,
     omnichannel_communications_api,
     ai_voice_agents_api,
@@ -54,7 +54,7 @@ from api import (
     ai_content_api,
     scheduler_api,
     sentiment_analysis_api,
-    operations_api
+    # operations_api  # TODO: Fix - imports NotificationService with duplicate table
 )
 
 # Import open-source services router
@@ -109,7 +109,7 @@ app.include_router(b2b_management_api.router)
 # app.include_router(payments_api.router)  # TODO: Fix reserved attribute name 'metadata'
 # app.include_router(analytics_api.router)  # TODO: Fix FastAPI type annotation error
 # app.include_router(advanced_auth_api.router)  # TODO: Fix - imports NotificationService with duplicate table
-app.include_router(admin_b2b_management_api.router)
+# app.include_router(admin_b2b_management_api.router)  # TODO: Fix - imports NotificationService with duplicate table
 app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
 app.include_router(ai_voice_agents_api.router)
@@ -120,7 +120,7 @@ app.include_router(access_control_router)
 app.include_router(ai_content_api.router)
 app.include_router(scheduler_api.router)
 app.include_router(sentiment_analysis_api.router)
-app.include_router(operations_api.router)
+# app.include_router(operations_api.router)  # TODO: Fix - imports NotificationService with duplicate table
 
 # Include open-source services router
 app.include_router(opensource_router)
