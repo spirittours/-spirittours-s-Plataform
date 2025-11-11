@@ -47,8 +47,8 @@ from api import (
     # admin_b2b_management_api,  # TODO: Fix - imports NotificationService with duplicate table
     commission_management_api,
     omnichannel_communications_api,
-    ai_voice_agents_api,
-    webrtc_signaling_api,
+    # ai_voice_agents_api,  # TODO: Fix - requires SpeechRecognition/pyaudio system libraries
+    # webrtc_signaling_api,  # TODO: Fix - depends on ai_voice_agents_service
     advanced_voice_api,
     social_media_credentials_api,
     ai_content_api,
@@ -66,8 +66,8 @@ from routers.access_control_router import router as access_control_router
 # Import services for startup initialization
 from services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3CXConfig
 from services.omnichannel_crm_service import OmnichannelCRMService
-from services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service
-from services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service
+# from services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service  # TODO: Fix audio dependencies
+# from services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service  # TODO: Fix audio dependencies
 from services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
 
 # Import WebSocket handler
@@ -112,8 +112,8 @@ app.include_router(b2b_management_api.router)
 # app.include_router(admin_b2b_management_api.router)  # TODO: Fix - imports NotificationService with duplicate table
 app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
-app.include_router(ai_voice_agents_api.router)
-app.include_router(webrtc_signaling_api.router)
+# app.include_router(ai_voice_agents_api.router)  # TODO: Fix audio dependencies
+# app.include_router(webrtc_signaling_api.router)  # TODO: Fix audio dependencies
 app.include_router(advanced_voice_api.router)
 app.include_router(social_media_credentials_api.router)
 app.include_router(access_control_router)
@@ -135,7 +135,7 @@ async def websocket_route(websocket: WebSocket, token: Optional[str] = None):
 pbx_service: Optional[PBX3CXIntegrationService] = None
 crm_service: Optional[OmnichannelCRMService] = None
 voice_agents_service: Optional[AIVoiceAgentsService] = None
-webrtc_service: Optional[WebRTCSignalingService] = None
+webrtc_service = None  # Optional[WebRTCSignalingService] - Disabled due to audio dependencies
 # advanced_voice_service is imported as global instance from services
 
 # Initialize database on startup
@@ -189,31 +189,33 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"⚠️ CRM service initialization error: {str(e)}")
         
-        # Initialize AI Voice Agents Service
-        try:
-            voice_agents_service = ai_voice_agents_service
-            
-            # Initialize with PBX and CRM services if available
-            if await voice_agents_service.initialize(pbx_service, crm_service):
-                logger.info("✅ AI Voice Agents service initialized successfully")
-            else:
-                logger.warning("⚠️ AI Voice Agents service initialization failed - continuing without voice AI")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ AI Voice Agents service initialization error: {str(e)}")
+        # Initialize AI Voice Agents Service (DISABLED - requires audio libraries)
+        # try:
+        #     voice_agents_service = ai_voice_agents_service
+        #     
+        #     # Initialize with PBX and CRM services if available
+        #     if await voice_agents_service.initialize(pbx_service, crm_service):
+        #         logger.info("✅ AI Voice Agents service initialized successfully")
+        #     else:
+        #         logger.warning("⚠️ AI Voice Agents service initialization failed - continuing without voice AI")
+        #         
+        # except Exception as e:
+        #     logger.warning(f"⚠️ AI Voice Agents service initialization error: {str(e)}")
+        voice_agents_service = None  # Disabled due to audio library dependencies
         
-        # Initialize WebRTC Signaling Service
-        try:
-            webrtc_service = webrtc_signaling_service
-            
-            # Initialize with AI Voice Agents and PBX services
-            if await webrtc_service.initialize(voice_agents_service, pbx_service):
-                logger.info("✅ WebRTC Signaling service initialized successfully")
-            else:
-                logger.warning("⚠️ WebRTC Signaling service initialization failed - continuing without WebRTC")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ WebRTC Signaling service initialization error: {str(e)}")
+        # Initialize WebRTC Signaling Service (DISABLED - requires audio libraries)
+        # try:
+        #     webrtc_service = webrtc_signaling_service
+        #     
+        #     # Initialize with AI Voice Agents and PBX services
+        #     if await webrtc_service.initialize(voice_agents_service, pbx_service):
+        #         logger.info("✅ WebRTC Signaling service initialized successfully")
+        #     else:
+        #         logger.warning("⚠️ WebRTC Signaling service initialization failed - continuing without WebRTC")
+        #         
+        # except Exception as e:
+        #     logger.warning(f"⚠️ WebRTC Signaling service initialization error: {str(e)}")
+        webrtc_service = None  # Disabled due to audio library dependencies
         
         # Initialize Advanced Voice AI Service  
         try:
