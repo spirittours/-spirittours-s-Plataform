@@ -57,8 +57,8 @@ from api import (
     # operations_api  # TODO: Fix - imports NotificationService with duplicate table
 )
 
-# Import open-source services router
-from routers.opensource_router import router as opensource_router
+# Import open-source services router (DISABLED - relative import error)
+# from routers.opensource_router import router as opensource_router
 
 # Import access control router
 from routers.access_control_router import router as access_control_router
@@ -123,7 +123,7 @@ app.include_router(sentiment_analysis_api.router)
 # app.include_router(operations_api.router)  # TODO: Fix - imports NotificationService with duplicate table
 
 # Include open-source services router
-app.include_router(opensource_router)
+# app.include_router(opensource_router)  # TODO: Fix relative import error
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -237,25 +237,25 @@ async def startup_event():
         #     logger.warning(f"⚠️ Advanced Voice AI service initialization error: {str(e)}")
         advanced_voice_service = None  # Disabled due to elevenlabs dependency
         
-        # Initialize Open Source Services
-        try:
-            from services.opensource.opensource_integration_manager import opensource_manager
-            
-            services_status = await opensource_manager.initialize_all_services()
-            
-            if all(services_status.values()):
-                logger.info("✅ All open-source services initialized successfully")
-                
-                # Log cost savings
-                savings = opensource_manager.get_total_savings()
-                logger.info(f"💰 Monthly savings: ${savings['monthly']}")
-                logger.info(f"💰 Annual savings: ${savings['annual']}")
-            else:
-                failed_services = [name for name, status in services_status.items() if not status]
-                logger.warning(f"⚠️ Some open-source services failed to initialize: {failed_services}")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Open-source services initialization error: {str(e)}")
+        # Initialize Open Source Services (DISABLED - import error)
+        # try:
+        #     from services.opensource.opensource_integration_manager import opensource_manager
+        #     
+        #     services_status = await opensource_manager.initialize_all_services()
+        #     
+        #     if all(services_status.values()):
+        #         logger.info("✅ All open-source services initialized successfully")
+        #         
+        #         # Log cost savings
+        #         savings = opensource_manager.get_total_savings()
+        #         logger.info(f"💰 Monthly savings: ${savings['monthly']}")
+        #         logger.info(f"💰 Annual savings: ${savings['annual']}")
+        #     else:
+        #         failed_services = [name for name, status in services_status.items() if not status]
+        #         logger.warning(f"⚠️ Some open-source services failed to initialize: {failed_services}")
+        #         
+        # except Exception as e:
+        #     logger.warning(f"⚠️ Open-source services initialization error: {str(e)}")
             
         logger.info("🚀 Spirit Tours Platform started successfully with omnichannel communications + AI Voice Agents + WebRTC + Advanced Voice AI + Open Source Services")
         
