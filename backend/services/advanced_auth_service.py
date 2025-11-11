@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Union, Any
 from enum import Enum
 from dataclasses import dataclass, field
+from decimal import Decimal
 import uuid
 import json
 import re
@@ -20,7 +21,7 @@ import aiohttp
 import jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, Field, validator
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Enum as SQLEnum, Decimal
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Enum as SQLEnum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
