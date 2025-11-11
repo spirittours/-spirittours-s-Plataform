@@ -40,7 +40,7 @@ from api import (
     booking_api,
     b2b_management_api,
     # ai_orchestrator_api,  # TODO: Fix import error
-    notifications_api,
+    # notifications_api,  # TODO: Fix duplicate table definition
     payments_api,
     # analytics_api,  # TODO: Fix FastAPI type annotation error
     advanced_auth_api,
@@ -105,7 +105,7 @@ app.include_router(alerts_api.router)
 app.include_router(booking_api.router)
 app.include_router(b2b_management_api.router)
 # app.include_router(ai_orchestrator_api.router)  # TODO: Fix import error
-app.include_router(notifications_api.router)
+# app.include_router(notifications_api.router)  # TODO: Fix duplicate table definition
 app.include_router(payments_api.router)
 # app.include_router(analytics_api.router)  # TODO: Fix FastAPI type annotation error
 app.include_router(advanced_auth_api.router)
