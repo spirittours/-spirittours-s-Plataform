@@ -2902,6 +2902,130 @@ async def get_final_system_status():
     }
 
 
+# ============================================
+# FRONTEND COMPATIBILITY ENDPOINTS (Mock Data)
+# ============================================
+
+@app.get("/api/v1/tours")
+async def get_tours_mock():
+    """Mock endpoint for frontend - returns sample tours data"""
+    return [
+        {
+            "id": "tour-001",
+            "title": "Sedona Vortex Experience",
+            "description": "Discover the mystical energy of Sedona's famous vortexes with our expert guide.",
+            "destination": "Sedona, Arizona",
+            "duration": "4 hours",
+            "price": 129.00,
+            "currency": "USD",
+            "category": "spiritual",
+            "rating": 4.8,
+            "reviews_count": 234,
+            "image_url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
+            "availability": "available"
+        },
+        {
+            "id": "tour-002",
+            "title": "Machu Picchu Spiritual Journey",
+            "description": "Experience the ancient wisdom of the Incas in this transformative journey.",
+            "destination": "Machu Picchu, Peru",
+            "duration": "7 days",
+            "price": 1899.00,
+            "currency": "USD",
+            "category": "adventure",
+            "rating": 4.9,
+            "reviews_count": 456,
+            "image_url": "https://images.unsplash.com/photo-1526392060635-9d6019884377",
+            "availability": "limited"
+        },
+        {
+            "id": "tour-003",
+            "title": "Bali Wellness Retreat",
+            "description": "Rejuvenate your mind, body and spirit in paradise.",
+            "destination": "Ubud, Bali",
+            "duration": "5 days",
+            "price": 1299.00,
+            "currency": "USD",
+            "category": "wellness",
+            "rating": 4.7,
+            "reviews_count": 189,
+            "image_url": "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
+            "availability": "available"
+        }
+    ]
+
+@app.get("/api/v1/stats")
+async def get_stats_mock():
+    """Mock endpoint for frontend - returns dashboard statistics"""
+    return {
+        "total_bookings": 1234,
+        "total_revenue": 156789.50,
+        "active_tours": 42,
+        "happy_customers": 4567,
+        "average_rating": 4.8,
+        "conversion_rate": 23.5,
+        "monthly_growth": 15.3,
+        "top_destinations": [
+            {"name": "Sedona", "bookings": 234},
+            {"name": "Machu Picchu", "bookings": 189},
+            {"name": "Bali", "bookings": 156}
+        ],
+        "recent_bookings": [
+            {
+                "id": "BK-001",
+                "tour": "Sedona Vortex Experience",
+                "customer": "John Doe",
+                "date": datetime.now().isoformat(),
+                "amount": 129.00,
+                "status": "confirmed"
+            },
+            {
+                "id": "BK-002",
+                "tour": "Bali Wellness Retreat",
+                "customer": "Jane Smith",
+                "date": (datetime.now() - timedelta(hours=2)).isoformat(),
+                "amount": 1299.00,
+                "status": "pending"
+            }
+        ]
+    }
+
+@app.get("/api/v1/bookings")
+async def get_bookings_mock():
+    """Mock endpoint for frontend - returns bookings list"""
+    return [
+        {
+            "id": "BK-001",
+            "booking_reference": "ST-2025-001",
+            "tour_id": "tour-001",
+            "tour_name": "Sedona Vortex Experience",
+            "customer_name": "John Doe",
+            "customer_email": "john@example.com",
+            "booking_date": datetime.now().isoformat(),
+            "travel_date": (datetime.now() + timedelta(days=30)).isoformat(),
+            "participants": 2,
+            "total_amount": 258.00,
+            "currency": "USD",
+            "status": "confirmed",
+            "payment_status": "paid"
+        },
+        {
+            "id": "BK-002",
+            "booking_reference": "ST-2025-002",
+            "tour_id": "tour-003",
+            "tour_name": "Bali Wellness Retreat",
+            "customer_name": "Jane Smith",
+            "customer_email": "jane@example.com",
+            "booking_date": (datetime.now() - timedelta(hours=2)).isoformat(),
+            "travel_date": (datetime.now() + timedelta(days=45)).isoformat(),
+            "participants": 1,
+            "total_amount": 1299.00,
+            "currency": "USD",
+            "status": "pending",
+            "payment_status": "pending"
+        }
+    ]
+
 
 if __name__ == "__main__":
     logger.info("🚀 Starting Spirit Tours API Server...")
