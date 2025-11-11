@@ -13,11 +13,12 @@ from decimal import Decimal
 import json
 from collections import defaultdict
 
-from models.database import (
-    User, Booking, BusinessBooking, PaymentTransaction,
-    TourOperator, TravelAgency, SalesAgent, Tour,
-    NotificationLog, AIQueryLog, PaymentRefund
+from models import (
+    User, BusinessBooking,
+    TourOperator, TravelAgency, SalesAgent
 )
+# TODO: Import additional models as they become available
+# Booking, PaymentTransaction, Tour, NotificationLog, AIQueryLog, PaymentRefund
 
 
 class AnalyticsService:
