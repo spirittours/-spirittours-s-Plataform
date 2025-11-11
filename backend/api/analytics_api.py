@@ -12,7 +12,7 @@ import json
 from database import get_db
 from auth import get_current_user
 from services.analytics_service import AnalyticsService
-from models.database import User
+from models import User
 
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
