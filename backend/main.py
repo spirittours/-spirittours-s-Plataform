@@ -49,7 +49,7 @@ from api import (
     omnichannel_communications_api,
     # ai_voice_agents_api,  # TODO: Fix - requires SpeechRecognition/pyaudio system libraries
     # webrtc_signaling_api,  # TODO: Fix - depends on ai_voice_agents_service
-    advanced_voice_api,
+    # advanced_voice_api,  # TODO: Fix - requires elevenlabs module
     social_media_credentials_api,
     ai_content_api,
     scheduler_api,
@@ -68,7 +68,7 @@ from services.pbx_3cx_integration_service import PBX3CXIntegrationService, PBX3C
 from services.omnichannel_crm_service import OmnichannelCRMService
 # from services.ai_voice_agents_service import AIVoiceAgentsService, ai_voice_agents_service  # TODO: Fix audio dependencies
 # from services.webrtc_signaling_service import WebRTCSignalingService, webrtc_signaling_service  # TODO: Fix audio dependencies
-from services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service
+# from services.advanced_voice_service import AdvancedVoiceService, advanced_voice_service  # TODO: Fix elevenlabs dependency
 
 # Import WebSocket handler
 from websocket_handler import websocket_endpoint
@@ -114,7 +114,7 @@ app.include_router(commission_management_api.router)
 app.include_router(omnichannel_communications_api.router)
 # app.include_router(ai_voice_agents_api.router)  # TODO: Fix audio dependencies
 # app.include_router(webrtc_signaling_api.router)  # TODO: Fix audio dependencies
-app.include_router(advanced_voice_api.router)
+# app.include_router(advanced_voice_api.router)  # TODO: Fix - requires elevenlabs module
 app.include_router(social_media_credentials_api.router)
 app.include_router(access_control_router)
 app.include_router(ai_content_api.router)
@@ -217,24 +217,25 @@ async def startup_event():
         #     logger.warning(f"⚠️ WebRTC Signaling service initialization error: {str(e)}")
         webrtc_service = None  # Disabled due to audio library dependencies
         
-        # Initialize Advanced Voice AI Service  
-        try:
-            # Prepare configuration for advanced voice service
-            voice_config = {
-                "elevenlabs_api_key": getattr(settings, 'ELEVENLABS_API_KEY', None),
-                "openai_api_key": getattr(settings, 'OPENAI_API_KEY', None),
-                "google_api_key": getattr(settings, 'GOOGLE_API_KEY', None),
-                "azure_api_key": getattr(settings, 'AZURE_API_KEY', None),
-            }
-            
-            # Initialize advanced voice service using global instance
-            if await advanced_voice_service.initialize(voice_config):
-                logger.info("✅ Advanced Voice AI service initialized successfully")
-            else:
-                logger.warning("⚠️ Advanced Voice AI service initialization failed - continuing without advanced voice features")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Advanced Voice AI service initialization error: {str(e)}")
+        # Initialize Advanced Voice AI Service (DISABLED - requires elevenlabs module)
+        # try:
+        #     # Prepare configuration for advanced voice service
+        #     voice_config = {
+        #         "elevenlabs_api_key": getattr(settings, 'ELEVENLABS_API_KEY', None),
+        #         "openai_api_key": getattr(settings, 'OPENAI_API_KEY', None),
+        #         "google_api_key": getattr(settings, 'GOOGLE_API_KEY', None),
+        #         "azure_api_key": getattr(settings, 'AZURE_API_KEY', None),
+        #     }
+        #     
+        #     # Initialize advanced voice service using global instance
+        #     if await advanced_voice_service.initialize(voice_config):
+        #         logger.info("✅ Advanced Voice AI service initialized successfully")
+        #     else:
+        #         logger.warning("⚠️ Advanced Voice AI service initialization failed - continuing without advanced voice features")
+        #         
+        # except Exception as e:
+        #     logger.warning(f"⚠️ Advanced Voice AI service initialization error: {str(e)}")
+        advanced_voice_service = None  # Disabled due to elevenlabs dependency
         
         # Initialize Open Source Services
         try:
