@@ -134,7 +134,7 @@ async def websocket_route(websocket: WebSocket, token: Optional[str] = None):
 # Global service instances
 pbx_service: Optional[PBX3CXIntegrationService] = None
 crm_service: Optional[OmnichannelCRMService] = None
-voice_agents_service: Optional[AIVoiceAgentsService] = None
+voice_agents_service = None  # Optional[AIVoiceAgentsService] - Disabled due to audio dependencies
 webrtc_service = None  # Optional[WebRTCSignalingService] - Disabled due to audio dependencies
 # advanced_voice_service is imported as global instance from services
 
