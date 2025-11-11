@@ -14,7 +14,7 @@ from . import booking_api
 from . import b2b_management_api
 from . import scheduler_api
 from . import sentiment_analysis_api
-from . import analytics_api
+# from . import analytics_api  # TODO: Fix FastAPI type annotation error
 
 __all__ = [
     'admin_api',
@@ -27,5 +27,5 @@ __all__ = [
     'b2b_management_api',
     'scheduler_api',
     'sentiment_analysis_api',
-    'analytics_api'
+    # 'analytics_api'  # TODO: Fix FastAPI type annotation error
 ]
