@@ -80,7 +80,19 @@ function AppSimple() {
     try {
       const response = await fetch(`${API_URL}/api/v1/tours`);
       const data = await response.json();
-      setTours(data.tours || data); // Support both { tours: [...] } and [...] formats
+      const toursArray = data.tours || data;
+      
+      // Transform backend format to match frontend interface
+      const transformedTours = toursArray.map((tour: any) => ({
+        id: tour.id,
+        title: tour.title,
+        description: tour.description,
+        price: tour.basePrice?.amount || tour.price || 0,
+        duration_days: tour.duration?.days || tour.duration_days || 1,
+        max_participants: tour.maxParticipants || tour.max_participants || 1
+      }));
+      
+      setTours(transformedTours);
     } catch (error) {
       console.error('Error fetching tours:', error);
     }
@@ -92,7 +104,19 @@ function AppSimple() {
     try {
       const response = await fetch(`${API_URL}/api/v1/bookings`);
       const data = await response.json();
-      setBookings(data);
+      
+      // Transform backend format to match frontend interface
+      const transformedBookings = data.map((booking: any) => ({
+        id: booking.id,
+        booking_date: booking.booking_date,
+        participants: booking.participants,
+        total_price: booking.total_amount || booking.total_price || 0,
+        status: booking.status,
+        tour_title: booking.tour_name || booking.tour_title || 'Unknown Tour',
+        tour_description: booking.tour_description || ''
+      }));
+      
+      setBookings(transformedBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
     }
