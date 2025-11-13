@@ -35,7 +35,7 @@ import {
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 interface Tour {
-  id: number;
+  id: string;  // Changed from number to string to match backend format (e.g., 'tour-001')
   title: string;
   description: string;
   price: number;
@@ -153,22 +153,21 @@ function AppSimple() {
     setSuccessMessage('');
 
     try {
-      console.log('Creating booking with data:', {
-        tour_id: selectedTour.id,
+      // Ensure tour_id is a string (backend expects string like 'tour-001')
+      const bookingData = {
+        tour_id: String(selectedTour.id),
         booking_date: bookingForm.booking_date,
-        participants: bookingForm.participants
-      });
+        participants: Number(bookingForm.participants)
+      };
+
+      console.log('Creating booking with data:', bookingData);
 
       const response = await fetch(`${API_URL}/api/v1/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tour_id: selectedTour.id,
-          booking_date: bookingForm.booking_date,
-          participants: bookingForm.participants
-        })
+        body: JSON.stringify(bookingData)
       });
 
       if (response.ok) {
