@@ -2908,7 +2908,7 @@ async def get_final_system_status():
 
 @app.get("/api/v1/tours")
 async def get_tours_mock():
-    """Mock endpoint for frontend - returns sample tours data"""
+    """Mock endpoint for frontend - returns sample tours data with all expected fields"""
     return [
         {
             "id": "tour-001",
@@ -2917,12 +2917,39 @@ async def get_tours_mock():
             "destination": "Sedona, Arizona",
             "duration": "4 hours",
             "price": 129.00,
+            "originalPrice": 159.00,
+            "discount": 19.0,
             "currency": "USD",
             "category": "spiritual",
             "rating": 4.8,
             "reviews_count": 234,
             "image_url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
-            "availability": "available"
+            "images": [
+                "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
+                "https://images.unsplash.com/photo-1506905925346-21bda4d32df5",
+                "https://images.unsplash.com/photo-1506905925346-21bda4d32df6"
+            ],
+            "availability": "available",
+            "maxGroupSize": 12,
+            "minAge": 18,
+            "difficulty": "moderate",
+            "highlights": [
+                "Visit 4 major vortex sites",
+                "Guided meditation sessions",
+                "Local expert guide",
+                "Small group experience"
+            ],
+            "included": [
+                "Transportation",
+                "Professional guide",
+                "Water and snacks",
+                "Meditation instruction"
+            ],
+            "excluded": [
+                "Meals",
+                "Personal expenses",
+                "Gratuities"
+            ]
         },
         {
             "id": "tour-002",
@@ -2931,12 +2958,40 @@ async def get_tours_mock():
             "destination": "Machu Picchu, Peru",
             "duration": "7 days",
             "price": 1899.00,
+            "originalPrice": 2299.00,
+            "discount": 17.0,
             "currency": "USD",
             "category": "adventure",
             "rating": 4.9,
             "reviews_count": 456,
             "image_url": "https://images.unsplash.com/photo-1526392060635-9d6019884377",
-            "availability": "limited"
+            "images": [
+                "https://images.unsplash.com/photo-1526392060635-9d6019884377",
+                "https://images.unsplash.com/photo-1526392060635-9d6019884378",
+                "https://images.unsplash.com/photo-1526392060635-9d6019884379"
+            ],
+            "availability": "limited",
+            "maxGroupSize": 16,
+            "minAge": 21,
+            "difficulty": "challenging",
+            "highlights": [
+                "Machu Picchu sunrise tour",
+                "Sacred Valley exploration",
+                "Traditional ceremonies",
+                "Expert archaeologist guide"
+            ],
+            "included": [
+                "Accommodation (6 nights)",
+                "All meals",
+                "Transportation",
+                "Entrance fees",
+                "Professional guides"
+            ],
+            "excluded": [
+                "International flights",
+                "Travel insurance",
+                "Personal expenses"
+            ]
         },
         {
             "id": "tour-003",
@@ -2945,12 +3000,41 @@ async def get_tours_mock():
             "destination": "Ubud, Bali",
             "duration": "5 days",
             "price": 1299.00,
+            "originalPrice": 1499.00,
+            "discount": 13.0,
             "currency": "USD",
             "category": "wellness",
             "rating": 4.7,
             "reviews_count": 189,
             "image_url": "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
-            "availability": "available"
+            "images": [
+                "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
+                "https://images.unsplash.com/photo-1537996194471-e657df975ab5",
+                "https://images.unsplash.com/photo-1537996194471-e657df975ab6"
+            ],
+            "availability": "available",
+            "maxGroupSize": 10,
+            "minAge": 16,
+            "difficulty": "easy",
+            "highlights": [
+                "Daily yoga sessions",
+                "Spa treatments",
+                "Healthy cuisine",
+                "Temple visits",
+                "Meditation workshops"
+            ],
+            "included": [
+                "Boutique accommodation",
+                "Organic meals",
+                "Yoga classes",
+                "Spa treatments",
+                "Airport transfers"
+            ],
+            "excluded": [
+                "International flights",
+                "Additional spa services",
+                "Personal expenses"
+            ]
         }
     ]
 
