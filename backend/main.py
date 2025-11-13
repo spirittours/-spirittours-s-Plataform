@@ -2908,135 +2908,149 @@ async def get_final_system_status():
 
 @app.get("/api/v1/tours")
 async def get_tours_mock():
-    """Mock endpoint for frontend - returns sample tours data with all expected fields"""
-    return [
-        {
-            "id": "tour-001",
-            "title": "Sedona Vortex Experience",
-            "description": "Discover the mystical energy of Sedona's famous vortexes with our expert guide.",
-            "destination": "Sedona, Arizona",
-            "duration": "4 hours",
-            "price": 129.00,
-            "originalPrice": 159.00,
-            "discount": 19.0,
-            "currency": "USD",
-            "category": "spiritual",
-            "rating": 4.8,
-            "reviews_count": 234,
-            "image_url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
-            "images": [
-                "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
-                "https://images.unsplash.com/photo-1506905925346-21bda4d32df5",
-                "https://images.unsplash.com/photo-1506905925346-21bda4d32df6"
-            ],
-            "availability": "available",
-            "maxGroupSize": 12,
-            "minAge": 18,
-            "difficulty": "moderate",
-            "highlights": [
-                "Visit 4 major vortex sites",
-                "Guided meditation sessions",
-                "Local expert guide",
-                "Small group experience"
-            ],
-            "included": [
-                "Transportation",
-                "Professional guide",
-                "Water and snacks",
-                "Meditation instruction"
-            ],
-            "excluded": [
-                "Meals",
-                "Personal expenses",
-                "Gratuities"
-            ]
-        },
-        {
-            "id": "tour-002",
-            "title": "Machu Picchu Spiritual Journey",
-            "description": "Experience the ancient wisdom of the Incas in this transformative journey.",
-            "destination": "Machu Picchu, Peru",
-            "duration": "7 days",
-            "price": 1899.00,
-            "originalPrice": 2299.00,
-            "discount": 17.0,
-            "currency": "USD",
-            "category": "adventure",
-            "rating": 4.9,
-            "reviews_count": 456,
-            "image_url": "https://images.unsplash.com/photo-1526392060635-9d6019884377",
-            "images": [
-                "https://images.unsplash.com/photo-1526392060635-9d6019884377",
-                "https://images.unsplash.com/photo-1526392060635-9d6019884378",
-                "https://images.unsplash.com/photo-1526392060635-9d6019884379"
-            ],
-            "availability": "limited",
-            "maxGroupSize": 16,
-            "minAge": 21,
-            "difficulty": "challenging",
-            "highlights": [
-                "Machu Picchu sunrise tour",
-                "Sacred Valley exploration",
-                "Traditional ceremonies",
-                "Expert archaeologist guide"
-            ],
-            "included": [
-                "Accommodation (6 nights)",
-                "All meals",
-                "Transportation",
-                "Entrance fees",
-                "Professional guides"
-            ],
-            "excluded": [
-                "International flights",
-                "Travel insurance",
-                "Personal expenses"
-            ]
-        },
-        {
-            "id": "tour-003",
-            "title": "Bali Wellness Retreat",
-            "description": "Rejuvenate your mind, body and spirit in paradise.",
-            "destination": "Ubud, Bali",
-            "duration": "5 days",
-            "price": 1299.00,
-            "originalPrice": 1499.00,
-            "discount": 13.0,
-            "currency": "USD",
-            "category": "wellness",
-            "rating": 4.7,
-            "reviews_count": 189,
-            "image_url": "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
-            "images": [
-                "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
-                "https://images.unsplash.com/photo-1537996194471-e657df975ab5",
-                "https://images.unsplash.com/photo-1537996194471-e657df975ab6"
-            ],
-            "availability": "available",
-            "maxGroupSize": 10,
-            "minAge": 16,
-            "difficulty": "easy",
-            "highlights": [
-                "Daily yoga sessions",
-                "Spa treatments",
-                "Healthy cuisine",
-                "Temple visits",
-                "Meditation workshops"
-            ],
-            "included": [
-                "Boutique accommodation",
-                "Organic meals",
-                "Yoga classes",
-                "Spa treatments",
-                "Airport transfers"
-            ],
-            "excluded": [
-                "International flights",
-                "Additional spa services",
-                "Personal expenses"
-            ]
-        }
-    ]
+    """Mock endpoint for frontend - returns tours matching TypeScript Tour interface"""
+    return {
+        "tours": [
+            {
+                "id": "tour-001",
+                "title": "Sedona Vortex Experience",
+                "slug": "sedona-vortex-experience",
+                "description": "Discover the mystical energy of Sedona's famous vortexes with our expert guide. Experience the transformative power of these natural energy centers.",
+                "shortDescription": "Discover the mystical energy of Sedona's famous vortexes with our expert guide.",
+                "category": "wellness",
+                "tags": ["spiritual", "wellness", "nature"],
+                "difficulty": "moderate",
+                "location": {
+                    "country": "USA",
+                    "city": "Sedona",
+                    "address": "Sedona, Arizona",
+                    "timezone": "America/Phoenix"
+                },
+                "destinations": ["Sedona", "Arizona"],
+                "duration": {
+                    "days": 1,
+                    "nights": 0
+                },
+                "minParticipants": 2,
+                "maxParticipants": 12,
+                "basePrice": {
+                    "amount": 129.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-001",
+                        "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
+                        "alt": "Sedona Vortex Landscape",
+                        "isPrimary": True,
+                        "order": 1
+                    },
+                    {
+                        "id": "img-002",
+                        "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df5",
+                        "alt": "Meditation at Vortex",
+                        "isPrimary": False,
+                        "order": 2
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["Meals", "Personal expenses", "Gratuities"],
+                "rating": 4.8,
+                "totalReviews": 234,
+                "status": "active",
+                "featured": True
+            },
+            {
+                "id": "tour-002",
+                "title": "Machu Picchu Spiritual Journey",
+                "slug": "machu-picchu-spiritual-journey",
+                "description": "Experience the ancient wisdom of the Incas in this transformative journey through the Sacred Valley and Machu Picchu.",
+                "shortDescription": "Experience the ancient wisdom of the Incas in this transformative journey.",
+                "category": "adventure",
+                "tags": ["spiritual", "adventure", "cultural"],
+                "difficulty": "challenging",
+                "location": {
+                    "country": "Peru",
+                    "city": "Cusco",
+                    "address": "Machu Picchu, Peru",
+                    "timezone": "America/Lima"
+                },
+                "destinations": ["Machu Picchu", "Cusco", "Sacred Valley"],
+                "duration": {
+                    "days": 7,
+                    "nights": 6
+                },
+                "minParticipants": 4,
+                "maxParticipants": 16,
+                "basePrice": {
+                    "amount": 1899.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-003",
+                        "url": "https://images.unsplash.com/photo-1526392060635-9d6019884377",
+                        "alt": "Machu Picchu Ruins",
+                        "isPrimary": True,
+                        "order": 1
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["International flights", "Travel insurance", "Personal expenses"],
+                "rating": 4.9,
+                "totalReviews": 456,
+                "status": "active",
+                "featured": True
+            },
+            {
+                "id": "tour-003",
+                "title": "Bali Wellness Retreat",
+                "slug": "bali-wellness-retreat",
+                "description": "Rejuvenate your mind, body and spirit in paradise. Enjoy daily yoga, spa treatments, and healthy organic cuisine in beautiful Ubud.",
+                "shortDescription": "Rejuvenate your mind, body and spirit in paradise.",
+                "category": "wellness",
+                "tags": ["wellness", "yoga", "spa"],
+                "difficulty": "easy",
+                "location": {
+                    "country": "Indonesia",
+                    "city": "Ubud",
+                    "address": "Ubud, Bali",
+                    "timezone": "Asia/Makassar"
+                },
+                "destinations": ["Ubud", "Bali"],
+                "duration": {
+                    "days": 5,
+                    "nights": 4
+                },
+                "minParticipants": 2,
+                "maxParticipants": 10,
+                "basePrice": {
+                    "amount": 1299.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-004",
+                        "url": "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
+                        "alt": "Bali Rice Terraces",
+                        "isPrimary": True,
+                        "order": 1
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["International flights", "Additional spa services", "Personal expenses"],
+                "rating": 4.7,
+                "totalReviews": 189,
+                "status": "active",
+                "featured": False
+            }
+        ],
+        "total": 3,
+        "totalPages": 1
+    }
 
 @app.get("/api/v1/stats")
 async def get_stats_mock():
