@@ -2956,10 +2956,20 @@ async def get_tours_mock():
                 "itinerary": [],
                 "inclusions": [],
                 "exclusions": ["Meals", "Personal expenses", "Gratuities"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
                 "rating": 4.8,
                 "totalReviews": 234,
+                "totalBookings": 150,
+                "popularityScore": 85,
                 "status": "active",
-                "featured": True
+                "featured": True,
+                "trending": False,
+                "createdBy": "admin",
+                "createdAt": "2025-01-01T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
             },
             {
                 "id": "tour-002",
@@ -2999,10 +3009,20 @@ async def get_tours_mock():
                 "itinerary": [],
                 "inclusions": [],
                 "exclusions": ["International flights", "Travel insurance", "Personal expenses"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
                 "rating": 4.9,
                 "totalReviews": 456,
+                "totalBookings": 320,
+                "popularityScore": 95,
                 "status": "active",
-                "featured": True
+                "featured": True,
+                "trending": True,
+                "createdBy": "admin",
+                "createdAt": "2025-01-15T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
             },
             {
                 "id": "tour-003",
@@ -3042,13 +3062,25 @@ async def get_tours_mock():
                 "itinerary": [],
                 "inclusions": [],
                 "exclusions": ["International flights", "Additional spa services", "Personal expenses"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
                 "rating": 4.7,
                 "totalReviews": 189,
+                "totalBookings": 210,
+                "popularityScore": 78,
                 "status": "active",
-                "featured": False
+                "featured": False,
+                "trending": False,
+                "createdBy": "admin",
+                "createdAt": "2025-02-01T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
             }
         ],
         "total": 3,
+        "page": 1,
+        "pageSize": 20,
         "totalPages": 1
     }
 
