@@ -80,7 +80,7 @@ function AppSimple() {
     try {
       const response = await fetch(`${API_URL}/api/v1/tours`);
       const data = await response.json();
-      setTours(data);
+      setTours(data.tours || data); // Support both { tours: [...] } and [...] formats
     } catch (error) {
       console.error('Error fetching tours:', error);
     }
