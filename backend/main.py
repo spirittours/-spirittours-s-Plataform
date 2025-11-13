@@ -3076,9 +3076,221 @@ async def get_tours_mock():
                 "createdBy": "admin",
                 "createdAt": "2025-02-01T00:00:00Z",
                 "updatedAt": "2025-11-13T00:00:00Z"
+            },
+            {
+                "id": "tour-004",
+                "title": "Iceland Northern Lights Quest",
+                "slug": "iceland-northern-lights-quest",
+                "description": "Witness the magical Aurora Borealis in Iceland's pristine wilderness. Experience the spiritual connection between earth and cosmos under dancing lights.",
+                "shortDescription": "Witness the magical Aurora Borealis in Iceland's pristine wilderness.",
+                "category": "adventure",
+                "tags": ["nature", "spiritual", "photography"],
+                "difficulty": "moderate",
+                "location": {
+                    "country": "Iceland",
+                    "city": "Reykjavik",
+                    "address": "Reykjavik, Iceland",
+                    "timezone": "Atlantic/Reykjavik"
+                },
+                "destinations": ["Reykjavik", "Golden Circle", "South Coast"],
+                "duration": {
+                    "days": 4,
+                    "nights": 3
+                },
+                "minParticipants": 2,
+                "maxParticipants": 8,
+                "basePrice": {
+                    "amount": 799.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-007",
+                        "url": "https://images.unsplash.com/photo-1483347756197-71ef80e95f73",
+                        "alt": "Northern Lights over Iceland",
+                        "isPrimary": True,
+                        "order": 1
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["International flights", "Meals", "Personal expenses"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
+                "rating": 4.9,
+                "totalReviews": 312,
+                "totalBookings": 180,
+                "popularityScore": 92,
+                "status": "active",
+                "featured": True,
+                "trending": True,
+                "createdBy": "admin",
+                "createdAt": "2025-02-15T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
+            },
+            {
+                "id": "tour-005",
+                "title": "Costa Rica Jungle Adventure",
+                "slug": "costa-rica-jungle-adventure",
+                "description": "Immerse yourself in the vibrant rainforest ecosystem. Connect with nature through wildlife encounters, zip-lining, and hot springs.",
+                "shortDescription": "Immerse yourself in the vibrant rainforest ecosystem.",
+                "category": "adventure",
+                "tags": ["nature", "adventure", "wildlife"],
+                "difficulty": "moderate",
+                "location": {
+                    "country": "Costa Rica",
+                    "city": "Arenal",
+                    "address": "Arenal Volcano, Costa Rica",
+                    "timezone": "America/Costa_Rica"
+                },
+                "destinations": ["Arenal", "Monteverde", "Manuel Antonio"],
+                "duration": {
+                    "days": 6,
+                    "nights": 5
+                },
+                "minParticipants": 2,
+                "maxParticipants": 12,
+                "basePrice": {
+                    "amount": 1349.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-008",
+                        "url": "https://images.unsplash.com/photo-1508962914676-134849a727f0",
+                        "alt": "Costa Rica Rainforest",
+                        "isPrimary": True,
+                        "order": 1
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["International flights", "Some meals", "Travel insurance"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
+                "rating": 4.8,
+                "totalReviews": 267,
+                "totalBookings": 195,
+                "popularityScore": 88,
+                "status": "active",
+                "featured": False,
+                "trending": True,
+                "createdBy": "admin",
+                "createdAt": "2025-03-01T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
+            },
+            {
+                "id": "tour-006",
+                "title": "New Zealand Nature Odyssey",
+                "slug": "new-zealand-nature-odyssey",
+                "description": "Explore the breathtaking landscapes of Middle Earth. From snow-capped mountains to pristine lakes, experience nature's majesty.",
+                "shortDescription": "Explore the breathtaking landscapes of Middle Earth.",
+                "category": "adventure",
+                "tags": ["nature", "adventure", "scenic"],
+                "difficulty": "challenging",
+                "location": {
+                    "country": "New Zealand",
+                    "city": "Queenstown",
+                    "address": "Queenstown, New Zealand",
+                    "timezone": "Pacific/Auckland"
+                },
+                "destinations": ["Queenstown", "Milford Sound", "Mount Cook"],
+                "duration": {
+                    "days": 8,
+                    "nights": 7
+                },
+                "minParticipants": 2,
+                "maxParticipants": 10,
+                "basePrice": {
+                    "amount": 2499.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-009",
+                        "url": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800",
+                        "alt": "New Zealand Mountains",
+                        "isPrimary": True,
+                        "order": 1
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["International flights", "Some meals", "Optional activities"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
+                "rating": 4.9,
+                "totalReviews": 389,
+                "totalBookings": 245,
+                "popularityScore": 94,
+                "status": "active",
+                "featured": True,
+                "trending": False,
+                "createdBy": "admin",
+                "createdAt": "2025-03-15T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
+            },
+            {
+                "id": "tour-007",
+                "title": "Morocco Desert Experience",
+                "slug": "morocco-desert-experience",
+                "description": "Journey through the mystical Sahara Desert. Experience Berber culture, camel rides, and nights under star-filled desert skies.",
+                "shortDescription": "Journey through the mystical Sahara Desert.",
+                "category": "cultural",
+                "tags": ["cultural", "adventure", "spiritual"],
+                "difficulty": "moderate",
+                "location": {
+                    "country": "Morocco",
+                    "city": "Marrakech",
+                    "address": "Marrakech, Morocco",
+                    "timezone": "Africa/Casablanca"
+                },
+                "destinations": ["Marrakech", "Sahara Desert", "Atlas Mountains"],
+                "duration": {
+                    "days": 5,
+                    "nights": 4
+                },
+                "minParticipants": 2,
+                "maxParticipants": 14,
+                "basePrice": {
+                    "amount": 899.00,
+                    "currency": "USD"
+                },
+                "images": [
+                    {
+                        "id": "img-010",
+                        "url": "https://images.unsplash.com/photo-1489749798305-4fea3ae63d43",
+                        "alt": "Morocco Sahara Desert",
+                        "isPrimary": True,
+                        "order": 1
+                    }
+                ],
+                "itinerary": [],
+                "inclusions": [],
+                "exclusions": ["International flights", "Alcoholic beverages", "Gratuities"],
+                "requirements": {},
+                "guides": [],
+                "availabilities": [],
+                "reviews": [],
+                "rating": 4.7,
+                "totalReviews": 223,
+                "totalBookings": 167,
+                "popularityScore": 82,
+                "status": "active",
+                "featured": False,
+                "trending": False,
+                "createdBy": "admin",
+                "createdAt": "2025-04-01T00:00:00Z",
+                "updatedAt": "2025-11-13T00:00:00Z"
             }
         ],
-        "total": 3,
+        "total": 7,
         "page": 1,
         "pageSize": 20,
         "totalPages": 1
@@ -3090,7 +3302,7 @@ async def get_stats_mock():
     return {
         "total_bookings": 1234,
         "total_revenue": 156789.50,
-        "active_tours": 42,
+        "active_tours": 7,
         "happy_customers": 4567,
         "average_rating": 4.8,
         "conversion_rate": 23.5,
