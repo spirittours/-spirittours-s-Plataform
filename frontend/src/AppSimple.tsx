@@ -73,6 +73,7 @@ function AppSimple() {
     participants: 1
   });
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Fetch tours
   const fetchTours = async () => {
@@ -147,7 +148,17 @@ function AppSimple() {
   const handleCreateBooking = async () => {
     if (!selectedTour) return;
 
+    // Clear any previous messages
+    setErrorMessage('');
+    setSuccessMessage('');
+
     try {
+      console.log('Creating booking with data:', {
+        tour_id: selectedTour.id,
+        booking_date: bookingForm.booking_date,
+        participants: bookingForm.participants
+      });
+
       const response = await fetch(`${API_URL}/api/v1/bookings`, {
         method: 'POST',
         headers: {
@@ -162,16 +173,29 @@ function AppSimple() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Booking created successfully:', data);
         setSuccessMessage(`Booking created successfully! ID: ${data.booking_id}`);
         setOpenBookingDialog(false);
         fetchBookings();
         fetchStats();
         
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(''), 3000);
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccessMessage(''), 5000);
+      } else {
+        // Handle error responses
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        console.error('Booking failed:', response.status, errorData);
+        setErrorMessage(`Error: ${errorData.detail || 'Failed to create booking'}`);
+        
+        // Clear error message after 5 seconds
+        setTimeout(() => setErrorMessage(''), 5000);
       }
     } catch (error) {
       console.error('Error creating booking:', error);
+      setErrorMessage('Network error: Unable to connect to server');
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setErrorMessage(''), 5000);
     }
   };
 
@@ -197,6 +221,11 @@ function AppSimple() {
         {successMessage && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {successMessage}
+          </Alert>
+        )}
+        {errorMessage && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errorMessage}
           </Alert>
         )}
 
