@@ -1,297 +1,378 @@
 """
-Pytest Configuration and Fixtures
-
-Provides shared fixtures for all tests.
+Test Configuration and Fixtures
+Provides shared fixtures for all test modules
 """
 
 import pytest
-import asyncio
-from typing import Generator, AsyncGenerator
-from decimal import Decimal
-from datetime import date, datetime, timedelta
+import os
+import sys
+from typing import Generator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from fastapi.testclient import TestClient
 
-# Test fixtures
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Add backend to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Set test environment variables before importing modules
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["USE_SQLITE"] = "true"
+os.environ["SECRET_KEY"] = "test-secret-key-min-32-chars-long-for-testing-purposes"
+os.environ["STRIPE_SECRET_KEY"] = "sk_test_fake"
+os.environ["SENDGRID_API_KEY"] = "SG.fake_test_key"
 
-@pytest.fixture
-def sample_customer_data():
-    """Sample customer data for testing."""
-    return {
-        "customer_id": "CUST-TEST-001",
-        "name": "Juan Pérez",
-        "email": "juan.perez@example.com",
-        "phone": "+34600123456",
-        "nif": "12345678A",
-        "address": {
-            "street": "Calle Mayor 123",
-            "city": "Madrid",
-            "postal_code": "28001",
-            "country": "España"
-        }
-    }
+from fastapi import FastAPI
+from database.models import Base
+from auth.models import User
+from auth.password import get_password_hash
+from auth.jwt import create_access_token
 
+# Create minimal test app
+app = FastAPI()
 
-@pytest.fixture
-def sample_booking_data():
-    """Sample booking data for testing."""
-    return {
-        "booking_id": "BK-TEST-001",
-        "customer_id": "CUST-TEST-001",
-        "booking_date": date.today().isoformat(),
-        "travel_date": (date.today() + timedelta(days=30)).isoformat(),
-        "destination": "Barcelona",
-        "status": "confirmed",
-        "total_amount": Decimal("1500.00"),
-        "products": [
-            {
-                "type": "flight",
-                "description": "Vuelo Madrid-Barcelona",
-                "price": Decimal("150.00")
-            },
-            {
-                "type": "hotel",
-                "description": "Hotel 4* Barcelona - 3 noches",
-                "price": Decimal("450.00")
-            }
-        ]
-    }
+# Import routes after environment is set
+from auth.routes import router as auth_router
+from reviews.routes import router as reviews_router
+from analytics.routes import router as analytics_router
+
+app.include_router(auth_router)
+app.include_router(reviews_router)
+app.include_router(analytics_router)
+
+# Test database URL (SQLite in-memory)
+TEST_DATABASE_URL = "sqlite:///:memory:"
+
+# Create test engine
+engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    pool_pre_ping=True
+)
+
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-@pytest.fixture
-def sample_invoice_data():
-    """Sample invoice data for testing."""
-    return {
-        "invoice_number": "INV-TEST-001",
-        "issue_date": date.today().isoformat(),
-        "due_date": (date.today() + timedelta(days=30)).isoformat(),
-        "customer": {
-            "name": "Juan Pérez",
-            "nif": "12345678A",
-            "address": "Calle Mayor 123, Madrid"
-        },
-        "lines": [
-            {
-                "description": "Paquete turístico Barcelona",
-                "quantity": Decimal("1"),
-                "unit_price": Decimal("1500.00"),
-                "tax_rate": Decimal("21"),
-                "total": Decimal("1815.00")
-            }
-        ],
-        "subtotal": Decimal("1500.00"),
-        "tax_amount": Decimal("315.00"),
-        "total_amount": Decimal("1815.00")
-    }
+@pytest.fixture(scope="function")
+def db() -> Generator[Session, None, None]:
+    """
+    Create a fresh database for each test
+    """
+    # Create all tables
+    Base.metadata.create_all(bind=engine)
+    
+    # Create session
+    db = TestingSessionLocal()
+    
+    try:
+        yield db
+    finally:
+        db.close()
+        # Drop all tables after test
+        Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture
-def sample_agent_data():
-    """Sample agent data for testing."""
-    return {
-        "agent_code": "AG-TEST-001",
-        "name": "Agencia Test",
-        "email": "agencia@test.com",
-        "phone": "+34600999888",
-        "commission_rate": Decimal("10"),
-        "status": "active",
-        "tier": "bronze"
-    }
-
-
-@pytest.fixture
-def sample_commission_data():
-    """Sample commission data for testing."""
-    return {
-        "commission_code": "COMM-TEST-001",
-        "agent_id": 1,
-        "booking_id": "BK-TEST-001",
-        "booking_amount": Decimal("1500.00"),
-        "commission_rate": Decimal("10"),
-        "commission_amount": Decimal("150.00"),
-        "status": "pending",
-        "generated_at": datetime.now().isoformat()
-    }
-
-
-@pytest.fixture
-def sample_bundle_data():
-    """Sample bundle data for testing."""
-    return {
-        "bundle_id": "BUNDLE-TEST-001",
-        "bundle_name": "Paquete Barcelona Premium",
-        "bundle_type": "premium",
-        "products": [
-            {
-                "product_id": "PROD-001",
-                "type": "flight",
-                "name": "Vuelo MAD-BCN",
-                "price": 150.00
-            },
-            {
-                "product_id": "PROD-002",
-                "type": "hotel",
-                "name": "Hotel 4* Barcelona",
-                "price": 450.00
-            },
-            {
-                "product_id": "PROD-003",
-                "type": "transport",
-                "name": "Traslados aeropuerto",
-                "price": 50.00
-            }
-        ],
-        "base_price": 650.00,
-        "discounted_price": 520.00,
-        "discount_percentage": 20.0
-    }
-
-
-@pytest.fixture
-def sample_recommendation_data():
-    """Sample AI recommendation data for testing."""
-    return {
-        "recommendation_id": "REC-TEST-001",
-        "customer_id": "CUST-TEST-001",
-        "type": "destination",
-        "destination": "Barcelona",
-        "estimated_price": 1500.00,
-        "confidence_score": 85.0,
-        "reasoning": [
-            "Basado en tu historial de viajes",
-            "Dentro de tu rango de presupuesto",
-            "Alta valoración de clientes similares"
-        ]
-    }
-
-
-# Mock database fixtures
-@pytest.fixture
-def mock_db_session():
-    """Mock database session for testing."""
-    class MockSession:
-        def __init__(self):
-            self.data = {}
-            self.committed = False
-            self.rolled_back = False
-        
-        async def commit(self):
-            self.committed = True
-        
-        async def rollback(self):
-            self.rolled_back = False
-        
-        async def close(self):
+@pytest.fixture(scope="function")
+def client(db: Session) -> Generator[TestClient, None, None]:
+    """
+    Create a test client with database dependency override
+    """
+    from database.connection import get_db
+    
+    def override_get_db():
+        try:
+            yield db
+        finally:
             pass
     
-    return MockSession()
+    app.dependency_overrides[get_db] = override_get_db
+    
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def mock_cache():
-    """Mock cache for testing."""
-    class MockCache:
-        def __init__(self):
-            self.data = {}
-        
-        async def get(self, key):
-            return self.data.get(key)
-        
-        async def set(self, key, value, expire=None):
-            self.data[key] = value
-        
-        async def delete(self, key):
-            if key in self.data:
-                del self.data[key]
-        
-        async def clear(self):
-            self.data.clear()
+def test_user(db: Session) -> dict:
+    """
+    Create a test user in the database
+    """
+    from database.models import User as UserModel
     
-    return MockCache()
-
-
-# API client fixtures
-@pytest.fixture
-def api_client():
-    """Mock API client for testing."""
-    from fastapi.testclient import TestClient
-    # This would import your actual FastAPI app
-    # from main import app
-    # return TestClient(app)
+    user_data = {
+        "email": "test@example.com",
+        "password": "TestPass123!",
+        "full_name": "Test User",
+        "phone": "+1234567890",
+        "role": "user"
+    }
     
-    # For now, return a mock
-    class MockClient:
-        async def get(self, url, **kwargs):
-            return MockResponse(200, {"status": "success"})
-        
-        async def post(self, url, **kwargs):
-            return MockResponse(201, {"status": "created"})
-        
-        async def put(self, url, **kwargs):
-            return MockResponse(200, {"status": "updated"})
-        
-        async def delete(self, url, **kwargs):
-            return MockResponse(204, {})
+    user = UserModel(
+        email=user_data["email"],
+        password_hash=get_password_hash(user_data["password"]),
+        full_name=user_data["full_name"],
+        phone=user_data["phone"],
+        role=user_data["role"]
+    )
     
-    class MockResponse:
-        def __init__(self, status_code, data):
-            self.status_code = status_code
-            self.data = data
-        
-        def json(self):
-            return self.data
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     
-    return MockClient()
-
-
-# Performance testing fixtures
-@pytest.fixture
-def performance_threshold():
-    """Performance thresholds for tests."""
     return {
-        "api_response_time_ms": 200,  # Max 200ms for API responses
-        "database_query_time_ms": 100,  # Max 100ms for DB queries
-        "cache_hit_rate": 0.80,  # Min 80% cache hit rate
-        "memory_usage_mb": 512,  # Max 512MB memory usage
+        "id": user.id,
+        "email": user.email,
+        "password": user_data["password"],  # Plain password for login
+        "full_name": user.full_name,
+        "role": user.role
     }
 
 
-# Security testing fixtures
 @pytest.fixture
-def security_headers():
-    """Required security headers for testing."""
+def test_admin(db: Session) -> dict:
+    """
+    Create a test admin user in the database
+    """
+    from database.models import User as UserModel
+    
+    admin_data = {
+        "email": "admin@example.com",
+        "password": "AdminPass123!",
+        "full_name": "Admin User",
+        "phone": "+1234567891",
+        "role": "admin"
+    }
+    
+    admin = UserModel(
+        email=admin_data["email"],
+        password_hash=get_password_hash(admin_data["password"]),
+        full_name=admin_data["full_name"],
+        phone=admin_data["phone"],
+        role=admin_data["role"]
+    )
+    
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
+    
     return {
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "X-XSS-Protection": "1; mode=block",
-        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-        "Content-Security-Policy": "default-src 'self'",
+        "id": admin.id,
+        "email": admin.email,
+        "password": admin_data["password"],  # Plain password for login
+        "full_name": admin.full_name,
+        "role": admin.role
     }
 
 
-# Parametrize fixtures for comprehensive testing
-@pytest.fixture(params=["credit_card", "debit_card", "paypal", "bank_transfer"])
-def payment_methods(request):
-    """Parametrized payment methods for testing."""
-    return request.param
+@pytest.fixture
+def user_token(test_user: dict) -> str:
+    """
+    Generate JWT token for test user
+    """
+    return create_access_token(
+        data={
+            "user_id": test_user["id"],
+            "email": test_user["email"],
+            "role": test_user["role"]
+        }
+    )
 
 
-@pytest.fixture(params=[10, 50, 100, 500, 1000])
-def load_test_users(request):
-    """Parametrized user counts for load testing."""
-    return request.param
+@pytest.fixture
+def admin_token(test_admin: dict) -> str:
+    """
+    Generate JWT token for test admin
+    """
+    return create_access_token(
+        data={
+            "user_id": test_admin["id"],
+            "email": test_admin["email"],
+            "role": test_admin["role"]
+        }
+    )
 
 
-# Cleanup fixtures
-@pytest.fixture(autouse=True)
-async def cleanup():
-    """Cleanup after each test."""
-    yield
-    # Cleanup code here
-    # Clear test data, close connections, etc.
-    pass
+@pytest.fixture
+def auth_headers(user_token: str) -> dict:
+    """
+    Create authorization headers with user token
+    """
+    return {"Authorization": f"Bearer {user_token}"}
+
+
+@pytest.fixture
+def admin_headers(admin_token: str) -> dict:
+    """
+    Create authorization headers with admin token
+    """
+    return {"Authorization": f"Bearer {admin_token}"}
+
+
+@pytest.fixture
+def test_tour(db: Session) -> dict:
+    """
+    Create a test tour in the database
+    """
+    from database.models import Tour as TourModel
+    
+    tour_data = {
+        "id": "TOUR-TEST-001",
+        "name": "Test Tour Madrid",
+        "description": "A test tour in Madrid",
+        "price": 99.99,
+        "duration": 180,
+        "location": "Madrid, Spain",
+        "rating_average": 4.5,
+        "review_count": 10
+    }
+    
+    tour = TourModel(**tour_data)
+    db.add(tour)
+    db.commit()
+    db.refresh(tour)
+    
+    return {
+        "id": tour.id,
+        "name": tour.name,
+        "description": tour.description,
+        "price": float(tour.price),
+        "duration": tour.duration,
+        "location": tour.location,
+        "rating_average": float(tour.rating_average),
+        "review_count": tour.review_count
+    }
+
+
+@pytest.fixture
+def test_booking(db: Session, test_user: dict, test_tour: dict) -> dict:
+    """
+    Create a test booking in the database
+    """
+    from database.models import Booking as BookingModel
+    from datetime import datetime, timedelta
+    
+    booking_data = {
+        "user_id": test_user["id"],
+        "tour_id": test_tour["id"],
+        "booking_date": datetime.utcnow(),
+        "tour_date": datetime.utcnow() + timedelta(days=30),
+        "participants": 2,
+        "status": "confirmed",
+        "total_amount": test_tour["price"] * 2
+    }
+    
+    booking = BookingModel(**booking_data)
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
+    
+    return {
+        "id": booking.id,
+        "user_id": booking.user_id,
+        "tour_id": booking.tour_id,
+        "booking_date": booking.booking_date,
+        "tour_date": booking.tour_date,
+        "participants": booking.participants,
+        "status": booking.status,
+        "total_amount": float(booking.total_amount)
+    }
+
+
+@pytest.fixture
+def completed_booking(db: Session, test_user: dict, test_tour: dict) -> dict:
+    """
+    Create a completed booking (for testing reviews)
+    """
+    from database.models import Booking as BookingModel
+    from datetime import datetime, timedelta
+    
+    booking_data = {
+        "user_id": test_user["id"],
+        "tour_id": test_tour["id"],
+        "booking_date": datetime.utcnow() - timedelta(days=10),
+        "tour_date": datetime.utcnow() - timedelta(days=5),
+        "participants": 2,
+        "status": "completed",
+        "total_amount": test_tour["price"] * 2
+    }
+    
+    booking = BookingModel(**booking_data)
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
+    
+    return {
+        "id": booking.id,
+        "user_id": booking.user_id,
+        "tour_id": booking.tour_id,
+        "booking_date": booking.booking_date,
+        "tour_date": booking.tour_date,
+        "participants": booking.participants,
+        "status": booking.status,
+        "total_amount": float(booking.total_amount)
+    }
+
+
+@pytest.fixture
+def test_payment(db: Session, test_booking: dict, test_user: dict) -> dict:
+    """
+    Create a test payment in the database
+    """
+    from database.models import Payment as PaymentModel
+    
+    payment_data = {
+        "booking_id": test_booking["id"],
+        "user_id": test_user["id"],
+        "amount": test_booking["total_amount"],
+        "currency": "USD",
+        "status": "succeeded",
+        "payment_method": "card",
+        "stripe_payment_intent_id": "pi_test_123456"
+    }
+    
+    payment = PaymentModel(**payment_data)
+    db.add(payment)
+    db.commit()
+    db.refresh(payment)
+    
+    return {
+        "id": payment.id,
+        "booking_id": payment.booking_id,
+        "user_id": payment.user_id,
+        "amount": float(payment.amount),
+        "currency": payment.currency,
+        "status": payment.status,
+        "payment_method": payment.payment_method,
+        "stripe_payment_intent_id": payment.stripe_payment_intent_id
+    }
+
+
+# Pytest configuration
+def pytest_configure(config):
+    """
+    Configure pytest
+    """
+    config.addinivalue_line(
+        "markers", "auth: mark test as authentication test"
+    )
+    config.addinivalue_line(
+        "markers", "payments: mark test as payments test"
+    )
+    config.addinivalue_line(
+        "markers", "email: mark test as email test"
+    )
+    config.addinivalue_line(
+        "markers", "database: mark test as database test"
+    )
+    config.addinivalue_line(
+        "markers", "reviews: mark test as reviews test"
+    )
+    config.addinivalue_line(
+        "markers", "analytics: mark test as analytics test"
+    )
+    config.addinivalue_line(
+        "markers", "integration: mark test as integration test"
+    )
+    config.addinivalue_line(
+        "markers", "slow: mark test as slow running"
+    )

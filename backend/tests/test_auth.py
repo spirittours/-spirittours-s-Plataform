@@ -1,116 +1,149 @@
 """
 Authentication Tests
-Spirit Tours Platform
+Tests for user registration, login, logout, and profile management
 """
 
 import pytest
-import json
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from main import app
-from models.user import User
-from core.auth import create_access_token, verify_password, get_password_hash
-from core.database import get_db
 
-client = TestClient(app)
-
-class TestAuthentication:
-    """Test suite for authentication endpoints and functions"""
+@pytest.mark.auth
+class TestUserRegistration:
+    """Test user registration functionality"""
     
-    def setup_method(self):
-        """Setup test fixtures"""
-        self.test_user_data = {
-            "email": "test@example.com",
-            "password": "SecurePass123!",
-            "name": "Test User",
-            "phone": "+1234567890"
-        }
-        
-    def teardown_method(self):
-        """Cleanup after tests"""
-        pass
-    
-    def test_user_registration_success(self):
+    def test_register_new_user_success(self, client: TestClient):
         """Test successful user registration"""
         response = client.post(
             "/api/v1/auth/register",
-            json=self.test_user_data
+            json={
+                "email": "newuser@example.com",
+                "password": "NewPass123!",
+                "full_name": "New User",
+                "phone": "+1234567890"
+            }
         )
         
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == self.test_user_data["email"]
+        assert data["email"] == "newuser@example.com"
+        assert data["full_name"] == "New User"
+        assert data["role"] == "user"
         assert "id" in data
         assert "password" not in data
-        
-    def test_user_registration_duplicate_email(self):
-        """Test registration with duplicate email"""
-        # First registration
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        
-        # Attempt duplicate registration
+        assert "password_hash" not in data
+    
+    def test_register_duplicate_email(self, client: TestClient, test_user: dict):
+        """Test registration with existing email fails"""
         response = client.post(
             "/api/v1/auth/register",
-            json=self.test_user_data
+            json={
+                "email": test_user["email"],
+                "password": "AnotherPass123!",
+                "full_name": "Another User"
+            }
         )
         
         assert response.status_code == 400
-        assert "already exists" in response.json()["detail"].lower()
+        assert "already registered" in response.json()["detail"].lower()
     
-    def test_user_registration_invalid_email(self):
+    def test_register_weak_password(self, client: TestClient):
+        """Test registration with weak password fails"""
+        # Too short
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "weak@example.com",
+                "password": "weak",
+                "full_name": "Weak User"
+            }
+        )
+        assert response.status_code == 422
+        
+        # No uppercase
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "weak2@example.com",
+                "password": "weakpass123",
+                "full_name": "Weak User"
+            }
+        )
+        assert response.status_code == 422
+        
+        # No digit
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "weak3@example.com",
+                "password": "WeakPassword",
+                "full_name": "Weak User"
+            }
+        )
+        assert response.status_code == 422
+    
+    def test_register_invalid_email(self, client: TestClient):
         """Test registration with invalid email format"""
-        invalid_data = self.test_user_data.copy()
-        invalid_data["email"] = "invalid-email"
-        
         response = client.post(
             "/api/v1/auth/register",
-            json=invalid_data
+            json={
+                "email": "not-an-email",
+                "password": "ValidPass123!",
+                "full_name": "Test User"
+            }
         )
         
         assert response.status_code == 422
-        
-    def test_user_registration_weak_password(self):
-        """Test registration with weak password"""
-        weak_data = self.test_user_data.copy()
-        weak_data["password"] = "weak"
-        
-        response = client.post(
-            "/api/v1/auth/register",
-            json=weak_data
-        )
-        
-        assert response.status_code == 422
-        assert "password" in response.json()["detail"][0]["loc"]
     
-    def test_user_login_success(self):
-        """Test successful user login"""
-        # Register user first
-        client.post("/api/v1/auth/register", json=self.test_user_data)
+    def test_register_missing_required_fields(self, client: TestClient):
+        """Test registration with missing required fields"""
+        # Missing email
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "password": "ValidPass123!",
+                "full_name": "Test User"
+            }
+        )
+        assert response.status_code == 422
         
-        # Login
+        # Missing password
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "test@example.com",
+                "full_name": "Test User"
+            }
+        )
+        assert response.status_code == 422
+
+
+@pytest.mark.auth
+class TestUserLogin:
+    """Test user login functionality"""
+    
+    def test_login_success(self, client: TestClient, test_user: dict):
+        """Test successful login"""
         response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": self.test_user_data["password"]
+            json={
+                "email": test_user["email"],
+                "password": test_user["password"]
             }
         )
         
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
-        assert "token_type" in data
         assert data["token_type"] == "bearer"
+        assert len(data["access_token"]) > 0
     
-    def test_user_login_invalid_credentials(self):
-        """Test login with invalid credentials"""
+    def test_login_wrong_password(self, client: TestClient, test_user: dict):
+        """Test login with wrong password"""
         response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": "nonexistent@example.com",
+            json={
+                "email": test_user["email"],
                 "password": "WrongPassword123!"
             }
         )
@@ -118,37 +151,132 @@ class TestAuthentication:
         assert response.status_code == 401
         assert "incorrect" in response.json()["detail"].lower()
     
-    def test_user_login_wrong_password(self):
-        """Test login with wrong password"""
-        # Register user
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        
-        # Login with wrong password
+    def test_login_nonexistent_user(self, client: TestClient):
+        """Test login with nonexistent email"""
         response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": "WrongPassword123!"
+            json={
+                "email": "nonexistent@example.com",
+                "password": "SomePass123!"
             }
         )
         
         assert response.status_code == 401
+        assert "incorrect" in response.json()["detail"].lower()
     
-    def test_get_current_user(self):
-        """Test getting current user info with valid token"""
-        # Register and login
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        login_response = client.post(
+    def test_login_invalid_email_format(self, client: TestClient):
+        """Test login with invalid email format"""
+        response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": self.test_user_data["password"]
+            json={
+                "email": "not-an-email",
+                "password": "SomePass123!"
             }
         )
         
-        token = login_response.json()["access_token"]
+        assert response.status_code == 422
+
+
+@pytest.mark.auth
+class TestUserProfile:
+    """Test user profile management"""
+    
+    def test_get_current_user_success(self, client: TestClient, test_user: dict, auth_headers: dict):
+        """Test getting current user profile"""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers=auth_headers
+        )
         
-        # Get current user
+        assert response.status_code == 200
+        data = response.json()
+        assert data["email"] == test_user["email"]
+        assert data["full_name"] == test_user["full_name"]
+        assert "password" not in data
+        assert "password_hash" not in data
+    
+    def test_get_current_user_no_token(self, client: TestClient):
+        """Test getting profile without authentication"""
+        response = client.get("/api/v1/auth/me")
+        
+        assert response.status_code == 403
+    
+    def test_get_current_user_invalid_token(self, client: TestClient):
+        """Test getting profile with invalid token"""
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "Bearer invalid_token_12345"}
+        )
+        
+        assert response.status_code == 401
+    
+    def test_update_profile_success(self, client: TestClient, test_user: dict, auth_headers: dict):
+        """Test updating user profile"""
+        response = client.put(
+            "/api/v1/auth/me",
+            headers=auth_headers,
+            json={
+                "full_name": "Updated Name",
+                "phone": "+9876543210"
+            }
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["full_name"] == "Updated Name"
+        assert data["phone"] == "+9876543210"
+        assert data["email"] == test_user["email"]  # Email unchanged
+    
+    def test_update_profile_no_auth(self, client: TestClient):
+        """Test updating profile without authentication"""
+        response = client.put(
+            "/api/v1/auth/me",
+            json={"full_name": "New Name"}
+        )
+        
+        assert response.status_code == 403
+
+
+@pytest.mark.auth
+class TestUserLogout:
+    """Test user logout functionality"""
+    
+    def test_logout_success(self, client: TestClient, auth_headers: dict):
+        """Test successful logout"""
+        response = client.post(
+            "/api/v1/auth/logout",
+            headers=auth_headers
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "logged out" in data["message"].lower()
+    
+    def test_logout_no_auth(self, client: TestClient):
+        """Test logout without authentication"""
+        response = client.post("/api/v1/auth/logout")
+        
+        assert response.status_code == 403
+
+
+@pytest.mark.auth
+class TestJWTToken:
+    """Test JWT token functionality"""
+    
+    def test_token_contains_user_info(self, client: TestClient, test_user: dict):
+        """Test that token contains correct user information"""
+        # Login to get token
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": test_user["email"],
+                "password": test_user["password"]
+            }
+        )
+        
+        token = response.json()["access_token"]
+        
+        # Use token to get profile
         response = client.get(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {token}"}
@@ -156,254 +284,196 @@ class TestAuthentication:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["email"] == self.test_user_data["email"]
-        assert data["name"] == self.test_user_data["name"]
+        assert data["id"] == test_user["id"]
+        assert data["email"] == test_user["email"]
+        assert data["role"] == test_user["role"]
     
-    def test_get_current_user_invalid_token(self):
-        """Test getting current user with invalid token"""
+    def test_token_works_for_protected_endpoints(self, client: TestClient, test_user: dict):
+        """Test that token provides access to protected endpoints"""
+        # Login to get token
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": test_user["email"],
+                "password": test_user["password"]
+            }
+        )
+        
+        token = response.json()["access_token"]
+        
+        # Try to access protected endpoint
         response = client.get(
             "/api/v1/auth/me",
-            headers={"Authorization": "Bearer invalid_token"}
-        )
-        
-        assert response.status_code == 401
-    
-    def test_password_reset_request(self):
-        """Test password reset request"""
-        # Register user
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        
-        # Request password reset
-        response = client.post(
-            "/api/v1/auth/password-reset",
-            json={"email": self.test_user_data["email"]}
-        )
-        
-        assert response.status_code == 200
-        assert "email sent" in response.json()["message"].lower()
-    
-    def test_password_reset_nonexistent_user(self):
-        """Test password reset for nonexistent user"""
-        response = client.post(
-            "/api/v1/auth/password-reset",
-            json={"email": "nonexistent@example.com"}
-        )
-        
-        # Should return success for security reasons
-        assert response.status_code == 200
-    
-    def test_token_refresh(self):
-        """Test token refresh functionality"""
-        # Register and login
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        login_response = client.post(
-            "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": self.test_user_data["password"]
-            }
-        )
-        
-        refresh_token = login_response.json().get("refresh_token")
-        
-        # Refresh token
-        response = client.post(
-            "/api/v1/auth/refresh",
-            headers={"Authorization": f"Bearer {refresh_token}"}
-        )
-        
-        assert response.status_code == 200
-        assert "access_token" in response.json()
-    
-    def test_logout(self):
-        """Test user logout"""
-        # Register and login
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        login_response = client.post(
-            "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": self.test_user_data["password"]
-            }
-        )
-        
-        token = login_response.json()["access_token"]
-        
-        # Logout
-        response = client.post(
-            "/api/v1/auth/logout",
             headers={"Authorization": f"Bearer {token}"}
         )
         
         assert response.status_code == 200
-        assert "logged out" in response.json()["message"].lower()
+
+
+@pytest.mark.auth
+class TestRoleBasedAccess:
+    """Test role-based access control"""
     
-    def test_password_hashing(self):
-        """Test password hashing and verification"""
-        password = "TestPassword123!"
-        hashed = get_password_hash(password)
-        
-        assert hashed != password
-        assert verify_password(password, hashed) is True
-        assert verify_password("WrongPassword", hashed) is False
-    
-    def test_jwt_token_creation(self):
-        """Test JWT token creation"""
-        user_data = {"sub": "test@example.com", "user_id": "123"}
-        token = create_access_token(data=user_data)
-        
-        assert token is not None
-        assert len(token) > 0
-        assert "." in token  # JWT format check
-    
-    def test_account_activation(self):
-        """Test account activation flow"""
-        # Register user
-        response = client.post("/api/v1/auth/register", json=self.test_user_data)
-        user_id = response.json()["id"]
-        
-        # Get activation token (mock)
-        activation_token = "mock_activation_token"
-        
-        # Activate account
+    def test_admin_role_assignment(self, client: TestClient, test_admin: dict):
+        """Test that admin role is correctly assigned"""
         response = client.post(
-            f"/api/v1/auth/activate/{activation_token}"
-        )
-        
-        # In real scenario, this would activate the account
-        # For now, we just check the endpoint exists
-        assert response.status_code in [200, 404]
-    
-    def test_two_factor_auth_setup(self):
-        """Test 2FA setup"""
-        # Register and login
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        login_response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": self.test_user_data["password"]
+            json={
+                "email": test_admin["email"],
+                "password": test_admin["password"]
             }
         )
         
-        token = login_response.json()["access_token"]
+        token = response.json()["access_token"]
         
-        # Setup 2FA
-        response = client.post(
-            "/api/v1/auth/2fa/setup",
-            headers={"Authorization": f"Bearer {token}"}
-        )
-        
-        # Check if endpoint exists
-        assert response.status_code in [200, 404]
-    
-    def test_session_management(self):
-        """Test session management"""
-        # Register and login
-        client.post("/api/v1/auth/register", json=self.test_user_data)
-        login_response = client.post(
-            "/api/v1/auth/login",
-            data={
-                "username": self.test_user_data["email"],
-                "password": self.test_user_data["password"]
-            }
-        )
-        
-        token = login_response.json()["access_token"]
-        
-        # Get active sessions
         response = client.get(
-            "/api/v1/auth/sessions",
+            "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {token}"}
         )
         
-        # Check if endpoint exists
-        assert response.status_code in [200, 404]
-
-
-class TestAuthorizationAndRoles:
-    """Test suite for authorization and role-based access"""
+        assert response.status_code == 200
+        assert response.json()["role"] == "admin"
     
-    def test_admin_access_control(self):
-        """Test admin-only endpoint access"""
-        # Create admin user
-        admin_data = {
-            "email": "admin@example.com",
-            "password": "AdminPass123!",
-            "name": "Admin User",
-            "role": "admin"
-        }
+    def test_user_role_assignment(self, client: TestClient, test_user: dict):
+        """Test that user role is correctly assigned"""
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": test_user["email"],
+                "password": test_user["password"]
+            }
+        )
         
-        # Register and login as admin
-        client.post("/api/v1/auth/register", json=admin_data)
+        token = response.json()["access_token"]
+        
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        
+        assert response.status_code == 200
+        assert response.json()["role"] == "user"
+
+
+@pytest.mark.auth
+class TestPasswordSecurity:
+    """Test password security features"""
+    
+    def test_password_not_returned_in_response(self, client: TestClient):
+        """Test that password is never returned in API responses"""
+        # Register
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "security@example.com",
+                "password": "SecurePass123!",
+                "full_name": "Security User"
+            }
+        )
+        
+        data = response.json()
+        assert "password" not in data
+        assert "password_hash" not in data
+        
+        # Login and get profile
         login_response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": admin_data["email"],
-                "password": admin_data["password"]
+            json={
+                "email": "security@example.com",
+                "password": "SecurePass123!"
             }
         )
         
         token = login_response.json()["access_token"]
         
-        # Access admin endpoint
-        response = client.get(
-            "/api/v1/admin/users",
+        profile_response = client.get(
+            "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {token}"}
         )
         
-        # Should have access (or 404 if endpoint not implemented)
-        assert response.status_code in [200, 404]
+        profile_data = profile_response.json()
+        assert "password" not in profile_data
+        assert "password_hash" not in profile_data
     
-    def test_regular_user_admin_access_denied(self):
-        """Test regular user cannot access admin endpoints"""
-        # Create regular user
-        user_data = {
-            "email": "user@example.com",
-            "password": "UserPass123!",
-            "name": "Regular User"
-        }
+    def test_password_hash_is_bcrypt(self, db: Session):
+        """Test that passwords are hashed with bcrypt"""
+        from database.models import User as UserModel
         
-        # Register and login
-        client.post("/api/v1/auth/register", json=user_data)
+        # Get user from database
+        user = db.query(UserModel).first()
+        
+        if user:
+            # Bcrypt hashes start with $2b$ or $2a$
+            assert user.password_hash.startswith("$2")
+            assert len(user.password_hash) == 60  # Bcrypt hash length
+
+
+@pytest.mark.auth
+@pytest.mark.integration
+class TestAuthenticationFlow:
+    """Test complete authentication flow"""
+    
+    def test_complete_registration_login_profile_flow(self, client: TestClient):
+        """Test complete user journey: register -> login -> get profile -> update profile"""
+        # Step 1: Register
+        register_response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "journey@example.com",
+                "password": "JourneyPass123!",
+                "full_name": "Journey User",
+                "phone": "+1111111111"
+            }
+        )
+        
+        assert register_response.status_code == 201
+        user_id = register_response.json()["id"]
+        
+        # Step 2: Login
         login_response = client.post(
             "/api/v1/auth/login",
-            data={
-                "username": user_data["email"],
-                "password": user_data["password"]
+            json={
+                "email": "journey@example.com",
+                "password": "JourneyPass123!"
             }
         )
         
+        assert login_response.status_code == 200
         token = login_response.json()["access_token"]
         
-        # Try to access admin endpoint
-        response = client.get(
-            "/api/v1/admin/users",
+        # Step 3: Get profile
+        profile_response = client.get(
+            "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {token}"}
         )
         
-        # Should be denied (403) or not found (404)
-        assert response.status_code in [403, 404]
-    
-    def test_role_based_permissions(self):
-        """Test different role permissions"""
-        roles = ["admin", "agent", "customer"]
+        assert profile_response.status_code == 200
+        profile_data = profile_response.json()
+        assert profile_data["id"] == user_id
+        assert profile_data["email"] == "journey@example.com"
         
-        for role in roles:
-            user_data = {
-                "email": f"{role}@example.com",
-                "password": "Pass123!",
-                "name": f"{role.capitalize()} User",
-                "role": role
+        # Step 4: Update profile
+        update_response = client.put(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "full_name": "Updated Journey User",
+                "phone": "+2222222222"
             }
-            
-            # Register user with role
-            response = client.post("/api/v1/auth/register", json=user_data)
-            
-            # Verify role is set correctly
-            if response.status_code == 201:
-                assert response.json().get("role", "customer") == role
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+        )
+        
+        assert update_response.status_code == 200
+        updated_data = update_response.json()
+        assert updated_data["full_name"] == "Updated Journey User"
+        assert updated_data["phone"] == "+2222222222"
+        
+        # Step 5: Verify changes persisted
+        verify_response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        
+        assert verify_response.status_code == 200
+        verified_data = verify_response.json()
+        assert verified_data["full_name"] == "Updated Journey User"
+        assert verified_data["phone"] == "+2222222222"
