@@ -79,6 +79,7 @@ class BookingResponse(BaseModel):
 # API ENDPOINTS
 # ============================
 
+@router.post("/", response_model=BookingResponse)
 @router.post("/create", response_model=BookingResponse)
 async def create_booking(
     booking_request: BookingRequest,
@@ -86,6 +87,7 @@ async def create_booking(
 ):
     """
     Create a new booking with B2C/B2B/B2B2C support
+    Supports both POST /api/v1/bookings and POST /api/v1/bookings/create
     """
     try:
         # For now, create a simple booking record
