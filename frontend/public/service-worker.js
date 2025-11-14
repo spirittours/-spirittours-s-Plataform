@@ -1,359 +1,305 @@
-/**
- * Spirit Tours PWA Service Worker
- * 
- * Provides:
- * - Offline functionality
- * - Cache management
- * - Background sync
- * - Push notifications
- * - Install prompts
- */
+// Spirit Tours - Service Worker
+// Version: 1.0.0
+// PWA offline support and caching strategy
 
-const CACHE_VERSION = 'v1.0.0';
-const CACHE_NAME = `spirit-tours-${CACHE_VERSION}`;
+const CACHE_NAME = 'spirit-tours-v1';
+const API_CACHE_NAME = 'spirit-tours-api-v1';
+const IMAGE_CACHE_NAME = 'spirit-tours-images-v1';
 
-// Assets to cache immediately on install
-const STATIC_ASSETS = [
+// Resources to cache immediately
+const PRECACHE_RESOURCES = [
   '/',
   '/index.html',
+  '/static/css/main.css',
+  '/static/js/main.js',
   '/manifest.json',
-  '/logo192.png',
-  '/logo512.png',
-  '/favicon.ico',
+  '/offline.html'
 ];
 
-// API endpoints to cache with network-first strategy
-const API_CACHE_ENDPOINTS = [
-  '/api/destinations/featured',
-  '/api/destinations',
-  '/api/products',
+// API routes that should be cached
+const API_ROUTES = [
+  '/api/v1/tours',
+  '/api/v1/destinations'
 ];
 
-// Install event - cache static assets
+// ============================================
+// Install Event - Cache Resources
+// ============================================
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing...');
+  console.log('[Service Worker] Installing...');
   
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[ServiceWorker] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => {
-        console.log('[ServiceWorker] Installation complete');
-        return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('[ServiceWorker] Installation failed:', error);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[Service Worker] Precaching resources');
+      return cache.addAll(PRECACHE_RESOURCES);
+    })
   );
+  
+  // Activate immediately
+  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// ============================================
+// Activate Event - Clean Old Caches
+// ============================================
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating...');
+  console.log('[Service Worker] Activating...');
   
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((cacheName) => {
-              return cacheName.startsWith('spirit-tours-') && cacheName !== CACHE_NAME;
-            })
-            .map((cacheName) => {
-              console.log('[ServiceWorker] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-        );
-      })
-      .then(() => {
-        console.log('[ServiceWorker] Activation complete');
-        return self.clients.claim();
-      })
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => {
+            return name !== CACHE_NAME && 
+                   name !== API_CACHE_NAME && 
+                   name !== IMAGE_CACHE_NAME;
+          })
+          .map((name) => {
+            console.log('[Service Worker] Deleting old cache:', name);
+            return caches.delete(name);
+          })
+      );
+    })
   );
+  
+  // Take control immediately
+  return self.clients.claim();
 });
 
-// Fetch event - implement caching strategies
+// ============================================
+// Fetch Event - Network Strategies
+// ============================================
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-
-  // Skip cross-origin requests
-  if (url.origin !== location.origin) {
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
     return;
   }
-
-  // API requests - Network First strategy
+  
+  // Skip chrome-extension and other protocols
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+  
+  // API Requests - Network First, Cache Fallback
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirstStrategy(request));
+    event.respondWith(networkFirstStrategy(request, API_CACHE_NAME));
     return;
   }
-
-  // Static assets - Cache First strategy
-  event.respondWith(cacheFirstStrategy(request));
+  
+  // Images - Cache First, Network Fallback
+  if (request.destination === 'image') {
+    event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE_NAME));
+    return;
+  }
+  
+  // HTML/CSS/JS - Stale While Revalidate
+  if (
+    request.destination === 'document' ||
+    request.destination === 'script' ||
+    request.destination === 'style'
+  ) {
+    event.respondWith(staleWhileRevalidateStrategy(request, CACHE_NAME));
+    return;
+  }
+  
+  // Default - Network First
+  event.respondWith(networkFirstStrategy(request, CACHE_NAME));
 });
 
-/**
- * Cache First Strategy
- * 
- * Try cache first, fallback to network if not found
- * Good for static assets that don't change often
- */
-async function cacheFirstStrategy(request) {
+// ============================================
+// Caching Strategies
+// ============================================
+
+// Network First - Try network, fallback to cache
+async function networkFirstStrategy(request, cacheName) {
   try {
+    const networkResponse = await fetch(request);
+    
+    // Cache successful responses
+    if (networkResponse.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('[Service Worker] Network failed, trying cache:', error);
     const cachedResponse = await caches.match(request);
     
     if (cachedResponse) {
-      console.log('[ServiceWorker] Serving from cache:', request.url);
       return cachedResponse;
     }
-
-    console.log('[ServiceWorker] Fetching from network:', request.url);
-    const networkResponse = await fetch(request);
-
-    // Cache successful responses
-    if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    console.error('[ServiceWorker] Fetch failed:', error);
     
-    // Return offline page if available
-    const offlinePage = await caches.match('/offline.html');
-    if (offlinePage) {
-      return offlinePage;
+    // Return offline page for navigation requests
+    if (request.destination === 'document') {
+      return caches.match('/offline.html');
     }
-
-    return new Response('Offline - No cached content available', {
-      status: 503,
-      statusText: 'Service Unavailable',
+    
+    return new Response('Network error', {
+      status: 408,
+      headers: { 'Content-Type': 'text/plain' }
     });
   }
 }
 
-/**
- * Network First Strategy
- * 
- * Try network first, fallback to cache if offline
- * Good for dynamic content that should be fresh
- */
-async function networkFirstStrategy(request) {
+// Cache First - Try cache, fallback to network
+async function cacheFirstStrategy(request, cacheName) {
+  const cachedResponse = await caches.match(request);
+  
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+  
   try {
-    console.log('[ServiceWorker] Network first:', request.url);
     const networkResponse = await fetch(request);
-
-    // Cache successful API responses
+    
     if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_NAME);
+      const cache = await caches.open(cacheName);
       cache.put(request, networkResponse.clone());
     }
-
+    
     return networkResponse;
   } catch (error) {
-    console.log('[ServiceWorker] Network failed, trying cache:', request.url);
-    
-    const cachedResponse = await caches.match(request);
-    
-    if (cachedResponse) {
-      // Add custom header to indicate cached response
-      const headers = new Headers(cachedResponse.headers);
-      headers.append('X-Cached', 'true');
-      
-      return new Response(cachedResponse.body, {
-        status: cachedResponse.status,
-        statusText: cachedResponse.statusText,
-        headers: headers,
-      });
-    }
-
-    return new Response(
-      JSON.stringify({
-        error: 'Offline',
-        message: 'No cached data available',
-      }),
-      {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    console.log('[Service Worker] Cache and network failed:', error);
+    return new Response('Resource not available', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
 }
 
-/**
- * Background Sync
- * 
- * Queue failed requests to retry when online
- */
-self.addEventListener('sync', (event) => {
-  console.log('[ServiceWorker] Background sync:', event.tag);
+// Stale While Revalidate - Return cache immediately, update in background
+async function staleWhileRevalidateStrategy(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+  
+  const fetchPromise = fetch(request).then((networkResponse) => {
+    if (networkResponse.ok) {
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+  });
+  
+  return cachedResponse || fetchPromise;
+}
 
+// ============================================
+// Background Sync
+// ============================================
+self.addEventListener('sync', (event) => {
+  console.log('[Service Worker] Background sync:', event.tag);
+  
   if (event.tag === 'sync-bookings') {
     event.waitUntil(syncBookings());
   }
 });
 
 async function syncBookings() {
+  // Sync offline bookings when back online
   try {
-    // Get pending bookings from IndexedDB
-    const db = await openDatabase();
-    const pendingBookings = await getPendingBookings(db);
-
-    console.log('[ServiceWorker] Syncing bookings:', pendingBookings.length);
-
-    for (const booking of pendingBookings) {
-      try {
-        const response = await fetch('/api/bookings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(booking),
-        });
-
+    const cache = await caches.open(API_CACHE_NAME);
+    const cachedRequests = await cache.keys();
+    
+    for (const request of cachedRequests) {
+      if (request.method === 'POST') {
+        const response = await fetch(request);
         if (response.ok) {
-          // Remove from pending queue
-          await removePendingBooking(db, booking.id);
-          console.log('[ServiceWorker] Booking synced:', booking.id);
+          await cache.delete(request);
         }
-      } catch (error) {
-        console.error('[ServiceWorker] Failed to sync booking:', booking.id, error);
       }
     }
   } catch (error) {
-    console.error('[ServiceWorker] Background sync failed:', error);
+    console.error('[Service Worker] Sync failed:', error);
   }
 }
 
-/**
- * Push Notifications
- */
+// ============================================
+// Push Notifications
+// ============================================
 self.addEventListener('push', (event) => {
-  console.log('[ServiceWorker] Push notification received');
-
-  let notificationData = {
-    title: 'Spirit Tours',
-    body: 'Nueva notificación',
-    icon: '/logo192.png',
-    badge: '/badge.png',
-  };
-
+  console.log('[Service Worker] Push received');
+  
+  let data = {};
   if (event.data) {
-    try {
-      notificationData = event.data.json();
-    } catch (error) {
-      notificationData.body = event.data.text();
-    }
+    data = event.data.json();
   }
-
+  
+  const title = data.title || 'Spirit Tours';
+  const options = {
+    body: data.body || 'New notification',
+    icon: '/logo192.png',
+    badge: '/badge-96x96.png',
+    vibrate: [200, 100, 200],
+    data: {
+      url: data.url || '/',
+      timestamp: Date.now()
+    },
+    actions: data.actions || [
+      {
+        action: 'open',
+        title: 'Open',
+        icon: '/icons/open.png'
+      },
+      {
+        action: 'close',
+        title: 'Close',
+        icon: '/icons/close.png'
+      }
+    ]
+  };
+  
   event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      data: notificationData.data,
-      actions: notificationData.actions || [],
-    })
+    self.registration.showNotification(title, options)
   );
 });
 
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('[ServiceWorker] Notification clicked');
+  console.log('[Service Worker] Notification clicked:', event.action);
   
   event.notification.close();
-
-  const urlToOpen = event.notification.data?.url || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Focus existing window if available
-        for (const client of clientList) {
-          if (client.url === urlToOpen && 'focus' in client) {
-            return client.focus();
+  
+  if (event.action === 'open' || !event.action) {
+    const urlToOpen = event.notification.data.url || '/';
+    
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then((windowClients) => {
+          // Check if there's already a window open
+          for (let client of windowClients) {
+            if (client.url === urlToOpen && 'focus' in client) {
+              return client.focus();
+            }
           }
-        }
-        
-        // Open new window
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
-      })
-  );
+          
+          // Open new window if none exists
+          if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+          }
+        })
+    );
+  }
 });
 
-/**
- * Message handler for communication with clients
- */
+// ============================================
+// Message Handler
+// ============================================
 self.addEventListener('message', (event) => {
-  console.log('[ServiceWorker] Message received:', event.data);
-
-  if (event.data.type === 'SKIP_WAITING') {
+  console.log('[Service Worker] Message received:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-
-  if (event.data.type === 'CLEAR_CACHE') {
+  
+  if (event.data && event.data.type === 'CACHE_URLS') {
+    const urlsToCache = event.data.payload;
     event.waitUntil(
-      caches.delete(CACHE_NAME).then(() => {
-        return self.clients.matchAll();
-      }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: 'CACHE_CLEARED' });
-        });
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.addAll(urlsToCache);
       })
     );
   }
-
-  if (event.data.type === 'GET_VERSION') {
-    event.ports[0].postMessage({ version: CACHE_VERSION });
-  }
 });
-
-/**
- * IndexedDB helpers for offline storage
- */
-function openDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('spirit-tours-db', 1);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      
-      if (!db.objectStoreNames.contains('pending-bookings')) {
-        db.createObjectStore('pending-bookings', { keyPath: 'id' });
-      }
-    };
-  });
-}
-
-function getPendingBookings(db) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pending-bookings'], 'readonly');
-    const store = transaction.objectStore('pending-bookings');
-    const request = store.getAll();
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-  });
-}
-
-function removePendingBooking(db, bookingId) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pending-bookings'], 'readwrite');
-    const store = transaction.objectStore('pending-bookings');
-    const request = store.delete(bookingId);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
-}
-
-console.log('[ServiceWorker] Script loaded, version:', CACHE_VERSION);
