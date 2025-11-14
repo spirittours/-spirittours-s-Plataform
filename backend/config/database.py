@@ -22,11 +22,14 @@ class DatabaseConfig:
     """Database configuration class"""
     
     def __init__(self):
-        # Database URL from environment or default
-        self.database_url = os.getenv(
-            "DATABASE_URL", 
-            "postgresql://spirittours:spirit2024@localhost:5432/spirittours_db"
-        )
+        # Database URL from environment or default to MongoDB if MONGODB_URI exists
+        mongodb_uri = os.getenv("MONGODB_URI")
+        if mongodb_uri and not os.getenv("DATABASE_URL"):
+            # If MONGODB_URI exists but DATABASE_URL doesn't, use SQLite fallback
+            # (MongoDB requires different ORM - this prevents PostgreSQL errors)
+            self.database_url = ""  # Empty will trigger SQLite fallback
+        else:
+            self.database_url = os.getenv("DATABASE_URL", "")
         
         # Connection settings
         self.echo_sql = os.getenv("DB_ECHO", "false").lower() == "true"
