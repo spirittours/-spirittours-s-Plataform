@@ -122,16 +122,18 @@ app.include_router(scheduler_api.router)
 app.include_router(sentiment_analysis_api.router)
 # app.include_router(operations_api.router)  # TODO: Fix - imports NotificationService with duplicate table
 
-# Include Critical Features (Auth, Payments, Notifications, Reviews)
+# Include Critical Features (Auth, Payments, Notifications, Reviews, Analytics)
 from auth.routes import router as simple_auth_router
 from payments.routes import router as payments_router
 from notifications.routes import router as notifications_router
 from reviews.routes import router as reviews_router
+from analytics.routes import router as analytics_router
 
 app.include_router(simple_auth_router)
 app.include_router(payments_router)
 app.include_router(notifications_router)
 app.include_router(reviews_router)
+app.include_router(analytics_router)
 
 # Include open-source services router
 # app.include_router(opensource_router)  # TODO: Fix relative import error
