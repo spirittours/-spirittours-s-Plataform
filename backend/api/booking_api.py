@@ -21,7 +21,7 @@ from models.business_models import (
 )
 from models.rbac_models import User
 
-router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
+router = APIRouter(tags=["Bookings"])
 
 # ============================
 # PYDANTIC MODELS
@@ -79,8 +79,9 @@ class BookingResponse(BaseModel):
 # API ENDPOINTS
 # ============================
 
-@router.post("/", response_model=BookingResponse)
-@router.post("/create", response_model=BookingResponse)
+@router.post("/api/v1/bookings", response_model=BookingResponse)
+@router.post("/api/v1/bookings/", response_model=BookingResponse)
+@router.post("/api/v1/bookings/create", response_model=BookingResponse)
 async def create_booking(
     booking_request: BookingRequest,
     db: Session = Depends(get_db)
@@ -153,7 +154,7 @@ async def create_booking(
             detail=f"Error creating booking: {str(e)}"
         )
 
-@router.get("/search")
+@router.get("/api/v1/bookings/search")
 async def search_bookings(
     customer_email: Optional[str] = Query(None),
     booking_reference: Optional[str] = Query(None),
