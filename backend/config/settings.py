@@ -8,13 +8,18 @@ import os
 from typing import List, Optional, Dict, Any
 try:
     from pydantic_settings import BaseSettings
-    from pydantic import validator
+    from pydantic import validator, ConfigDict
 except ImportError:
     from pydantic import BaseSettings, validator
+    ConfigDict = None  # Fallback for older Pydantic versions
 from functools import lru_cache
 
 class Settings(BaseSettings):
     """Application settings with environment variable support"""
+    
+    # Allow extra fields for backward compatibility
+    if ConfigDict is not None:
+        model_config = ConfigDict(extra='allow')
     
     # ============================
     # BASIC APPLICATION SETTINGS
