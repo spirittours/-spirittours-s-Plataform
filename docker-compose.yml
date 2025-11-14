@@ -34,14 +34,14 @@ services:
   # Backend API
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: spirittours-backend
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
-      NODE_ENV: production
+      ENVIRONMENT: production
       PORT: 5000
       
       # Database
