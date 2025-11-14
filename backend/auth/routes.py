@@ -3,28 +3,31 @@ Authentication API routes
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import timedelta
+from sqlalchemy.orm import Session
 
 from .models import (
     UserCreate, 
     UserLogin, 
     Token, 
     User, 
-    UserResponse,
-    UserDB
+    UserResponse
 )
 from .password import get_password_hash, verify_password
 from .jwt import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from .repository import UserRepository
+from database.connection import get_db
 
-router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["🔐 Authentication"])
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate):
+async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user
     
     Args:
         user_data: User registration data (email, password, name, phone)
+        db: Database session
         
     Returns:
         JWT token and user information
@@ -33,19 +36,17 @@ async def register(user_data: UserCreate):
         HTTPException: If email already exists or validation fails
     """
     # Check if email already exists
-    if UserDB.email_exists(user_data.email):
+    if UserRepository.email_exists(db, user_data.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
     
-    # Hash the password
-    password_hash = get_password_hash(user_data.password)
-    
-    # Create user in database
-    user_dict = UserDB.create_user(
+    # Create user in database (password hashing handled in repository)
+    user = UserRepository.create_user(
+        db=db,
         email=user_data.email,
-        password_hash=password_hash,
+        password=user_data.password,
         full_name=user_data.full_name,
         phone=user_data.phone
     )
@@ -53,23 +54,23 @@ async def register(user_data: UserCreate):
     # Create access token
     access_token = create_access_token(
         data={
-            "user_id": user_dict["id"],
-            "email": user_dict["email"],
-            "role": user_dict["role"]
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role
         },
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     
     # Return token and user info
     user_response = UserResponse(
-        id=user_dict["id"],
-        email=user_dict["email"],
-        full_name=user_dict["full_name"],
-        role=user_dict["role"],
-        is_active=user_dict["is_active"],
-        email_verified=user_dict["email_verified"],
-        avatar_url=user_dict["avatar_url"],
-        created_at=user_dict["created_at"]
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        email_verified=user.email_verified,
+        avatar_url=user.avatar_url,
+        created_at=user.created_at
     )
     
     return Token(
@@ -80,12 +81,13 @@ async def register(user_data: UserCreate):
 
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin):
+async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """
     Login with email and password
     
     Args:
         credentials: User login credentials (email, password)
+        db: Database session
         
     Returns:
         JWT token and user information
@@ -94,9 +96,9 @@ async def login(credentials: UserLogin):
         HTTPException: If credentials are invalid
     """
     # Get user from database
-    user_dict = UserDB.get_user_by_email(credentials.email)
+    user = UserRepository.get_user_by_email(db, credentials.email)
     
-    if not user_dict:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -104,7 +106,7 @@ async def login(credentials: UserLogin):
         )
     
     # Verify password
-    if not verify_password(credentials.password, user_dict["password_hash"]):
+    if not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -112,7 +114,7 @@ async def login(credentials: UserLogin):
         )
     
     # Check if user is active
-    if not user_dict.get("is_active", True):
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user account"
@@ -121,23 +123,23 @@ async def login(credentials: UserLogin):
     # Create access token
     access_token = create_access_token(
         data={
-            "user_id": user_dict["id"],
-            "email": user_dict["email"],
-            "role": user_dict["role"]
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role
         },
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     
     # Return token and user info
     user_response = UserResponse(
-        id=user_dict["id"],
-        email=user_dict["email"],
-        full_name=user_dict["full_name"],
-        role=user_dict["role"],
-        is_active=user_dict["is_active"],
-        email_verified=user_dict["email_verified"],
-        avatar_url=user_dict["avatar_url"],
-        created_at=user_dict["created_at"]
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        email_verified=user.email_verified,
+        avatar_url=user.avatar_url,
+        created_at=user.created_at
     )
     
     return Token(
@@ -174,7 +176,8 @@ async def get_me(current_user: User = Depends(get_current_user)):
 async def update_me(
     full_name: str = None,
     phone: str = None,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     Update current user information
@@ -183,6 +186,7 @@ async def update_me(
         full_name: Updated full name (optional)
         phone: Updated phone number (optional)
         current_user: Current authenticated user
+        db: Database session
         
     Returns:
         Updated user information
@@ -194,17 +198,17 @@ async def update_me(
         update_data["phone"] = phone
     
     if update_data:
-        user_dict = UserDB.update_user(current_user.id, **update_data)
-        if user_dict:
+        user = UserRepository.update_user(db, current_user.id, **update_data)
+        if user:
             return UserResponse(
-                id=user_dict["id"],
-                email=user_dict["email"],
-                full_name=user_dict["full_name"],
-                role=user_dict["role"],
-                is_active=user_dict["is_active"],
-                email_verified=user_dict["email_verified"],
-                avatar_url=user_dict["avatar_url"],
-                created_at=user_dict["created_at"]
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role,
+                is_active=user.is_active,
+                email_verified=user.email_verified,
+                avatar_url=user.avatar_url,
+                created_at=user.created_at
             )
     
     return UserResponse(

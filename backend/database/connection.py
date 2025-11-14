@@ -1,367 +1,167 @@
 """
-Database Connection Manager for Spirit Tours
-PostgreSQL with SQLAlchemy and connection pooling
+Database Connection Management
+Handles SQLAlchemy engine, sessions, and database lifecycle
 """
 
 import os
 import logging
-from typing import Generator, Optional
+from typing import Generator
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import NullPool
 from contextlib import contextmanager
-from sqlalchemy import create_engine, event, pool
-from sqlalchemy.orm import sessionmaker, Session, scoped_session
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.pool import NullPool, QueuePool
-import psycopg2
-from datetime import datetime
 
+from .models import Base
+
+# Configure logging
 logger = logging.getLogger(__name__)
 
-# Base para modelos
-Base = declarative_base()
+# Database URL from environment
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://spirittours:spirit2024@localhost:5432/spirittours_db"
+)
 
-class DatabaseConfig:
-    """Configuración de base de datos"""
-    
-    def __init__(self):
-        # Obtener configuración del entorno
-        self.database_url = os.getenv(
-            "DATABASE_URL",
-            "postgresql://postgres:password@localhost:5432/spirit_tours"
-        )
-        
-        # Configuración alternativa por componentes
-        if not os.getenv("DATABASE_URL"):
-            self.host = os.getenv("DB_HOST", "localhost")
-            self.port = os.getenv("DB_PORT", "5432")
-            self.database = os.getenv("DB_NAME", "spirit_tours")
-            self.username = os.getenv("DB_USER", "postgres")
-            self.password = os.getenv("DB_PASSWORD", "password")
-            
-            self.database_url = (
-                f"postgresql://{self.username}:{self.password}@"
-                f"{self.host}:{self.port}/{self.database}"
-            )
-        
-        # Configuración del pool
-        self.pool_size = int(os.getenv("DB_POOL_SIZE", "20"))
-        self.max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "40"))
-        self.pool_timeout = int(os.getenv("DB_POOL_TIMEOUT", "30"))
-        self.pool_recycle = int(os.getenv("DB_POOL_RECYCLE", "3600"))
-        
-        # Configuración de rendimiento
-        self.echo = os.getenv("DB_ECHO", "false").lower() == "true"
-        self.echo_pool = os.getenv("DB_ECHO_POOL", "false").lower() == "true"
-        
-    def get_engine_kwargs(self):
-        """Obtener kwargs para crear el engine"""
-        return {
-            "echo": self.echo,
-            "echo_pool": self.echo_pool,
-            "poolclass": QueuePool,
-            "pool_size": self.pool_size,
-            "max_overflow": self.max_overflow,
-            "pool_timeout": self.pool_timeout,
-            "pool_recycle": self.pool_recycle,
-            "pool_pre_ping": True,  # Verificar conexión antes de usar
-            "connect_args": {
-                "connect_timeout": 10,
-                "application_name": "spirit_tours_api",
-                "options": "-c statement_timeout=30000"  # 30 segundos timeout
-            }
-        }
+# For development, allow SQLite fallback
+if os.getenv("USE_SQLITE", "false").lower() == "true":
+    DATABASE_URL = "sqlite:///./spirittours.db"
+    logger.warning("⚠️  Using SQLite for development (set USE_SQLITE=false for PostgreSQL)")
+
+# Engine configuration
+ENGINE_OPTIONS = {
+    "echo": os.getenv("DB_ECHO", "false").lower() == "true",
+    "pool_pre_ping": True,  # Verify connections before using
+}
+
+# Add pool settings for PostgreSQL (not needed for SQLite)
+if not DATABASE_URL.startswith("sqlite"):
+    ENGINE_OPTIONS.update({
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),  # 1 hour
+    })
+else:
+    # SQLite-specific settings
+    ENGINE_OPTIONS.update({
+        "connect_args": {"check_same_thread": False},
+        "poolclass": NullPool,
+    })
+
+# Create engine
+engine = create_engine(DATABASE_URL, **ENGINE_OPTIONS)
+
+# Session factory
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
 
-class DatabaseManager:
-    """
-    Gestor principal de conexiones a base de datos
-    """
-    
-    def __init__(self, config: Optional[DatabaseConfig] = None):
-        """Inicializar gestor de base de datos"""
-        self.config = config or DatabaseConfig()
-        self._engine = None
-        self._session_factory = None
-        self._scoped_session = None
-        
-    @property
-    def engine(self):
-        """Obtener o crear engine de SQLAlchemy"""
-        if self._engine is None:
-            self._engine = create_engine(
-                self.config.database_url,
-                **self.config.get_engine_kwargs()
-            )
-            
-            # Configurar eventos del engine
-            self._setup_engine_events()
-            
-            logger.info(f"Database engine created: {self.config.database_url.split('@')[1]}")
-            
-        return self._engine
-    
-    @property
-    def session_factory(self):
-        """Obtener factory de sesiones"""
-        if self._session_factory is None:
-            self._session_factory = sessionmaker(
-                bind=self.engine,
-                autocommit=False,
-                autoflush=False,
-                expire_on_commit=False
-            )
-            logger.info("Session factory created")
-            
-        return self._session_factory
-    
-    @property
-    def scoped_session(self):
-        """Obtener sesión con scope (thread-safe)"""
-        if self._scoped_session is None:
-            self._scoped_session = scoped_session(self.session_factory)
-            
-        return self._scoped_session
-    
-    def _setup_engine_events(self):
-        """Configurar eventos del engine para logging y monitoreo"""
-        
-        @event.listens_for(self.engine, "connect")
-        def receive_connect(dbapi_conn, connection_record):
-            """Evento al establecer conexión"""
-            connection_record.info['connect_time'] = datetime.now()
-            logger.debug("New database connection established")
-            
-        @event.listens_for(self.engine, "checkout")
-        def receive_checkout(dbapi_conn, connection_record, connection_proxy):
-            """Evento al obtener conexión del pool"""
-            # Calcular tiempo en el pool
-            if 'connect_time' in connection_record.info:
-                age = (datetime.now() - connection_record.info['connect_time']).seconds
-                if age > 3600:  # Más de 1 hora
-                    logger.warning(f"Long-lived connection detected: {age} seconds")
-                    
-        @event.listens_for(self.engine, "checkin")
-        def receive_checkin(dbapi_conn, connection_record):
-            """Evento al devolver conexión al pool"""
-            connection_record.info['last_checkin'] = datetime.now()
-            
-    def get_session(self) -> Session:
-        """
-        Obtener nueva sesión de base de datos
-        
-        Returns:
-            Session: Nueva sesión de SQLAlchemy
-        """
-        return self.session_factory()
-    
-    @contextmanager
-    def session_scope(self):
-        """
-        Context manager para manejo automático de sesiones
-        
-        Usage:
-            with db_manager.session_scope() as session:
-                # hacer operaciones con session
-                session.query(Model).all()
-        """
-        session = self.get_session()
-        try:
-            yield session
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            logger.error(f"Database session error: {e}")
-            raise
-        finally:
-            session.close()
-            
-    def create_all_tables(self):
-        """Crear todas las tablas en la base de datos"""
-        try:
-            # Importar todos los modelos para registrarlos
-            from ..models.quotation import (
-                GroupQuotation, QuotationResponse, 
-                HotelProvider, Company, User
-            )
-            
-            Base.metadata.create_all(bind=self.engine)
-            logger.info("All database tables created successfully")
-            
-        except Exception as e:
-            logger.error(f"Error creating tables: {e}")
-            raise
-            
-    def drop_all_tables(self):
-        """Eliminar todas las tablas (¡PELIGROSO!)"""
-        try:
-            Base.metadata.drop_all(bind=self.engine)
-            logger.warning("All database tables dropped")
-            
-        except Exception as e:
-            logger.error(f"Error dropping tables: {e}")
-            raise
-            
-    def test_connection(self) -> bool:
-        """
-        Probar conexión a la base de datos
-        
-        Returns:
-            bool: True si la conexión es exitosa
-        """
-        try:
-            with self.engine.connect() as conn:
-                result = conn.execute("SELECT 1")
-                result.fetchone()
-                logger.info("Database connection test successful")
-                return True
-                
-        except Exception as e:
-            logger.error(f"Database connection test failed: {e}")
-            return False
-            
-    def get_connection_stats(self) -> dict:
-        """
-        Obtener estadísticas del pool de conexiones
-        
-        Returns:
-            dict: Estadísticas del pool
-        """
-        pool = self.engine.pool
-        
-        return {
-            "size": pool.size(),
-            "checked_in": pool.checkedin(),
-            "checked_out": pool.checkedout(),
-            "overflow": pool.overflow(),
-            "total": pool.size() + pool.overflow()
-        }
-        
-    def close(self):
-        """Cerrar todas las conexiones y limpiar recursos"""
-        if self._scoped_session:
-            self._scoped_session.remove()
-            
-        if self._engine:
-            self._engine.dispose()
-            logger.info("Database connections closed")
-            
-    def __enter__(self):
-        """Entrada del context manager"""
-        return self
-        
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Salida del context manager"""
-        self.close()
-
-
-# Instancia global del manager
-db_manager = DatabaseManager()
-
-
-# Dependency para FastAPI
+# Database dependency for FastAPI
 def get_db() -> Generator[Session, None, None]:
     """
-    Dependency de FastAPI para obtener sesión de DB
+    FastAPI dependency to get database session
     
     Usage:
-        @router.get("/")
+        @app.get("/items")
         def get_items(db: Session = Depends(get_db)):
-            return db.query(Item).all()
+            items = db.query(Item).all()
+            return items
     """
-    db = db_manager.get_session()
+    db = SessionLocal()
     try:
         yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
     finally:
         db.close()
 
 
-# Funciones de utilidad
-def init_database():
-    """Inicializar base de datos con tablas y datos iniciales"""
-    try:
-        # Probar conexión
-        if not db_manager.test_connection():
-            raise ConnectionError("Cannot connect to database")
-            
-        # Crear tablas
-        db_manager.create_all_tables()
-        
-        # Insertar datos iniciales si es necesario
-        with db_manager.session_scope() as session:
-            # Verificar si hay datos
-            from ..models.quotation import Company
-            
-            company_count = session.query(Company).count()
-            if company_count == 0:
-                logger.info("Inserting initial data...")
-                _insert_initial_data(session)
-                
-        logger.info("Database initialization complete")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        return False
-
-
-def _insert_initial_data(session: Session):
-    """Insertar datos iniciales en la base de datos"""
-    from ..models.quotation import Company, User
-    from werkzeug.security import generate_password_hash
+# Context manager for database sessions
+@contextmanager
+def db_session():
+    """
+    Context manager for database sessions
     
+    Usage:
+        with db_session() as db:
+            user = db.query(User).first()
+    """
+    session = SessionLocal()
     try:
-        # Crear empresa de prueba
-        demo_company = Company(
-            id="CMP-DEMO001",
-            name="Demo Travel Agency",
-            type="B2B",
-            email="demo@spirittours.com",
-            phone="+1-800-DEMO",
-            address="123 Demo Street, Miami, FL",
-            tax_id="12-3456789",
-            is_active=True
-        )
-        session.add(demo_company)
-        
-        # Crear usuario administrador
-        admin_user = User(
-            id="USR-ADMIN001",
-            company_id="CMP-DEMO001",
-            email="admin@spirittours.com",
-            password_hash=generate_password_hash("admin123"),
-            first_name="Admin",
-            last_name="System",
-            role="admin",
-            is_active=True
-        )
-        session.add(admin_user)
-        
-        # Crear usuario de prueba B2B
-        demo_user = User(
-            id="USR-DEMO001",
-            company_id="CMP-DEMO001",
-            email="demo@spirittours.com",
-            password_hash=generate_password_hash("demo123"),
-            first_name="Demo",
-            last_name="User",
-            role="client",
-            is_active=True
-        )
-        session.add(demo_user)
-        
+        yield session
         session.commit()
-        logger.info("Initial data inserted successfully")
-        
     except Exception as e:
-        logger.error(f"Error inserting initial data: {e}")
+        session.rollback()
+        logger.error(f"Database error: {str(e)}")
+        raise
+    finally:
+        session.close()
+
+
+def create_tables():
+    """Create all database tables"""
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Database tables created successfully")
+    except Exception as e:
+        logger.error(f"❌ Error creating tables: {str(e)}")
         raise
 
 
-# Configuración de logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+def drop_tables():
+    """Drop all database tables (use with caution!)"""
+    try:
+        Base.metadata.drop_all(bind=engine)
+        logger.warning("⚠️  All database tables dropped")
+    except Exception as e:
+        logger.error(f"❌ Error dropping tables: {str(e)}")
+        raise
+
+
+def init_db():
+    """
+    Initialize database
+    Creates tables and can seed initial data
+    """
+    try:
+        logger.info("🔧 Initializing database...")
+        
+        # Create all tables
+        create_tables()
+        
+        # Test connection
+        with db_session() as db:
+            db.execute("SELECT 1")
+        
+        logger.info("✅ Database initialized successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Database initialization failed: {str(e)}")
+        return False
+
+
+# Connection event listeners for logging
+@event.listens_for(engine, "connect")
+def receive_connect(dbapi_conn, connection_record):
+    """Log successful connections"""
+    logger.debug("🔌 Database connection established")
+
+
+@event.listens_for(engine, "close")
+def receive_close(dbapi_conn, connection_record):
+    """Log connection closures"""
+    logger.debug("🔌 Database connection closed")
+
+
+# Export public API
+__all__ = [
+    'engine',
+    'SessionLocal',
+    'get_db',
+    'db_session',
+    'create_tables',
+    'drop_tables',
+    'init_db',
+]

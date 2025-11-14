@@ -6,9 +6,12 @@ from typing import Optional
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 import os
 
-from .models import TokenData, User, UserDB
+from .models import TokenData, User
+from .repository import UserRepository
+from database.connection import get_db
 
 # JWT Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production-D-VGbteT3od_gCrq_iena5mF_GJPlAzW3V8nbckMvDszNVCQ6KtlSAwqRZPOHB9f1BBbDvhojkpsBanne5HhMg")
@@ -79,13 +82,15 @@ def verify_token(token: str) -> TokenData:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
 ) -> User:
     """
     Get the current authenticated user from JWT token
     
     Args:
         credentials: HTTP Authorization credentials with Bearer token
+        db: Database session
         
     Returns:
         Current user object
@@ -97,22 +102,34 @@ async def get_current_user(
     token_data = verify_token(token)
     
     # Get user from database
-    user_dict = UserDB.get_user_by_id(token_data.user_id)
+    user = UserRepository.get_user_by_id(db, token_data.user_id)
     
-    if user_dict is None:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if not user_dict.get("is_active", True):
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
     
-    return User(**user_dict)
+    # Convert SQLAlchemy model to Pydantic model
+    return User(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        phone=user.phone,
+        role=user.role,
+        is_active=user.is_active,
+        email_verified=user.email_verified,
+        avatar_url=user.avatar_url,
+        created_at=user.created_at,
+        updated_at=user.updated_at
+    )
 
 
 async def get_current_active_user(
