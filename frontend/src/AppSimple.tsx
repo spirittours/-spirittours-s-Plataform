@@ -153,11 +153,20 @@ function AppSimple() {
     setSuccessMessage('');
 
     try {
-      // Ensure tour_id is a string (backend expects string like 'tour-001')
+      // Backend expects BookingRequest model with customer info
       const bookingData = {
-        tour_id: String(selectedTour.id),
-        booking_date: bookingForm.booking_date,
-        participants: Number(bookingForm.participants)
+        customer: {
+          first_name: "Guest",
+          last_name: "User",
+          email: "guest@spirittours.com",
+          phone: "+1234567890",
+          country_code: "US"
+        },
+        product_id: String(selectedTour.id),
+        slot_id: `slot-${bookingForm.booking_date}`,
+        participants_count: Number(bookingForm.participants),
+        customer_type: "b2c_direct",
+        booking_channel: "direct_website"
       };
 
       console.log('Creating booking with data:', bookingData);
