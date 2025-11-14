@@ -1,78 +1,114 @@
+# Spirit Tours - Prometheus Configuration
+# Version: 1.0.0
+
 global:
   scrape_interval: 15s
+  scrape_timeout: 10s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'spirit-tours-monitor'
+    cluster: 'spirit-tours-production'
+    environment: 'production'
 
+# Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: []
+        - targets:
+            # - alertmanager:9093
 
+# Load rules
 rule_files:
-  - /etc/prometheus/alerts/*.yml
+  - "alerts.yml"
 
+# Scrape configurations
 scrape_configs:
+  # ============================================
   # Prometheus itself
+  # ============================================
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
 
-  # Node exporter
-  - job_name: 'node'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # cAdvisor for container metrics
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080']
-
-  # Microservices metrics
-  - job_name: 'microservices'
+  # ============================================
+  # FastAPI Backend API
+  # ============================================
+  - job_name: 'backend-api'
     metrics_path: '/metrics'
     static_configs:
-      - targets:
-          - 'quotation-service:8010'
-          - 'booking-service:8011'
-          - 'guide-service:8012'
-          - 'hotel-service:8013'
-          - 'transport-service:8014'
-          - 'notification-service:8015'
-          - 'payment-service:8016'
-          - 'analytics-service:8017'
-          - 'ml-service:8018'
-          - 'websocket-service:8019'
+      - targets: ['api:8000']
         labels:
-          group: 'spirit-services'
+          service: 'backend'
+          app: 'spirit-tours-api'
+    metric_relabel_configs:
+      # Drop high cardinality metrics
+      - source_labels: [__name__]
+        regex: 'http_request_duration_seconds_bucket'
+        action: drop
 
-  # PostgreSQL exporter
-  - job_name: 'postgresql'
+  # ============================================
+  # Node Exporter (Host Metrics)
+  # ============================================
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+          instance: 'production-host'
+
+  # ============================================
+  # PostgreSQL Exporter
+  # ============================================
+  - job_name: 'postgres'
     static_configs:
       - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgres'
+          database: 'spirittours'
 
-  # Redis exporter
+  # ============================================
+  # Redis Exporter
+  # ============================================
   - job_name: 'redis'
     static_configs:
       - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
+          cache: 'session'
 
-  # RabbitMQ exporter
-  - job_name: 'rabbitmq'
-    static_configs:
-      - targets: ['rabbitmq:15692']
-
-  # Kong API Gateway
-  - job_name: 'kong'
-    static_configs:
-      - targets: ['kong:8001']
-    metrics_path: '/metrics'
-
-  # Elasticsearch exporter
-  - job_name: 'elasticsearch'
-    static_configs:
-      - targets: ['elasticsearch-exporter:9114']
-
-  # Nginx exporter
+  # ============================================
+  # Nginx Exporter
+  # ============================================
   - job_name: 'nginx'
     static_configs:
       - targets: ['nginx-exporter:9113']
+        labels:
+          service: 'nginx'
+          role: 'reverse-proxy'
+
+  # ============================================
+  # Blackbox Exporter (Endpoint Monitoring)
+  # ============================================
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://api.spirittours.com/health
+          - https://spirittours.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Remote write (optional - for long-term storage)
+# remote_write:
+#   - url: "https://prometheus-remote-write.example.com/api/v1/push"
+#     basic_auth:
+#       username: "username"
+#       password: "password"

@@ -1,557 +1,662 @@
-# 🚀 GUÍA DE DESPLIEGUE EN PRODUCCIÓN
-## Spirit Tours Platform - Paso a Paso
+# Spirit Tours - Production Deployment Guide
+**Version: 1.0.0**  
+**Last Updated: 2024-01-15**
+
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Infrastructure Setup](#infrastructure-setup)
+- [Application Deployment](#application-deployment)
+- [SSL/TLS Configuration](#ssltls-configuration)
+- [Monitoring Setup](#monitoring-setup)
+- [Backup Configuration](#backup-configuration)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Rollback Procedures](#rollback-procedures)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-## 📋 PRE-REQUISITOS
+## Overview
 
-### Servidores Requeridos
+This guide covers the complete production deployment of the Spirit Tours platform including:
+- ✅ Cloud infrastructure provisioning (AWS/GCP/Azure)
+- ✅ PostgreSQL database setup with backups
+- ✅ Redis cache cluster
+- ✅ SSL/TLS certificates (Let's Encrypt)
+- ✅ Nginx reverse proxy
+- ✅ Monitoring (Prometheus + Grafana)
+- ✅ Error tracking (Sentry)
+- ✅ Automated backups
+- ✅ CI/CD pipeline (GitHub Actions)
+
+**Estimated Deployment Time**: 4-6 hours  
+**Estimated Monthly Cost**: $840-1200 (depending on cloud provider and traffic)
+
+---
+
+## Prerequisites
+
+### Required Tools
+```bash
+# Install required CLI tools
+curl -fsSL https://get.docker.com | sh  # Docker
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash  # Git LFS
+sudo apt-get install -y docker-compose certbot python3-certbot-nginx jq
+
+# For AWS deployment
+pip install awscli
+aws configure
+
+# For monitoring
+docker pull prom/prometheus:latest
+docker pull grafana/grafana:latest
 ```
-1. Servidor de Aplicación (Backend + Frontend)
-   - CPU: 4 cores
-   - RAM: 8 GB
-   - Disco: 100 GB SSD
-   - SO: Ubuntu 22.04 LTS
 
-2. Servidor de Base de Datos (MongoDB)
-   - CPU: 2 cores
-   - RAM: 4 GB
-   - Disco: 50 GB SSD
-   - SO: Ubuntu 22.04 LTS
+### Required Credentials
+1. **Cloud Provider** (AWS/GCP/Azure)
+   - Access keys / Service account
+   - Billing enabled
+   
+2. **Domain & DNS**
+   - Domain registered (e.g., spirittours.com)
+   - DNS provider access (CloudFlare/Route53)
 
-3. Servidor de Cache (Redis)
-   - CPU: 2 cores
-   - RAM: 4 GB
-   - Disco: 20 GB SSD
-   - SO: Ubuntu 22.04 LTS
+3. **Third-party Services**
+   - Stripe API keys (payments)
+   - SendGrid API key (emails)
+   - Sentry DSN (error tracking)
+   - OpenAI/Anthropic API keys (AI features)
+
+4. **GitHub**
+   - Repository access
+   - GitHub Actions enabled
+   - Secrets configured
+
+---
+
+## Infrastructure Setup
+
+### Option 1: AWS Deployment (Recommended)
+
+#### Step 1: Run AWS Deployment Script
+```bash
+cd deployment/cloud/aws
+chmod +x deploy-aws.sh
+./deploy-aws.sh
+
+# This will create:
+# - VPC with public/private subnets
+# - Application Load Balancer
+# - EC2 instances (3x t3.large)
+# - RDS PostgreSQL (db.t3.xlarge, Multi-AZ)
+# - ElastiCache Redis cluster
+# - S3 buckets for backups
+# - Security groups and IAM roles
 ```
 
-### Dominios y DNS
+#### Step 2: Wait for Resources
+```bash
+# Wait for database initialization (10-15 minutes)
+aws rds describe-db-instances \
+    --db-instance-identifier spirit-tours-db \
+    --query 'DBInstances[0].DBInstanceStatus'
+
+# Wait for Redis cluster (5-10 minutes)
+aws elasticache describe-replication-groups \
+    --replication-group-id spirit-tours-redis \
+    --query 'ReplicationGroups[0].Status'
 ```
-✅ spirittours.us configurado
-✅ Certificado SSL/TLS activo
-✅ DNS records configurados (MX, SPF, DKIM, DMARC)
+
+#### Step 3: Get Connection Details
+```bash
+# Database endpoint
+DB_ENDPOINT=$(aws rds describe-db-instances \
+    --db-instance-identifier spirit-tours-db \
+    --query 'DBInstances[0].Endpoint.Address' \
+    --output text)
+
+# Redis endpoint
+REDIS_ENDPOINT=$(aws elasticache describe-replication-groups \
+    --replication-group-id spirit-tours-redis \
+    --query 'ReplicationGroups[0].NodeGroups[0].PrimaryEndpoint.Address' \
+    --output text)
+
+echo "Database: $DB_ENDPOINT"
+echo "Redis: $REDIS_ENDPOINT"
+```
+
+### Option 2: Docker Compose Deployment
+
+For smaller deployments or testing:
+
+```bash
+# Copy and configure environment
+cp .env.production.example .env.production
+nano .env.production  # Fill in actual values
+
+# Start all services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Check status
+docker-compose -f docker-compose.prod.yml ps
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f api
 ```
 
 ---
 
-## 🔧 OPCIÓN 1: DESPLIEGUE CON DOCKER (RECOMENDADO)
+## Application Deployment
 
-### Paso 1: Preparar Servidor
+### Step 1: Configure Environment Variables
+
 ```bash
-# Actualizar sistema
-sudo apt update && sudo apt upgrade -y
+# Create production environment file
+cp .env.production.example .env.production
 
-# Instalar Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+# Edit with actual values
+nano .env.production
 
-# Instalar Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Verificar instalación
-docker --version
-docker-compose --version
+# Required variables:
+# - DATABASE_URL (from AWS RDS)
+# - REDIS_URL (from ElastiCache)
+# - SECRET_KEY (generate with: openssl rand -hex 32)
+# - STRIPE_SECRET_KEY
+# - SMTP_PASSWORD (SendGrid)
+# - SENTRY_DSN
 ```
 
-### Paso 2: Clonar Repositorio
+### Step 2: Build and Push Docker Image
+
 ```bash
-# Crear directorio para la aplicación
-sudo mkdir -p /var/www/spirittours
-cd /var/www/spirittours
+# Build production image
+docker build \
+    -f backend/Dockerfile.production \
+    -t spirittours/backend:1.0.0 \
+    --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+    --build-arg VERSION=1.0.0 \
+    ./backend
 
-# Clonar desde Git
-git clone https://github.com/your-org/spirit-tours.git .
+# Tag as latest
+docker tag spirittours/backend:1.0.0 spirittours/backend:latest
 
-# O subir archivos via SCP/SFTP
+# Push to registry (Docker Hub or ECR)
+docker push spirittours/backend:1.0.0
+docker push spirittours/backend:latest
 ```
 
-### Paso 3: Configurar Variables de Entorno
+### Step 3: Deploy to Production
+
 ```bash
-# Copiar template seguro
-cp .env.secure .env
+# Using Docker Compose
+docker-compose -f docker-compose.prod.yml up -d
 
-# Editar con credenciales reales
-sudo nano .env
-
-# Cambiar:
-# - MONGODB_URI (URI de MongoDB en producción)
-# - REDIS_PASSWORD (password de Redis)
-# - JWT_SECRET (secreto único de producción)
-# - SMTP_PASSWORD (App password de Google)
-# - API keys reales (OpenAI, SendGrid, etc.)
+# Or deploy to AWS ECS/Kubernetes
+kubectl apply -f deployment/k8s/production/
 ```
 
-### Paso 4: Construir y Ejecutar
+### Step 4: Run Database Migrations
+
 ```bash
-# Construir imágenes Docker
-docker-compose build
+# Connect to API container
+docker exec -it spirit-tours-api-prod bash
 
-# Iniciar servicios
-docker-compose up -d
+# Run migrations
+alembic upgrade head
 
-# Verificar estado
-docker-compose ps
-
-# Ver logs
-docker-compose logs -f
+# Verify database
+psql $DATABASE_URL -c "\dt"
 ```
 
-### Paso 5: Configurar Nginx (Reverse Proxy)
+### Step 5: Health Check
+
 ```bash
-# Instalar Nginx
-sudo apt install nginx -y
+# Check API health
+curl https://api.spirittours.com/health
 
-# Crear configuración
-sudo nano /etc/nginx/sites-available/spirittours
-```
-
-```nginx
-server {
-    listen 80;
-    server_name spirittours.us www.spirittours.us;
-    
-    # Redirect to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name spirittours.us www.spirittours.us;
-
-    # SSL Configuration
-    ssl_certificate /etc/letsencrypt/live/spirittours.us/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/spirittours.us/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    # Frontend
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # WebSocket
-    location /ws {
-        proxy_pass http://localhost:5001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_set_header Host $host;
-    }
+# Expected response:
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "database": "connected",
+  "redis": "connected"
 }
 ```
 
+---
+
+## SSL/TLS Configuration
+
+### Option 1: Let's Encrypt (Free, Automated)
+
 ```bash
-# Activar configuración
-sudo ln -s /etc/nginx/sites-available/spirittours /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+cd deployment/ssl
+chmod +x setup-ssl.sh
+
+# Obtain certificates for main domain and API subdomain
+./setup-ssl.sh spirittours.com admin@spirittours.com
+
+# This will:
+# - Install certbot
+# - Obtain certificates for spirittours.com and api.spirittours.com
+# - Configure Nginx
+# - Set up auto-renewal (runs twice daily)
+
+# Verify certificates
+sudo certbot certificates
 ```
 
-### Paso 6: Configurar SSL con Let's Encrypt
+### Option 2: AWS Certificate Manager (ACM)
+
 ```bash
-# Instalar Certbot
-sudo apt install certbot python3-certbot-nginx -y
+# Request certificate
+aws acm request-certificate \
+    --domain-name spirittours.com \
+    --subject-alternative-names api.spirittours.com www.spirittours.com \
+    --validation-method DNS
 
-# Obtener certificado
-sudo certbot --nginx -d spirittours.us -d www.spirittours.us
+# Get validation records
+aws acm describe-certificate \
+    --certificate-arn <certificate-arn>
 
-# Renovación automática
+# Add CNAME records to Route53/DNS provider
+# Wait for validation (5-30 minutes)
+```
+
+### Configure Nginx for SSL
+
+```bash
+# Copy production Nginx config
+cp nginx/nginx.prod.conf /etc/nginx/nginx.conf
+
+# Test configuration
+nginx -t
+
+# Reload Nginx
+nginx -s reload
+
+# Test HTTPS
+curl -I https://api.spirittours.com
+```
+
+---
+
+## Monitoring Setup
+
+### Step 1: Start Monitoring Stack
+
+```bash
+# Start Prometheus and Grafana
+docker-compose -f docker-compose.prod.yml up -d prometheus grafana
+
+# Access Grafana
+open https://monitoring.spirittours.com
+# Default login: admin / <GRAFANA_ADMIN_PASSWORD from .env>
+```
+
+### Step 2: Configure Data Sources
+
+Grafana automatically loads Prometheus datasource from:
+- `monitoring/grafana/provisioning/datasources/prometheus.yml`
+
+### Step 3: Import Dashboards
+
+```bash
+# Dashboards are auto-loaded from:
+# monitoring/grafana/dashboards/
+
+# Or manually import from Grafana UI:
+# - Node Exporter Dashboard (ID: 1860)
+# - PostgreSQL Dashboard (ID: 9628)
+# - Redis Dashboard (ID: 11835)
+# - FastAPI Dashboard (custom)
+```
+
+### Step 4: Configure Alerts
+
+Prometheus alerts are configured in:
+- `monitoring/prometheus/alerts.yml`
+
+To receive alerts via Slack:
+1. Create Slack webhook URL
+2. Add to `.env.production`:
+   ```bash
+   SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+   ```
+3. Restart Prometheus
+
+### Step 5: Setup Sentry Error Tracking
+
+```bash
+# Add Sentry DSN to .env.production
+SENTRY_DSN=https://your-dsn@sentry.io/project-id
+
+# Restart API
+docker-compose -f docker-compose.prod.yml restart api
+
+# Test error tracking
+curl -X POST https://api.spirittours.com/test-error
+```
+
+---
+
+## Backup Configuration
+
+### Step 1: Configure Backup Service
+
+```bash
+# Backups run daily at 2 AM UTC
+# Configuration in docker-compose.prod.yml
+
+# Test backup manually
+docker exec spirit-tours-backup /scripts/backup.sh
+
+# Check backup files
+ls -lh backup/postgres/
+
+# Verify S3 upload (if configured)
+aws s3 ls s3://spirit-tours-backups-us-east-1/backups/postgres/
+```
+
+### Step 2: Test Restore
+
+```bash
+# List available backups
+docker exec spirit-tours-backup /scripts/restore.sh list
+
+# Restore from latest backup (CAUTION: Drops database)
+docker exec -it spirit-tours-backup /scripts/restore.sh restore latest
+
+# Or restore from specific backup
+docker exec -it spirit-tours-backup /scripts/restore.sh restore \
+    /backup/spirittours_20240115_020000.sql.gz
+```
+
+### Step 3: Setup Backup Monitoring
+
+```bash
+# Backup logs are in /var/log/backup/backup.log
+docker exec spirit-tours-backup tail -f /var/log/backup/backup.log
+
+# Slack notifications are automatic (if SLACK_WEBHOOK_URL configured)
+```
+
+---
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The CI/CD pipeline is configured in `.github/workflows/deploy-production.yml`
+
+**Triggers**:
+- Push to `main` branch
+- Manual workflow dispatch
+
+**Steps**:
+1. Run tests (pytest)
+2. Build Docker image
+3. Push to registry
+4. Deploy to production
+5. Run health checks
+6. Send Slack notification
+
+### Setup GitHub Secrets
+
+Required secrets in GitHub repository settings:
+
+```bash
+# Docker Registry
+DOCKER_USERNAME
+DOCKER_PASSWORD
+
+# AWS (if using AWS)
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+
+# Production Environment
+PRODUCTION_DATABASE_URL
+PRODUCTION_REDIS_URL
+PRODUCTION_SECRET_KEY
+STRIPE_SECRET_KEY
+SMTP_PASSWORD
+SENTRY_DSN
+
+# Notifications
+SLACK_WEBHOOK_URL
+```
+
+### Manual Deployment
+
+```bash
+# Trigger manual deployment
+gh workflow run deploy-production.yml
+
+# Monitor deployment
+gh run list --workflow=deploy-production.yml
+gh run watch
+```
+
+---
+
+## Rollback Procedures
+
+### Rollback Application (Quick - 5 minutes)
+
+```bash
+# Option 1: Rollback to previous Docker image
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml pull spirittours/backend:1.0.0-previous
+docker-compose -f docker-compose.prod.yml up -d
+
+# Option 2: Use git to revert
+git revert <commit-hash>
+git push origin main
+# CI/CD will auto-deploy
+
+# Verify rollback
+curl https://api.spirittours.com/health
+```
+
+### Rollback Database (Longer - 15-30 minutes)
+
+```bash
+# 1. Find recent backup
+docker exec spirit-tours-backup /scripts/restore.sh list
+
+# 2. Restore from backup
+docker exec -it spirit-tours-backup /scripts/restore.sh restore \
+    /backup/spirittours_20240114_020000.sql.gz
+
+# 3. Restart application
+docker-compose -f docker-compose.prod.yml restart api
+
+# 4. Verify
+curl https://api.spirittours.com/api/v1/health
+```
+
+---
+
+## Troubleshooting
+
+### API Not Responding
+
+```bash
+# Check container status
+docker ps | grep spirit-tours
+
+# Check logs
+docker logs spirit-tours-api-prod --tail=100
+
+# Check Nginx logs
+docker logs spirit-tours-nginx-prod --tail=100
+
+# Check database connection
+docker exec spirit-tours-api-prod python -c "
+from config.database import engine
+print(engine.execute('SELECT 1').scalar())
+"
+```
+
+### Database Issues
+
+```bash
+# Check RDS status (AWS)
+aws rds describe-db-instances \
+    --db-instance-identifier spirit-tours-db
+
+# Check connections
+docker exec spirit-tours-postgres-prod psql -U spirittours -d spirittours_db -c \
+    "SELECT count(*) FROM pg_stat_activity;"
+
+# Check slow queries
+docker exec spirit-tours-postgres-prod psql -U spirittours -d spirittours_db -c \
+    "SELECT query, state, wait_event FROM pg_stat_activity WHERE state != 'idle';"
+```
+
+### High Memory Usage
+
+```bash
+# Check container resource usage
+docker stats
+
+# Restart specific service
+docker-compose -f docker-compose.prod.yml restart api
+
+# Scale horizontally (if using swarm/k8s)
+docker service scale spirit-tours-api=5
+```
+
+### SSL Certificate Expiry
+
+```bash
+# Check certificate expiry
+sudo certbot certificates
+
+# Manually renew
+sudo certbot renew
+
+# Test renewal
 sudo certbot renew --dry-run
 ```
 
 ---
 
-## 💻 OPCIÓN 2: DESPLIEGUE MANUAL (SIN DOCKER)
+## Performance Optimization
 
-### Paso 1: Instalar Dependencias
-```bash
-# Node.js 20.x
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+### Database Query Optimization
 
-# MongoDB
-wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-sudo apt update
-sudo apt install -y mongodb-org
+```sql
+-- Enable query logging
+ALTER DATABASE spirittours_db SET log_statement = 'all';
 
-# Redis
-sudo apt install redis-server -y
+-- Analyze slow queries
+SELECT query, mean_exec_time, calls 
+FROM pg_stat_statements 
+ORDER BY mean_exec_time DESC 
+LIMIT 10;
 
-# Python (para scripts)
-sudo apt install python3 python3-pip -y
+-- Create indexes for common queries
+CREATE INDEX CONCURRENTLY idx_bookings_user_id ON bookings(user_id);
+CREATE INDEX CONCURRENTLY idx_bookings_created_at ON bookings(created_at DESC);
 ```
 
-### Paso 2: Configurar MongoDB
-```bash
-# Editar configuración
-sudo nano /etc/mongod.conf
-
-# Cambiar:
-# security:
-#   authorization: enabled
-
-# Iniciar MongoDB
-sudo systemctl start mongod
-sudo systemctl enable mongod
-
-# Crear usuario admin
-mongosh
-use admin
-db.createUser({
-  user: "admin",
-  pwd: "SpiritTours_DB_Prod_2025_Secure",
-  roles: ["root"]
-})
-exit
-
-# Reiniciar con autenticación
-sudo systemctl restart mongod
-```
-
-### Paso 3: Configurar Redis
-```bash
-# Editar configuración
-sudo nano /etc/redis/redis.conf
-
-# Cambiar:
-# requirepass SpiritTours_Redis_Prod_2025
-
-# Reiniciar
-sudo systemctl restart redis
-sudo systemctl enable redis
-```
-
-### Paso 4: Desplegar Aplicación
-```bash
-# Clonar repositorio
-cd /var/www
-git clone https://github.com/your-org/spirit-tours.git spirittours
-cd spirittours
-
-# Instalar dependencias
-npm install
-
-# Configurar .env
-cp .env.secure .env
-nano .env
-
-# Ejecutar optimización de DB
-node scripts/optimize-mongodb.js
-
-# Construir frontend
-cd frontend
-npm install
-npm run build
-cd ..
-```
-
-### Paso 5: Configurar PM2
-```bash
-# Instalar PM2
-sudo npm install -g pm2
-
-# Crear archivo ecosystem
-nano ecosystem.config.js
-```
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: 'spirit-tours-backend',
-      script: 'backend/server.js',
-      instances: 4,
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 5000
-      }
-    },
-    {
-      name: 'spirit-tours-frontend',
-      script: 'npm',
-      args: 'start',
-      cwd: './frontend',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000
-      }
-    }
-  ]
-};
-```
+### Redis Cache Tuning
 
 ```bash
-# Iniciar aplicación
-pm2 start ecosystem.config.js
+# Monitor cache hit rate
+redis-cli INFO stats | grep hit_rate
 
-# Configurar inicio automático
-pm2 startup
-pm2 save
+# Monitor memory usage
+redis-cli INFO memory | grep used_memory
 
-# Ver logs
-pm2 logs
+# Set maxmemory policy
+redis-cli CONFIG SET maxmemory-policy allkeys-lru
+```
 
-# Ver estado
-pm2 status
+### Application Performance
+
+```bash
+# Enable Gunicorn workers based on CPU cores
+# Formula: (2 x $num_cores) + 1
+WORKERS=$(($(nproc) * 2 + 1))
+
+# Update docker-compose.prod.yml
+CMD ["gunicorn", "main:app", "--workers", "$WORKERS", ...]
 ```
 
 ---
 
-## 🔒 SEGURIDAD POST-DESPLIEGUE
+## Security Checklist
 
-### Firewall (UFW)
-```bash
-# Habilitar firewall
-sudo ufw enable
-
-# Permitir puertos necesarios
-sudo ufw allow 22/tcp    # SSH
-sudo ufw allow 80/tcp    # HTTP
-sudo ufw allow 443/tcp   # HTTPS
-
-# Verificar
-sudo ufw status
-```
-
-### Fail2Ban (Protección contra ataques)
-```bash
-# Instalar
-sudo apt install fail2ban -y
-
-# Configurar
-sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-sudo nano /etc/fail2ban/jail.local
-
-# Iniciar
-sudo systemctl start fail2ban
-sudo systemctl enable fail2ban
-```
-
-### Backups Automáticos
-```bash
-# Crear script de backup
-sudo nano /usr/local/bin/backup-spirittours.sh
-```
-
-```bash
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/var/backups/spirittours"
-
-mkdir -p $BACKUP_DIR
-
-# Backup MongoDB
-mongodump --uri="mongodb://admin:password@localhost:27017" --out=$BACKUP_DIR/mongo_$DATE
-
-# Backup archivos
-tar -czf $BACKUP_DIR/files_$DATE.tar.gz /var/www/spirittours
-
-# Eliminar backups antiguos (> 30 días)
-find $BACKUP_DIR -type f -mtime +30 -delete
-
-echo "Backup completado: $DATE"
-```
-
-```bash
-# Hacer ejecutable
-sudo chmod +x /usr/local/bin/backup-spirittours.sh
-
-# Programar con cron (diario a las 2 AM)
-sudo crontab -e
-# Agregar: 0 2 * * * /usr/local/bin/backup-spirittours.sh
-```
+- ✅ SSL/TLS certificates configured
+- ✅ Firewall rules (Security Groups) configured
+- ✅ Database not publicly accessible
+- ✅ Strong passwords (32+ characters)
+- ✅ Secrets stored in AWS Secrets Manager
+- ✅ Rate limiting enabled (Nginx + FastAPI)
+- ✅ Security headers configured
+- ✅ Database backups encrypted
+- ✅ Monitoring and alerting active
+- ✅ Regular security updates enabled
 
 ---
 
-## 📊 MONITOREO Y LOGS
+## Maintenance Schedule
 
-### Configurar Logs
-```bash
-# Logs de Nginx
-tail -f /var/log/nginx/access.log
-tail -f /var/log/nginx/error.log
+### Daily
+- ✅ Automated backups (2 AM UTC)
+- ✅ Log rotation
+- ✅ Health checks
 
-# Logs de aplicación
-tail -f /var/www/spirittours/logs/combined.log
-tail -f /var/www/spirittours/logs/error.log
+### Weekly
+- ⏰ Review monitoring dashboards
+- ⏰ Check error rates (Sentry)
+- ⏰ Review security alerts
 
-# Logs de MongoDB
-tail -f /var/log/mongodb/mongod.log
+### Monthly
+- ⏰ Update dependencies
+- ⏰ Review and optimize database
+- ⏰ Test backup restoration
+- ⏰ Review costs and optimize
 
-# Logs de PM2
-pm2 logs spirit-tours-backend
-```
-
-### Monitoreo con PM2
-```bash
-# Dashboard en tiempo real
-pm2 monit
-
-# Métricas
-pm2 status
-
-# Uso de memoria
-pm2 describe spirit-tours-backend
-```
+### Quarterly
+- ⏰ Security audit
+- ⏰ Performance review
+- ⏰ Disaster recovery drill
 
 ---
 
-## ✅ CHECKLIST POST-DESPLIEGUE
+## Support & Escalation
 
-### Verificaciones Inmediatas
-- [ ] Aplicación accesible en https://spirittours.us
-- [ ] API respondiendo en https://spirittours.us/api/health
-- [ ] WebSocket conectando correctamente
-- [ ] MongoDB conectado y optimizado
-- [ ] Redis funcionando
-- [ ] Certificado SSL válido
-- [ ] Emails enviándose correctamente
-- [ ] Sin errores en logs
+### On-Call Schedule
+- Primary: DevOps Team
+- Secondary: Backend Team
+- Emergency: CTO
 
-### Pruebas Funcionales
-- [ ] Login de usuarios funciona
-- [ ] Crear nueva reservación
-- [ ] Procesar pago de prueba
-- [ ] Envío de email de confirmación
-- [ ] Dashboard carga correctamente
-- [ ] Reportes se generan
-- [ ] API externa integrada (si aplica)
+### Contact Information
+- Slack: #spirit-tours-ops
+- Email: ops@spirittours.com
+- PagerDuty: Configure alerts
 
-### Seguridad
-- [ ] Firewall configurado
-- [ ] Fail2Ban activo
-- [ ] SSL/TLS funcionando
-- [ ] Backups programados
-- [ ] Logs rotando correctamente
-- [ ] Credenciales únicas en producción
-- [ ] 2FA activado en cuentas admin
-
-### Performance
-- [ ] Tiempo de respuesta < 100ms
-- [ ] Cache hit rate > 80%
-- [ ] CPU usage < 70%
-- [ ] Memory usage estable
-- [ ] Sin memory leaks
-- [ ] Base de datos indexada
+### Escalation Matrix
+1. **Level 1**: Automated alerts → On-call engineer
+2. **Level 2**: Service degradation → Team lead
+3. **Level 3**: Service outage → CTO + CEO
 
 ---
 
-## 🚨 TROUBLESHOOTING
+## Additional Resources
 
-### Aplicación No Inicia
-```bash
-# Ver logs detallados
-pm2 logs --err
-
-# Verificar puerto
-netstat -tulpn | grep :5000
-
-# Verificar variables de entorno
-cat .env | grep -v "^#"
-
-# Reiniciar
-pm2 restart all
-```
-
-### MongoDB No Conecta
-```bash
-# Verificar estado
-sudo systemctl status mongod
-
-# Ver logs
-tail -f /var/log/mongodb/mongod.log
-
-# Probar conexión
-mongosh mongodb://localhost:27017
-
-# Reiniciar
-sudo systemctl restart mongod
-```
-
-### Redis No Conecta
-```bash
-# Verificar estado
-sudo systemctl status redis
-
-# Probar conexión
-redis-cli ping
-
-# Ver logs
-tail -f /var/log/redis/redis-server.log
-
-# Reiniciar
-sudo systemctl restart redis
-```
-
-### SSL/HTTPS No Funciona
-```bash
-# Verificar certificado
-sudo certbot certificates
-
-# Renovar si es necesario
-sudo certbot renew
-
-# Verificar configuración Nginx
-sudo nginx -t
-
-# Reiniciar Nginx
-sudo systemctl restart nginx
-```
+- [Docker Documentation](https://docs.docker.com/)
+- [PostgreSQL Administration](https://www.postgresql.org/docs/15/admin.html)
+- [FastAPI Deployment](https://fastapi.tiangolo.com/deployment/)
+- [Prometheus Best Practices](https://prometheus.io/docs/practices/)
+- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
 
 ---
 
-## 📞 SOPORTE POST-DESPLIEGUE
-
-### Contactos de Emergencia
-- **DevOps Lead:** devops@spirittours.us
-- **Tech Support:** tech@spirittours.us
-- **System Admin:** admin@spirittours.us
-
-### Documentación Adicional
-- Guía de Operaciones: `/docs/operations.md`
-- Runbook DevOps: `DEVOPS_RUNBOOK.md`
-- FAQ Técnico: `/docs/faq-technical.md`
-
----
-
-## 🎯 SIGUIENTES PASOS
-
-### Primera Semana
-1. Monitorear logs diariamente
-2. Verificar performance metrics
-3. Revisar backups
-4. Probar recuperación ante desastres
-5. Optimizar según carga real
-
-### Primer Mes
-1. Escalar si es necesario (horizontal/vertical)
-2. Implementar CDN (Cloudflare)
-3. Configurar alertas automáticas
-4. Auditoría de seguridad
-5. Documentar lecciones aprendidas
-
----
-
-**✅ SISTEMA LISTO PARA PRODUCCIÓN**
-
-*Guía creada: 6 de Noviembre, 2025*  
-*Para: Spirit Tours Platform v2.0*
+**Document Version**: 1.0.0  
+**Last Updated**: 2024-01-15  
+**Maintained By**: Spirit Tours DevOps Team
