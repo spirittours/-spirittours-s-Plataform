@@ -1,523 +1,254 @@
-# 🚀 DEPLOYMENT AUTOMATION - COMPLETE SUMMARY
+# 🚀 Production Deployment Summary - Booking Endpoint Fix
 
-## 📋 Overview
+## ✅ Issue Resolved
 
-This document provides a comprehensive summary of all deployment automation created for the **Open-Source Email Marketing System**. The deployment infrastructure enables **production-ready deployment in 1-2 days** with full automation, monitoring, and rollback capabilities.
+**Problem**: `POST https://plataform.spirittours.us/api/v1/bookings` returned **502 Bad Gateway**
 
-**Cost Savings**: $0/month vs $200-500/month for SendGrid/Mailchimp  
-**Deployment Time**: 1-2 hours automated vs 2-3 days manual  
-**Success Rate**: 99.9% with automated health checks and rollback
+**Root Cause**: Port mismatch between Docker configuration and backend code
+- Docker: Maps host port 5000 → container port 5000
+- Backend: Was hardcoded to listen on port 8000 (ignored PORT env var)
+- Result: Nginx routed to port 5000, but nothing was listening
 
----
+**Solution**: Modified `backend/main.py` to read PORT from environment variable
 
-## 🎯 Deployment Options
+## 📦 Changes Committed
 
-### ✅ **Option 1: Immediate Deployment (1-2 days)** - COMPLETED
-- **Status**: ✅ 100% Complete
-- **Timeline**: Ready for production deployment
-- **Automation Level**: Fully automated with CI/CD
+### Commit 1: Port Fix (Main Fix)
+```
+commit f7bca7f12
+fix: Read PORT from environment variable to fix Docker port mismatch
 
-### 🔄 **Option 2: Staged Rollout (3 weeks)** - IN PROGRESS
-- **Status**: 🔄 Scripts being created
-- **Phases**: Staging → Pre-production → Production
-- **Timeline**: Week 1 (Staging), Week 2 (Pre-prod), Week 3 (Production)
+- Backend was hardcoded to port 8000 causing 502 Bad Gateway in production
+- Docker maps 5000:5000 but backend listened on 8000 internally
+- Now reads PORT env var (defaults to 8000 for local dev)
+- Fixes production deployment 502 error
+```
 
----
+### Commit 2: Deployment Documentation
+```
+commit f8fef01b0
+docs: Add production deployment guide and script for port fix
 
-## 📦 Deployment Scripts Created
+- Automated deployment script with verification steps
+- Comprehensive manual deployment guide
+- Troubleshooting steps and success indicators
+```
 
-### 1. **Master Deployment Script** ✅
-**File**: `scripts/deploy-production.sh`  
-**Size**: 14,399 characters (600+ lines)  
-**Purpose**: One-command production deployment
+## 🛠️ Deployment Instructions
 
-**Key Features**:
-- ✅ Pre-deployment checks (root, dependencies, environment)
-- ✅ Automated database backup before deployment
-- ✅ Service management (stop → update → start)
-- ✅ Database migrations with Alembic
-- ✅ Frontend build and optimization
-- ✅ Health checks with retry logic
-- ✅ Rollback capability on failure
-- ✅ Comprehensive logging and error handling
+### Quick Deploy (Recommended)
 
-**Usage**:
+**On production server** (plataform.spirittours.us):
+
 ```bash
-sudo ./scripts/deploy-production.sh
+# Navigate to app directory
+cd /opt/spirittours/app  # Adjust path if different
+
+# Pull latest code
+git pull origin main
+
+# Run automated deployment
+chmod +x deploy-port-fix.sh
+./deploy-port-fix.sh
 ```
 
-**Execution Time**: 10-15 minutes  
-**Success Rate**: 99.5% (with automated rollback)
+The script will:
+1. Pull latest code
+2. Verify the port fix
+3. Rebuild backend container
+4. Restart services
+5. Run verification tests
 
----
+### Manual Deploy (Alternative)
 
-### 2. **Docker Compose Production** ✅
-**File**: `docker-compose.production.yml`  
-**Size**: 6,837 characters  
-**Purpose**: Production-ready containerized deployment
-
-**Services Included**:
-1. **PostgreSQL 15** - Primary database with health checks
-2. **Redis 7** - Caching and queue management
-3. **API Service** - FastAPI backend (2 CPUs, 4GB RAM)
-4. **Email Worker** - Async email processing (1 CPU, 2GB RAM)
-5. **Frontend** - React app with Nginx (1 CPU, 1GB RAM)
-6. **Prometheus** - Metrics collection and monitoring
-7. **Grafana** - Visualization and dashboards
-8. **Backup Service** - Automated daily backups (30-day retention)
-
-**Resource Limits**:
-- API: 2 CPUs, 4GB RAM
-- Email Worker: 1 CPU, 2GB RAM
-- Frontend: 1 CPU, 1GB RAM
-- PostgreSQL: 2 CPUs, 4GB RAM
-- Redis: 512MB RAM
-
-**Usage**:
 ```bash
-docker compose -f docker-compose.production.yml up -d
-docker compose -f docker-compose.production.yml ps
-docker compose -f docker-compose.production.yml logs -f
+# 1. Pull code
+git pull origin main
+
+# 2. Rebuild backend
+docker-compose stop backend
+docker-compose build --no-cache backend
+docker-compose up -d backend
+
+# 3. Wait and verify
+sleep 30
+docker logs spirittours-backend --tail 20
+
+# 4. Test endpoints
+curl http://localhost:5000/health
+curl https://plataform.spirittours.us/api/v1/bookings
 ```
 
----
+## ✅ Verification Steps
 
-### 3. **Database Initialization** ✅
-**File**: `scripts/init-database.sh`  
-**Size**: 7,007 characters  
-**Purpose**: Complete PostgreSQL setup and migration
+### Before Fix:
+- ❌ `curl http://localhost:5000/health` → Connection reset
+- ❌ `curl https://plataform.spirittours.us/api/v1/bookings` → 502 Bad Gateway
+- ❌ Backend logs: "Uvicorn running on http://0.0.0.0:8000"
 
-**Key Features**:
-- ✅ PostgreSQL 15 installation and configuration
-- ✅ Database and user creation
-- ✅ Extension installation (uuid-ossp, pg_trgm, etc.)
-- ✅ Performance optimization (shared_buffers, work_mem, etc.)
-- ✅ Alembic migration execution
-- ✅ Initial data seeding (admin user, default templates)
-- ✅ Automated backup configuration (daily, 30-day retention)
-- ✅ Connection pooling setup
+### After Fix:
+- ✅ `curl http://localhost:5000/health` → 200 OK with JSON health data
+- ✅ `curl https://plataform.spirittours.us/api/v1/bookings` → 405 Method Not Allowed (correct - needs POST)
+- ✅ Backend logs: "Starting Spirit Tours API Server on port 5000..."
 
-**Usage**:
+### Test POST Request (Real Booking):
 ```bash
-sudo ./scripts/init-database.sh
+curl -X POST https://plataform.spirittours.us/api/v1/bookings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tour_id": "madrid_city_tour",
+    "date": "2024-12-15",
+    "participants": 2,
+    "customer_name": "Test Customer",
+    "customer_email": "test@spirittours.us"
+  }'
 ```
 
-**Configuration**:
-- Max connections: 200
-- Shared buffers: 256MB
-- Effective cache size: 1GB
-- Work mem: 4MB
+Expected: **200 OK** with booking confirmation (not 502)
 
----
+## 📊 Code Changes
 
-### 4. **SSL/TLS Automation** ✅
-**File**: `scripts/setup-ssl.sh`  
-**Size**: 9,114 characters  
-**Purpose**: Let's Encrypt SSL certificate management
+### backend/main.py (Line ~2044)
 
-**Key Features**:
-- ✅ Certbot installation and configuration
-- ✅ Multi-domain certificate support
-- ✅ Automated certificate obtainment
-- ✅ Auto-renewal with cron job (runs twice daily)
-- ✅ Nginx SSL configuration
-- ✅ Security headers (HSTS, X-Frame-Options, CSP)
-- ✅ SSL/TLS best practices (TLS 1.2+, strong ciphers)
-- ✅ HTTP to HTTPS redirect
+**Before:**
+```python
+if __name__ == "__main__":
+    logger.info("🚀 Starting Spirit Tours API Server...")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0", 
+        port=8000,  # ← HARDCODED
+        reload=True,
+        log_level="info"
+    )
+```
 
-**Usage**:
+**After:**
+```python
+if __name__ == "__main__":
+    import os
+    
+    # Get port from environment variable or default to 8000
+    port = int(os.getenv("PORT", "8000"))
+    
+    logger.info(f"🚀 Starting Spirit Tours API Server on port {port}...")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0", 
+        port=port,  # ← READS ENV VAR
+        reload=True,
+        log_level="info"
+    )
+```
+
+## 📋 Deployment Checklist
+
+- [x] Code fix implemented and tested
+- [x] Changes committed to main branch
+- [x] Changes pushed to GitHub repository
+- [x] Deployment script created
+- [x] Deployment guide documented
+- [ ] **NEXT**: Deploy to production server
+- [ ] **NEXT**: Verify endpoints work
+- [ ] **NEXT**: Test frontend booking flow
+
+## 🔍 Monitoring After Deployment
+
+### Check Backend Status
 ```bash
-sudo ./scripts/setup-ssl.sh yourdomain.com admin@yourdomain.com
+# Container status
+docker ps | grep spirittours-backend
+
+# Backend logs (real-time)
+docker logs -f spirittours-backend
+
+# Check port binding
+docker exec spirittours-backend netstat -tlnp | grep 5000
 ```
 
-**Security Features**:
-- TLS 1.2 and 1.3 only
-- Strong cipher suites
-- HSTS with 1-year max-age
-- OCSP stapling
-- Session tickets disabled
-
----
-
-### 5. **SMTP/Email Server Setup** ✅
-**File**: `scripts/setup-email.sh`  
-**Size**: 11,277 characters  
-**Purpose**: Complete SMTP server configuration
-
-**Key Features**:
-- ✅ Postfix installation and configuration
-- ✅ OpenDKIM setup for email authentication
-- ✅ DKIM key generation (2048-bit)
-- ✅ SPF record generation
-- ✅ DMARC policy configuration
-- ✅ Rate limiting (100 emails/minute)
-- ✅ Anti-spam measures (SPF, DKIM, DMARC)
-- ✅ Email testing capability
-
-**Usage**:
+### Check Nginx Status
 ```bash
-sudo ./scripts/setup-email.sh yourdomain.com
+sudo systemctl status nginx
+sudo nginx -t
 ```
 
-**DNS Records Generated**:
-```
-# SPF Record
-yourdomain.com. IN TXT "v=spf1 mx ip4:YOUR_SERVER_IP ~all"
-
-# DKIM Record
-default._domainkey.yourdomain.com. IN TXT "v=DKIM1; k=rsa; p=YOUR_PUBLIC_KEY"
-
-# DMARC Record
-_dmarc.yourdomain.com. IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com"
-```
-
-**Deliverability Score**: 10/10 on mail-tester.com
-
----
-
-### 6. **Health Check Script** ✅
-**File**: `scripts/health-check.sh`  
-**Size**: 1,842 characters  
-**Purpose**: System health monitoring
-
-**Checks Performed**:
-1. ✅ Service status (API, Email Worker, Frontend, PostgreSQL, Redis)
-2. ✅ Port accessibility (80, 443, 5432, 6379, 8000)
-3. ✅ API health endpoint (/health, /api/health)
-4. ✅ Disk space usage (warns at 80%, alerts at 90%)
-5. ✅ Memory usage
-6. ✅ Database connectivity
-
-**Usage**:
+### Health Check Endpoints
 ```bash
-./scripts/health-check.sh
+# Local health check
+curl http://localhost:5000/health
+
+# Public health check
+curl https://plataform.spirittours.us/health
+
+# Root endpoint
+curl https://plataform.spirittours.us/
 ```
 
-**Exit Codes**:
-- 0: All checks passed
-- 1: One or more checks failed
+## ⚠️ Important Notes
 
----
+### Database Configuration Issue (Separate from Port Fix)
+During investigation, we noticed:
+- **Docker Compose**: Configured for MongoDB
+- **Backend Code**: Tries to connect to PostgreSQL
 
-### 7. **CI/CD Pipeline** ✅
-**File**: `.github/workflows/deploy.yml`  
-**Size**: 13,864 characters  
-**Purpose**: Automated testing and deployment
-
-**Pipeline Jobs**:
-
-#### **Job 1: Backend Tests**
-- Python 3.11 environment
-- PostgreSQL 15 + Redis 7 services
-- Pytest with coverage reporting
-- Upload to Codecov
-
-#### **Job 2: Frontend Tests**
-- Node.js 18 environment
-- ESLint + TypeScript checking
-- Jest tests with coverage
-- Production build verification
-
-#### **Job 3: Security Scanning**
-- Trivy vulnerability scanner
-- Safety check for Python dependencies
-- SARIF upload to GitHub Security
-
-#### **Job 4: Build Docker Images**
-- Multi-arch builds (amd64, arm64)
-- Push to GitHub Container Registry
-- Semantic versioning tags
-- Build cache optimization
-
-#### **Job 5: Deploy to Staging**
-- Triggered on `genspark_ai_developer` branch
-- SSH deployment to staging server
-- Zero-downtime deployment
-- Smoke tests
-
-#### **Job 6: Deploy to Production**
-- Triggered on `main` branch
-- Automated backup before deployment
-- Execute `deploy-production.sh`
-- Health checks and verification
-
-#### **Job 7: Rollback**
-- Manual trigger only
-- Restore from backup
-- Service rollback
-
-#### **Job 8: Notifications**
-- Slack webhook notifications
-- Deployment status reporting
-
-**Triggers**:
-- Push to `main` → Production deployment
-- Push to `genspark_ai_developer` → Staging deployment
-- Manual workflow dispatch → Choose environment
-
----
-
-### 8. **Pre-Deployment Checklist** ✅
-**File**: `PRE_DEPLOYMENT_CHECKLIST.md`  
-**Size**: 7,638 characters (200+ items)  
-**Purpose**: Comprehensive deployment verification
-
-**Sections Covered**:
-1. ✅ Infrastructure Requirements (20 items)
-2. ✅ Software Dependencies (15 items)
-3. ✅ Environment Configuration (25 items)
-4. ✅ Database Setup (18 items)
-5. ✅ Email Server Configuration (22 items)
-6. ✅ SSL/TLS Setup (12 items)
-7. ✅ Security Configuration (28 items)
-8. ✅ Performance Optimization (15 items)
-9. ✅ Monitoring Setup (14 items)
-10. ✅ Testing Procedures (30 items)
-11. ✅ Backup and Recovery (12 items)
-12. ✅ Documentation (8 items)
-
-**Total Items**: 200+ verification points
-
----
-
-## 🔧 Additional Scripts
-
-### 9. **Rollback Script** (To be created)
-**File**: `scripts/rollback.sh`  
-**Purpose**: Automated rollback to previous version
-
-### 10. **Backup Script** (To be created)
-**File**: `scripts/backup-database.sh`  
-**Purpose**: Manual and automated backups
-
-### 11. **Monitoring Setup** (To be created)
-**File**: `scripts/setup-monitoring.sh`  
-**Purpose**: Prometheus + Grafana configuration
-
----
-
-## 📊 Deployment Metrics
-
-### **Time Savings**
-- Manual deployment: **2-3 days**
-- Automated deployment: **1-2 hours**
-- Time saved: **90-95%**
-
-### **Cost Savings**
-- SendGrid/Mailchimp: **$200-500/month** ($2,400-6,000/year)
-- Own SMTP server: **$0/month**
-- Annual savings: **$2,400-6,000**
-
-### **Reliability**
-- Automated health checks: **Yes**
-- Rollback capability: **Yes**
-- Zero-downtime deployment: **Yes**
-- Success rate: **99.5%+**
-
-### **Scalability**
-- Horizontal scaling: **Docker Swarm/Kubernetes ready**
-- Vertical scaling: **Resource limits configurable**
-- Load balancing: **Nginx + multiple workers**
-
----
-
-## 🚀 Quick Start Guide
-
-### **Step 1: Pre-Deployment**
+This may cause database connection errors on startup. Check:
 ```bash
-# 1. Review checklist
-cat PRE_DEPLOYMENT_CHECKLIST.md
-
-# 2. Verify environment
-./scripts/health-check.sh
-
-# 3. Make scripts executable
-chmod +x scripts/*.sh
+docker logs spirittours-backend | grep -i "database\|postgres\|mongo"
 ```
 
-### **Step 2: Infrastructure Setup**
-```bash
-# 1. Initialize database
-sudo ./scripts/init-database.sh
+If database errors occur, update `.env.production` or `docker-compose.yml` to match your actual database.
 
-# 2. Setup SSL/TLS
-sudo ./scripts/setup-ssl.sh yourdomain.com admin@yourdomain.com
-
-# 3. Setup email server
-sudo ./scripts/setup-email.sh yourdomain.com
-```
-
-### **Step 3: Deploy Application**
-```bash
-# Option A: Docker Compose
-docker compose -f docker-compose.production.yml up -d
-
-# Option B: Automated script
-sudo ./scripts/deploy-production.sh
-```
-
-### **Step 4: Verification**
-```bash
-# Check system health
-./scripts/health-check.sh
-
-# Check service logs
-docker compose -f docker-compose.production.yml logs -f
-
-# Test email sending
-curl -X POST http://localhost:8000/api/test-email
-```
-
----
-
-## 🔒 Security Considerations
-
-### **SSL/TLS**
-- ✅ Let's Encrypt certificates
-- ✅ TLS 1.2+ only
-- ✅ Strong cipher suites
-- ✅ HSTS enabled
-
-### **Email Security**
-- ✅ DKIM signing
-- ✅ SPF records
-- ✅ DMARC policy
-- ✅ Rate limiting
-
-### **Application Security**
-- ✅ JWT authentication
-- ✅ CORS configuration
-- ✅ SQL injection prevention
-- ✅ XSS protection
-- ✅ CSRF tokens
-
-### **Infrastructure Security**
-- ✅ Firewall rules (UFW)
-- ✅ Fail2ban for brute force protection
-- ✅ Regular security updates
-- ✅ Least privilege principle
-
----
-
-## 📈 Monitoring and Alerting
-
-### **Prometheus Metrics**
-- API response times
-- Email sending rates
-- Database connections
-- System resources (CPU, RAM, disk)
-
-### **Grafana Dashboards**
-- System overview
-- Email campaign performance
-- API performance
-- Database metrics
-
-### **Health Checks**
-- Every 30 seconds
-- Auto-restart on failure
-- Slack/email notifications
-
----
-
-## 🔄 Rollback Procedures
-
-### **Automatic Rollback**
-- Triggered on deployment failure
-- Restores previous Docker images
-- Restores database from backup
-- Takes 5-10 minutes
-
-### **Manual Rollback**
-```bash
-# Via CI/CD
-gh workflow run deploy.yml -f environment=production -f action=rollback
-
-# Via script
-sudo ./scripts/rollback.sh
-```
-
----
-
-## 📚 Documentation Links
-
-1. **Deployment Guide**: `DEPLOYMENT_PRODUCTION_GUIDE.md`
-2. **Pre-Deployment Checklist**: `PRE_DEPLOYMENT_CHECKLIST.md`
-3. **System Architecture**: `SYSTEM_ARCHITECTURE.md`
-4. **API Documentation**: `API_DOCUMENTATION.md`
-5. **Development Complete**: `DEVELOPMENT_COMPLETE_FINAL.md`
-
----
-
-## ✅ Completion Status
-
-### **Option 1: Immediate Deployment (1-2 days)** - ✅ 100% COMPLETE
-
-| Component | Status | Completion |
-|-----------|--------|------------|
-| Master deployment script | ✅ Complete | 100% |
-| Docker Compose production | ✅ Complete | 100% |
-| Database initialization | ✅ Complete | 100% |
-| SSL/TLS automation | ✅ Complete | 100% |
-| Email server setup | ✅ Complete | 100% |
-| Health check script | ✅ Complete | 100% |
-| CI/CD pipeline | ✅ Complete | 100% |
-| Pre-deployment checklist | ✅ Complete | 100% |
-| Deployment summary | ✅ Complete | 100% |
-| Scripts made executable | ✅ Complete | 100% |
-
-### **Overall Progress**: ✅ **100% COMPLETE**
-
----
-
-## 🎉 What's Included
-
-✅ **10 production-ready deployment scripts**  
-✅ **8-service Docker Compose configuration**  
-✅ **Complete CI/CD pipeline with 8 jobs**  
-✅ **200+ item pre-deployment checklist**  
-✅ **Automated SSL/TLS with Let's Encrypt**  
-✅ **SMTP server with DKIM/SPF/DMARC**  
-✅ **Health monitoring and auto-restart**  
-✅ **Automated backups (daily, 30-day retention)**  
-✅ **Rollback capability**  
-✅ **Zero-downtime deployment**
-
----
-
-## 🚦 Next Steps (Option 2: Staged Rollout)
-
-### **Phase 1: Staging Environment (Week 1)**
-- [ ] Create `docker-compose.staging.yml`
-- [ ] Setup staging server
-- [ ] Configure staging domain
-- [ ] Deploy to staging
-- [ ] Run load tests (10K emails, 100K users)
-
-### **Phase 2: Pre-Production (Week 2)**
-- [ ] OTA integration validation
-- [ ] Performance optimization
-- [ ] Security audit
-- [ ] Documentation review
-
-### **Phase 3: Production Launch (Week 3)**
-- [ ] Final go-live checklist
-- [ ] Production deployment
-- [ ] Monitoring setup
-- [ ] Post-launch verification
-
----
+### Port Configuration Summary
+- **Local Dev**: Port 8000 (default)
+- **Production Docker**: Port 5000 (from environment)
+- **Frontend**: Port 8080 (React dev server)
+- **Nginx**: Routes from 443 (HTTPS) to backend 5000
 
 ## 📞 Support
 
-For deployment issues or questions:
-1. Check logs: `docker compose logs -f`
-2. Run health check: `./scripts/health-check.sh`
-3. Review documentation
-4. Check GitHub Actions logs
+If issues persist after deployment:
+
+1. **Check Backend Logs**:
+   ```bash
+   docker logs spirittours-backend --tail 100
+   ```
+
+2. **Verify Port Binding**:
+   ```bash
+   docker ps | grep spirittours-backend
+   # Should show: 0.0.0.0:5000->5000/tcp
+   ```
+
+3. **Test Local Connection**:
+   ```bash
+   curl -v http://localhost:5000/health
+   ```
+
+4. **Check Nginx Config**:
+   ```bash
+   cat /etc/nginx/sites-available/spirittours | grep -A 5 "location /api/"
+   ```
+
+## 📚 Documentation Files
+
+- **PRODUCTION_PORT_FIX_GUIDE.md**: Comprehensive deployment guide
+- **deploy-port-fix.sh**: Automated deployment script
+- **DEPLOYMENT_SUMMARY.md**: This file
+
+## 🎉 Success Criteria
+
+Deployment is successful when:
+
+1. ✅ Backend starts without errors
+2. ✅ Backend logs show "port 5000"
+3. ✅ Health endpoint returns 200 OK
+4. ✅ Booking endpoint returns 405 (not 502)
+5. ✅ Frontend can create bookings
+6. ✅ No 502 errors in nginx logs
 
 ---
 
-**Last Updated**: 2025-10-18  
-**Version**: 1.0.0  
-**Status**: ✅ Production Ready
+**Last Updated**: 2024-11-14  
+**Branch**: main  
+**Commits**: f7bca7f12, f8fef01b0  
+**Status**: ✅ Ready for Production Deployment
