@@ -17,20 +17,53 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Set test environment variables before importing modules
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["USE_SQLITE"] = "true"
-os.environ["SECRET_KEY"] = "test-secret-key-min-32-chars-long-for-testing-purposes"
+os.environ["TESTING"] = "true"
+os.environ["SECRET_KEY"] = "test-secret-32chars-minimum!"  # Shorter for bcrypt (max 72 bytes)
 os.environ["STRIPE_SECRET_KEY"] = "sk_test_fake"
 os.environ["SENDGRID_API_KEY"] = "SG.fake_test_key"
+os.environ["JWT_SECRET_KEY"] = "test-jwt-key-32-chars-min!"  # Shorter for bcrypt
+os.environ["JWT_ALGORITHM"] = "HS256"
 
-from fastapi import FastAPI
-from database.models import Base
-from auth.models import User
+# Import ALL models before Base to ensure they're registered
+from database.models import (
+    Base, User as UserModel, Tour as TourModel, 
+    Booking as BookingModel, Review as ReviewModel,
+    Payment as PaymentModel, EmailLog as EmailLogModel,
+    AnalyticsEvent as AnalyticsEventModel
+)
+from auth.models import User  # Pydantic model
 from auth.password import get_password_hash
 from auth.jwt import create_access_token
 
+# Test database URL (SQLite in-memory)
+TEST_DATABASE_URL = "sqlite:///:memory:"
+
+# Create test engine with proper configuration for SQLite
+test_engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={
+        "check_same_thread": False,
+        "timeout": 30
+    },
+    pool_pre_ping=True,
+    echo=False  # Set to True for debugging
+)
+
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+# Create all tables at module level
+Base.metadata.create_all(bind=test_engine)
+
+# Monkey-patch the database.connection module to use test engine
+import database.connection as db_conn
+db_conn.engine = test_engine
+db_conn.SessionLocal = TestingSessionLocal
+
 # Create minimal test app
+from fastapi import FastAPI
 app = FastAPI()
 
-# Import routes after environment is set
+# Import routes after database is patched
 from auth.routes import router as auth_router
 from reviews.routes import router as reviews_router
 from analytics.routes import router as analytics_router
@@ -39,36 +72,27 @@ app.include_router(auth_router)
 app.include_router(reviews_router)
 app.include_router(analytics_router)
 
-# Test database URL (SQLite in-memory)
-TEST_DATABASE_URL = "sqlite:///:memory:"
 
-# Create test engine
-engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    pool_pre_ping=True
-)
-
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=False)
 def db() -> Generator[Session, None, None]:
     """
-    Create a fresh database for each test
+    Create a fresh database session for each test
+    Tables are already created at module level
     """
-    # Create all tables
-    Base.metadata.create_all(bind=engine)
+    # Create connection and begin transaction
+    connection = test_engine.connect()
+    transaction = connection.begin()
     
-    # Create session
-    db = TestingSessionLocal()
+    # Create session bound to connection
+    session = Session(bind=connection)
     
     try:
-        yield db
+        yield session
     finally:
-        db.close()
-        # Drop all tables after test
-        Base.metadata.drop_all(bind=engine)
+        session.close()
+        # Rollback transaction to clean up data
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture(scope="function")

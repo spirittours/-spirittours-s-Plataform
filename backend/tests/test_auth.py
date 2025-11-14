@@ -26,12 +26,18 @@ class TestUserRegistration:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == "newuser@example.com"
-        assert data["full_name"] == "New User"
-        assert data["role"] == "user"
-        assert "id" in data
-        assert "password" not in data
-        assert "password_hash" not in data
+        # Check token fields
+        assert "access_token" in data
+        assert "token_type" in data
+        assert data["token_type"] == "bearer"
+        # Check user fields (nested in 'user' object)
+        assert "user" in data
+        assert data["user"]["email"] == "newuser@example.com"
+        assert data["user"]["full_name"] == "New User"
+        assert data["user"]["role"] == "customer"
+        assert "id" in data["user"]
+        assert "password" not in data["user"]
+        assert "password_hash" not in data["user"]
     
     def test_register_duplicate_email(self, client: TestClient, test_user: dict):
         """Test registration with existing email fails"""

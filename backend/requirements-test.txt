@@ -43,3 +43,6 @@ freezegun==1.4.0
 
 # Environment management
 python-dotenv==1.0.0
+
+# Security - Pin bcrypt to 4.x for passlib compatibility
+bcrypt<5.0.0
