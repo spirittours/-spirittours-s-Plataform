@@ -3381,92 +3381,12 @@ async def get_bookings_mock():
         }
     ]
 
-@app.post("/api/v1/bookings")
-async def create_booking_mock(booking_data: dict):
-    """Mock endpoint for creating bookings - validates and returns confirmation"""
-    try:
-        # Extract data from request
-        tour_id = booking_data.get("tour_id")
-        booking_date = booking_data.get("booking_date")
-        participants = booking_data.get("participants", 1)
-        
-        # Validate required fields
-        if not tour_id:
-            raise HTTPException(status_code=400, detail="tour_id is required")
-        if not booking_date:
-            raise HTTPException(status_code=400, detail="booking_date is required")
-        
-        # Find tour to get pricing
-        tours_response = await get_tours_mock()
-        tours = tours_response["tours"]
-        selected_tour = next((t for t in tours if t["id"] == tour_id), None)
-        
-        if not selected_tour:
-            raise HTTPException(status_code=404, detail=f"Tour {tour_id} not found")
-        
-        # Validate participants
-        if participants < selected_tour["minParticipants"]:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Minimum {selected_tour['minParticipants']} participants required"
-            )
-        if participants > selected_tour["maxParticipants"]:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Maximum {selected_tour['maxParticipants']} participants allowed"
-            )
-        
-        # Calculate total amount
-        base_price = selected_tour["basePrice"]["amount"]
-        total_amount = base_price * participants
-        
-        # Generate booking ID and reference
-        booking_id = f"BK-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        booking_reference = f"ST-{datetime.now().year}-{booking_id[-6:]}"
-        
-        # Create booking record
-        new_booking = {
-            "id": booking_id,
-            "booking_reference": booking_reference,
-            "tour_id": tour_id,
-            "tour_name": selected_tour["title"],
-            "tour_description": selected_tour["description"],
-            "customer_name": "Guest User",  # TODO: Get from authenticated user
-            "customer_email": "guest@spirittours.us",  # TODO: Get from authenticated user
-            "booking_date": datetime.now().isoformat(),
-            "travel_date": booking_date,
-            "participants": participants,
-            "total_amount": total_amount,
-            "currency": "USD",
-            "status": "pending",
-            "payment_status": "pending",
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
-        }
-        
-        logger.info(f"✅ Booking created: {booking_id} for tour {tour_id}")
-        
-        # Return success response
-        return {
-            "success": True,
-            "booking_id": booking_id,
-            "booking_reference": booking_reference,
-            "message": "Booking created successfully",
-            "booking": new_booking,
-            "total_amount": total_amount,
-            "currency": "USD",
-            "next_steps": [
-                "Complete payment to confirm booking",
-                "You will receive a confirmation email",
-                "Check your booking status in the dashboard"
-            ]
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"❌ Error creating booking: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating booking: {str(e)}")
+# OLD MOCK ENDPOINT - DISABLED in favor of booking_api.py router
+# This old endpoint was conflicting with the new booking_api.py
+# @app.post("/api/v1/bookings")
+# async def create_booking_mock(booking_data: dict):
+#     """Mock endpoint for creating bookings - validates and returns confirmation"""
+#     # ... (old implementation commented out)
 
 
 if __name__ == "__main__":

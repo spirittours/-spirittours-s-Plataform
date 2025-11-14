@@ -160,7 +160,8 @@ function AppSimple() {
           last_name: "User",
           email: "guest@spirittours.com",
           phone: "+1234567890",
-          country_code: "US"
+          country: "US",
+          language: "es"
         },
         product_id: String(selectedTour.id),
         slot_id: `slot-${bookingForm.booking_date}`,
