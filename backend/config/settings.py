@@ -17,9 +17,15 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """Application settings with environment variable support"""
     
-    # Allow extra fields for backward compatibility
+    # Pydantic v2 configuration - Allow extra fields for backward compatibility
     if ConfigDict is not None:
-        model_config = ConfigDict(extra='allow')
+        model_config = ConfigDict(
+            extra='allow',
+            env_file='.env',
+            env_file_encoding='utf-8',
+            case_sensitive=False,
+            env_prefix=''
+        )
     
     # ============================
     # BASIC APPLICATION SETTINGS
@@ -270,39 +276,9 @@ class Settings(BaseSettings):
             raise ValueError('Commission rate must be between 0.0 and 1.0')
         return v
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-        
-        # Environment variable prefixes
-        env_prefix = ""
-        
-        # Custom environment mappings
-        fields = {
-            'database_url': {'env': 'DATABASE_URL'},
-            'secret_key': {'env': 'SECRET_KEY'},
-            'openai_api_key': {'env': 'OPENAI_API_KEY'},
-            'anthropic_api_key': {'env': 'ANTHROPIC_API_KEY'},
-            'smtp_host': {'env': 'SMTP_HOST'},
-            'smtp_username': {'env': 'SMTP_USERNAME'},
-            'smtp_password': {'env': 'SMTP_PASSWORD'},
-            'redis_url': {'env': 'REDIS_URL'},
-            'stripe_secret_key': {'env': 'STRIPE_SECRET_KEY'},
-            'stripe_public_key': {'env': 'STRIPE_PUBLIC_KEY'},
-            'sentry_dsn': {'env': 'SENTRY_DSN'},
-            # 3CX PBX Environment Variables
-            'PBX_3CX_SERVER_URL': {'env': 'PBX_3CX_SERVER_URL'},
-            'PBX_3CX_USERNAME': {'env': 'PBX_3CX_USERNAME'},
-            'PBX_3CX_PASSWORD': {'env': 'PBX_3CX_PASSWORD'},
-            # Social Media Environment Variables
-            'WHATSAPP_ACCESS_TOKEN': {'env': 'WHATSAPP_ACCESS_TOKEN'},
-            'FACEBOOK_PAGE_ACCESS_TOKEN': {'env': 'FACEBOOK_PAGE_ACCESS_TOKEN'},
-            'INSTAGRAM_ACCESS_TOKEN': {'env': 'INSTAGRAM_ACCESS_TOKEN'},
-            'TIKTOK_ACCESS_TOKEN': {'env': 'TIKTOK_ACCESS_TOKEN'},
-            'TWITTER_BEARER_TOKEN': {'env': 'TWITTER_BEARER_TOKEN'},
-            'LINKEDIN_ACCESS_TOKEN': {'env': 'LINKEDIN_ACCESS_TOKEN'},
-        }
+    # Pydantic v2 configuration (replaces old Config class)
+    # Note: model_config was already added at class level for extra='allow'
+    # The old Config class has been removed to avoid conflicts
 
 class DevelopmentSettings(Settings):
     """Development environment settings"""
